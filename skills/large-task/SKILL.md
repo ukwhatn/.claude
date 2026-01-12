@@ -1,0 +1,151 @@
+---
+name: large-task
+description: 大規模タスクを複数セッションに分割して実装するワークフロー。1セッション目で包括調査とPlan作成、2セッション目以降で各タスクを実装。Phase 0-5の補完・拡張として機能。使用タイミング: (1) 複数日にまたがる大規模実装、(2) 10個以上のタスクに分割される機能開発、(3) 複数人で並行作業する可能性があるタスク。
+---
+
+# Large Task Workflow
+
+大規模タスクを複数セッションに分割して効率的に実装するためのワークフロー。
+
+## 既存ワークフローとの関係
+
+- **Phase 0-5（@context/workflow-rules.md）を補完・拡張**
+- 通常タスク: Phase 0-5をそのまま使用
+- 大規模タスク: このスキルでタスク分割 → 各タスクでPhase 0-5を適用
+
+## ディレクトリ構成
+
+```
+${MEMORY_DIR}/
+├── memory/YYMMDD_<task>/    # 通常のメモリディレクトリ（既存Phase 0-5）
+└── tasks/YYMMDD_<task_name>/       # 大規模タスク専用（本スキル）
+    ├── 00_plan.md           # 全体計画
+    ├── 01_<subtask>.md      # 個別タスク1
+    ├── 02_<subtask>.md      # 個別タスク2
+    └── ...
+```
+
+- MEMORY_DIR: PJ CLAUDE.mdで定義（未定義時: `.local/`）
+- task_name: タスクを識別する短い名前（例: `data-site`, `auth-refactor`）
+
+## サブコマンド
+
+### /large-task plan
+
+**セッション1で実行**: 包括調査 → 全体計画 + 個別タスクファイル作成
+
+1. 要件の明確化（AskUserQuestionで確認）
+2. 包括調査
+   - 既存コードベース調査
+   - context7/WebSearchで外部情報参照
+3. `${MEMORY_DIR}/tasks/YYMMDD_<task_name>/` ディレクトリ作成
+   - 必ずdateコマンドで日付を確認すること
+4. 00_plan.md作成（全体計画）
+5. 01_xxx.md, 02_xxx.md... 作成（個別タスク）
+6. agent reviewで計画検証（指摘なくなるまで）
+
+### /large-task implement <task_num>
+
+**セッション2以降で実行**: 指定タスクを実装
+
+1. 00_plan.md と 指定タスクファイル（例: 03_apps_data_base.md）を読込
+2. Phase 0-5を適用して実装
+   - reference: user-level CLAUDE.md, @context/workflow-rules.md
+   - Phase 0: memory/YYMMDD_<task>/ にメモリディレクトリ作成
+   - Phase 1-4: タスクファイルに従って実装
+   - Phase 5: 完了報告
+
+## ファイルフォーマット
+
+### 00_plan.md（全体計画）
+
+```markdown
+# <タスク名> 実装計画
+
+## 概要
+[1-2文で全体像を説明]
+
+## 背景・目的
+[なぜこの実装が必要か]
+
+## タスク一覧
+
+| # | タスク | 依存 | 状態 |
+|---|--------|------|------|
+| 01 | <タスク名> | - | pending |
+| 02 | <タスク名> | 01 | pending |
+| ... | ... | ... | ... |
+
+状態: pending / in_progress / completed
+
+## 全体アーキテクチャ
+[図や説明]
+
+## リスク・懸念事項
+| リスク | 影響度 | 対策 |
+|-------|-------|------|
+
+## agent reviewの結果
+[計画フェーズでのagent指摘と対応]
+```
+
+### 個別タスクファイル（01_xxx.md等）
+
+テンプレート: [references/task-template.md](references/task-template.md)
+
+```markdown
+# Task XX: <タスク名>
+
+## 目的
+[このタスクで何を達成するか]
+
+## 前提条件
+- [ ] 依存タスク（あれば）
+- [ ] 必要な環境・設定
+
+## 完了条件
+- [ ] 検証可能な条件1
+- [ ] 検証可能な条件2
+
+## 作業内容
+### 変更対象ファイル
+- path/to/file1.ts
+- path/to/file2.ts
+
+### 詳細手順
+1. [手順1]
+2. [手順2]
+3. ...
+
+### コミット
+- `feat: ...`
+
+## 検証手順
+```bash
+# 検証コマンド
+bun run typecheck
+bun run test
+```
+
+## 注意事項
+- [ハマりポイント1]
+- [ハマりポイント2]
+```
+
+## Phase 0-5との統合
+
+各タスク実装時は、通常のPhase 0-5ワークフローを適用:
+
+1. **Phase 0**: `memory/YYMMDD_<task>/` 作成、05_log.md初期化
+2. **Phase 1**: タスクファイルの「作業内容」を元に詳細調査
+3. **Phase 2**: 必要に応じて詳細計画（タスクファイルで既に十分なら省略可）
+4. **Phase 3**: 実装（4ステップ: 調査→計画→実行→レビュー）
+5. **Phase 4**: 品質確認 + agent review
+6. **Phase 5**: 完了報告、00_plan.mdの状態更新
+
+## 既存設定への参照
+
+- ワークフロー詳細: @context/workflow-rules.md
+- メモリファイル形式: @context/memory-file-formats.md
+- agent cli: @context/agent-cli-guide.md
+- PJ固有設定: PJ CLAUDE.md
