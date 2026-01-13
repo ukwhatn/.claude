@@ -82,6 +82,10 @@ find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.md" 
 
 **CRITICAL**: 6つのサブエージェントを**同時に**起動する。Taskツールを1つのメッセージで6回呼び出す。
 
+**CRITICAL**: サブエージェントは必ず `subagent_type=general-purpose` を使用すること。
+- `Explore`エージェントはファイル探索専用でWriteツールを持たないため、issueファイルを作成できない
+- `general-purpose`エージェントは全ツール（Read, Write, Grep, Glob, Bash, WebSearch, context7等）にアクセス可能
+
 各サブエージェントには以下の情報を渡す:
 - メモリディレクトリのフルパス
 - PJ CLAUDE.mdの内容（アーキテクチャルール等）
