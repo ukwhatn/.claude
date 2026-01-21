@@ -10,7 +10,7 @@ Claude Codeとは異なる観点からの分析により、計画・実装の品
 ## 基本コマンド
 
 ```bash
-agent -p "<プロンプト>" --model gpt-5.2-high --output-format json
+agent -p "<プロンプト>" --model gpt-5.2-high --output-format stream-json
 ```
 
 ### パラメータ
@@ -55,7 +55,7 @@ agent -p "メモリディレクトリ /path/to/.local/memory/<task>/ の内容�
 計画内容:
 $(cat .local/memory/<task>/30_plan.md)" \
   --model gpt-5.2-high \
-  --output-format json
+  --output-format stream-json
 ```
 
 ### 2. 実装レビュー（Phase 4）
@@ -73,7 +73,7 @@ agent -p "メモリディレクトリ /path/to/.local/memory/<task>/ の内容�
 変更内容:
 $(git diff $BASE_BRANCH)" \
   --model gpt-5.2-high \
-  --output-format json
+  --output-format stream-json
 ```
 
 ### 3. PRレビュー
@@ -89,7 +89,7 @@ agent -p "以下のPRをレビューしてください:
 PR diff:
 $(gh pr diff <番号>)" \
   --model gpt-5.2-high \
-  --output-format json
+  --output-format stream-json
 ```
 
 ### 4. セッション継続
@@ -101,33 +101,24 @@ agent --resume <session_id> -p "以下の改善を行いました:
 
 再度レビューしてください。指摘がなければ「指摘なし」とだけ回答してください。" \
   --model gpt-5.2-high \
-  --output-format json
+  --output-format stream-json
 ```
 
 ## 出力形式
 
-### json形式（推奨）
+### stream-json形式（推奨）
 
-```json
-{
-  "type": "result",
-  "subtype": "success",
-  "is_error": false,
-  "duration_ms": 1234,
-  "result": "<レビュー結果>",
-  "session_id": "<uuid>"
-}
-```
-
-### 結果の抽出
+ストリーミング形式でJSONが出力される。最終行に結果が含まれる。
 
 ```bash
-# jqで結果を抽出
-agent -p "..." --model gpt-5.2-high --output-format json | jq -r .result
+# 最終行から結果を抽出
+agent -p "..." --model gpt-5.2-high --output-format stream-json | tail -1 | jq -r .result
 
 # session_idの抽出
-agent -p "..." --model gpt-5.2-high --output-format json | jq -r .session_id
+agent -p "..." --model gpt-5.2-high --output-format stream-json | tail -1 | jq -r .session_id
 ```
+
+**NOTE:** `stream-json`は`json`より高速（長時間処理でタイムアウトしにくい）
 
 ### 結果の活用
 

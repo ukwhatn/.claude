@@ -56,7 +56,7 @@ PR情報:
 変更内容:
 $(cat /tmp/pr-<番号>.diff)" \
   --model gpt-5.2-high \
-  --output-format json
+  --output-format stream-json
 ```
 
 ### 5. 結果の統合

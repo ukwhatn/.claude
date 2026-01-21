@@ -121,14 +121,14 @@
 agent -p "メモリディレクトリ ${MEMORY_DIR}/memory/yymmdd_<task_name>/ の内容を読み、以下の実装計画をレビューしてください。
 抜け漏れ、リスク、改善点を指摘してください。指摘がなければ「指摘なし」とだけ回答してください: <計画内容>" \
   --model gpt-5.2-high \
-  --output-format json
+  --output-format stream-json
 ```
 
 **2回目以降**（セッション継続）:
 ```bash
 agent --resume <session_id> -p "以下の改善を行いました: <改善内容>。再度レビューしてください。" \
   --model gpt-5.2-high \
-  --output-format json
+  --output-format stream-json
 ```
 
 **ループ条件**:
@@ -171,14 +171,14 @@ agent -p "メモリディレクトリ ${MEMORY_DIR}/memory/yymmdd_<task_name>/ �
 バグ、セキュリティ、パフォーマンス、ベストプラクティスの観点から指摘してください。
 指摘がなければ「指摘なし」とだけ回答してください: $(git diff $BASE_BRANCH)" \
   --model gpt-5.2-high \
-  --output-format json
+  --output-format stream-json
 ```
 
 **2回目以降**（セッション継続）:
 ```bash
 agent --resume <session_id> -p "以下の改善を行いました: <改善内容>。再度レビューしてください。" \
   --model gpt-5.2-high \
-  --output-format json
+  --output-format stream-json
 ```
 
 **ループ条件**:

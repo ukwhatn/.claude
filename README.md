@@ -86,7 +86,7 @@ CLAUDE.mdで定義された6フェーズワークフロー:
 別モデル（GPT-5.2-high）によるレビューを実施:
 
 ```bash
-agent -p "<prompt>" --model gpt-5.2-high --output-format json
+agent -p "<prompt>" --model gpt-5.2-high --output-format stream-json
 ```
 
 - 修正すべき点がなくなるまでループ
