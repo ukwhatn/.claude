@@ -203,7 +203,7 @@ find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.md" 
    - 優先度は厳格に判断（critの乱用禁止）
    - コードベースの一部だけを見て終わりにしない" \
      --model gpt-5.2-high \
-     --output-format json
+     --output-format stream-json
    ```
 
 2. **結果を突き合わせ**
