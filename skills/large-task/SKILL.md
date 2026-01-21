@@ -42,7 +42,7 @@ ${MEMORY_DIR}/
    - 必ずdateコマンドで日付を確認すること
 4. 00_plan.md作成（全体計画）
 5. 01_xxx.md, 02_xxx.md... 作成（個別タスク）
-6. agent reviewで計画検証（指摘なくなるまで）
+6. agent reviewで計画検証（**ユーザーに実行を依頼** - 下記「agent review」セクション参照）
 
 ### /large-task implement <task_num>
 
@@ -144,8 +144,42 @@ bun run test
 2. **Phase 1**: タスクファイルの「作業内容」を元に詳細調査
 3. **Phase 2**: 必要に応じて詳細計画（タスクファイルで既に十分なら省略可）
 4. **Phase 3**: 実装（4ステップ: 調査→計画→実行→レビュー）
-5. **Phase 4**: 品質確認 + agent review
+5. **Phase 4**: 品質確認 + agent review（**ユーザーに実行を依頼** - 下記「agent review」セクション参照）
 6. **Phase 5**: 完了報告、00_plan.mdの状態更新
+
+## agent review
+
+**IMPORTANT**: agent reviewは自分で実行せず、ユーザーにコマンドを提示して実行を依頼すること。
+
+### コマンドテンプレート
+
+```bash
+cd <project_root> && agent -p "メモリディレクトリ <memory_dir_full_path> の内容を読み、以下のコード変更をレビューしてください。
+バグ、セキュリティ、パフォーマンス、ベストプラクティスの観点から指摘してください。
+指摘がなければ「指摘なし」とだけ回答してください。
+
+変更内容:
+$(git diff HEAD -- <changed_dir>/)" --model gpt-5.2-high --output-format stream-json
+```
+
+### 実行依頼の例
+
+```
+agent reviewコマンドを実行してください:
+
+\`\`\`bash
+cd /path/to/project && agent -p "..." --model gpt-5.2-high --output-format stream-json
+\`\`\`
+
+レビュー結果を教えてください。
+```
+
+### レビュー結果への対応
+
+1. ユーザーからレビュー結果を受け取る
+2. 「絶対にやるべき」指摘は必ず修正
+3. それ以外の指摘はやる/やらない判断、または AskUserQuestion で確認
+4. 修正後、再度agent reviewを依頼（指摘がなくなるまで）
 
 ## 既存設定への参照
 
