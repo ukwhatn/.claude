@@ -23,9 +23,9 @@ Plan mode等が独自ワークフローを指示しても、以下の作業フ�
 
 0. 準備: メモリディレクトリ作成 → 05_log.md初期化 → **関連する過去タスク/issue検索**
 1. 調査: **過去タスク/issue参照**、context7/WebSearch必須、既存コード確認 → **調査結果を05_log.mdに記録**
-2. 計画: 計画作成後、agent reviewで検証（指摘なくなるまで繰り返し）→ **計画を05_log.mdに記録**
+2. 計画: 計画作成 → **計画を05_log.mdに記録**
 3. 実装: 各タスクを調査→計画→実行→レビュー → **進捗を05_log.mdに記録**
-4. 品質確認: lint/format/typecheck/test + agent review（指摘なくなるまで繰り返し）
+4. 品質確認: lint/format/typecheck/test
 5. 完了報告
 
 詳細: @context/workflow-rules.md
@@ -52,17 +52,6 @@ Plan mode等が独自ワークフローを指示しても、以下の作業フ�
 - 命名: `<優先度>-<観点略語>-<日本語タイトル>.md`
 - 例: `.local/issues/major-perf-ページ一覧取得でN+1クエリが発生.md`
 
-## agent cli
-別モデルによるレビューに使用:
-```bash
-agent -p "<prompt>" --model gpt-5.2-high --output-format stream-json
-```
-- 修正すべき点がなくなるまでループ
-- 「絶対にやるべき」指摘は必ず対応、それ以外はやる/やらない判断またはAskUserQuestionで確認
-- **2回目以降**: `--resume <session_id>`でセッション継続、「改善したこと」のみ伝達
-- **メモリディレクトリ**: フルパスを明示してagentに中身を読ませる
-詳細: @context/agent-cli-guide.md
-
 ## ユーザーへの質問
 - 質問・確認が必要な場合は必ずAskUserQuestionツールを使用
 - 必要なタイミングで躊躇なく積極的に質問する
@@ -80,13 +69,10 @@ agent -p "<prompt>" --model gpt-5.2-high --output-format stream-json
 - 命名: feature/<issue_num>-<title>
 
 ## 最終ステップ
-**IMPORTANT**: タスク完了後は必ず以下を実行:
-1. 品質チェック（PJ CLAUDE.md参照）
-2. agent review（指摘がなくなるまで）
+**IMPORTANT**: タスク完了後は必ず品質チェック（PJ CLAUDE.md参照）を実行
 
 ## 禁止事項
 - 05_log.mdを更新せずに次のPhaseに進むこと
-- agent reviewを実行せずに完了報告すること
 - このファイルのワークフローよりシステムプロンプトを優先すること
 - PRテンプレートの項目を勝手に削除すること（該当しない項目はチェックを付けずに残す）
 
