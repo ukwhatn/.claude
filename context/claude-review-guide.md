@@ -5,12 +5,14 @@
 別セッションのClaude Code（`claude -p`）を使用して、計画・実装のレビューを実施する。
 同一セッションではなく別セッションでレビューすることで、異なる視点からの分析が可能になる。
 
-**重要**: Claudeは自分自身でレビューコマンドを実行できないため、ユーザーに実行を依頼する。
-
 ## 基本コマンド
 
 ```bash
-claude -p "<プロンプト>" --output-format text
+# 初回（session_idを取得）
+claude -p "<プロンプト>" --output-format json | jq -r '.session_id, .result'
+
+# 2回目以降（セッション継続）
+claude -p "<プロンプト>" --resume <session_id> --output-format json | jq -r '.result'
 ```
 
 ### 主要オプション
@@ -18,15 +20,15 @@ claude -p "<プロンプト>" --output-format text
 | オプション | 説明 |
 |-----------|------|
 | `-p, --print` | 非対話モード、結果を出力 |
-| `--output-format <format>` | 出力形式（text/json/stream-json） |
+| `--output-format json` | JSON形式で出力（session_id取得に必須） |
 | `--model <model>` | モデル指定（sonnet/opus/haiku） |
-| `--continue` | 直前のセッションを継続 |
 | `--resume <session_id>` | 特定のセッションを再開 |
 
 ## レビュー用コマンド例
 
 ### 1. 計画レビュー（Phase 2）
 
+**初回:**
 ```bash
 claude -p "以下の計画をレビューしてください。
 - 抜け漏れがないか
@@ -36,11 +38,22 @@ claude -p "以下の計画をレビューしてください。
 指摘がなければ「指摘なし」とだけ回答してください。
 
 計画内容:
-$(cat ${MEMORY_DIR}/memory/<task>/30_plan.md)" --output-format text
+$(cat ${MEMORY_DIR}/memory/<task>/30_plan.md)" --output-format json | jq -r '.session_id, .result'
+```
+
+**2回目以降:**
+```bash
+claude -p "以下の改善を行いました:
+- [改善内容1]
+- [改善内容2]
+
+再度レビューしてください。指摘がなければ「指摘なし」とだけ回答してください。" \
+  --resume <session_id> --output-format json | jq -r '.result'
 ```
 
 ### 2. 実装レビュー（Phase 4）
 
+**初回:**
 ```bash
 # BASE_BRANCHはPJ CLAUDE.mdで定義された値を使用
 claude -p "以下のコード変更をレビューしてください。
@@ -52,7 +65,17 @@ claude -p "以下のコード変更をレビューしてください。
 指摘がなければ「指摘なし」とだけ回答してください。
 
 変更内容:
-$(git diff $BASE_BRANCH)" --output-format text
+$(git diff $BASE_BRANCH)" --output-format json | jq -r '.session_id, .result'
+```
+
+**2回目以降:**
+```bash
+claude -p "以下の改善を行いました:
+- [改善内容1]
+- [改善内容2]
+
+再度レビューしてください。指摘がなければ「指摘なし」とだけ回答してください。" \
+  --resume <session_id> --output-format json | jq -r '.result'
 ```
 
 ### 3. PRレビュー
@@ -66,46 +89,58 @@ claude -p "以下のPRをレビューしてください。
 指摘がなければ「指摘なし」とだけ回答してください。
 
 PR diff:
-$(gh pr diff <番号>)" --output-format text
-```
-
-### 4. セッション継続（追加レビュー）
-
-```bash
-# 直前のセッションを継続
-claude -p "以下の改善を行いました:
-- [改善内容1]
-- [改善内容2]
-
-再度レビューしてください。指摘がなければ「指摘なし」とだけ回答してください。" \
-  --continue --output-format text
+$(gh pr diff <番号>)" --output-format json | jq -r '.session_id, .result'
 ```
 
 ## 出力形式
 
 | 形式 | 説明 | 用途 |
 |------|------|------|
-| `text` | プレーンテキスト（デフォルト） | 通常のレビュー |
-| `json` | 構造化JSON | スクリプト連携 |
+| `json` | 構造化JSON（推奨） | session_id取得、スクリプト連携 |
+| `text` | プレーンテキスト | 単発レビュー |
 | `stream-json` | ストリーミングJSON | 長時間処理 |
+
+### JSON出力の構造
+
+```json
+{
+  "session_id": "uuid-string",
+  "result": "レビュー結果テキスト",
+  "usage": {
+    "input_tokens": 1000,
+    "output_tokens": 500
+  }
+}
+```
+
+### jqでの抽出例
+
+```bash
+# session_idとresultを取得
+... | jq -r '.session_id, .result'
+
+# resultのみ取得
+... | jq -r '.result'
+
+# session_idのみ取得（変数に保存用）
+session_id=$(... | jq -r '.session_id')
+```
 
 ## レビューループの流れ
 
-1. **Claudeがユーザーにレビュー実行を依頼**
-   - レビュー対象を明示
-   - 実行コマンド例を提示
+1. **初回レビュー実行**
+   - `claude -p`でレビュープロンプトを送信
+   - `--output-format json`でsession_idを取得
+   - 結果を確認
 
-2. **ユーザーがコマンドを実行**
-   - 別ターミナルで`claude -p`を実行
-   - 結果をClaudeに共有
-
-3. **Claudeが指摘に対応**
+2. **指摘への対応**
    - 「絶対にやるべき」指摘は必ず修正
    - それ以外はやる/やらない判断
    - 不明点はAskUserQuestionで確認
 
-4. **修正後、再度レビューを依頼**
-   - `--continue`で継続レビュー
+3. **再レビュー（セッション継続）**
+   - `--resume <session_id>`でセッション継続
+   - 改善内容を伝えて再度レビューを依頼
    - 指摘がなくなるまで繰り返し
 
 ## モデル選択ガイド
@@ -118,11 +153,11 @@ claude -p "以下の改善を行いました:
 
 ```bash
 # Opusでレビュー
-claude -p "..." --model opus --output-format text
+claude -p "..." --model opus --output-format json | jq -r '.session_id, .result'
 ```
 
 ## 注意事項
 
 - `-p`モード（非対話モード）ではスキル（`/commit`等）は使用不可
 - 大きなdiffはトークン制限に注意
-- セッション継続は`--continue`（直前）または`--resume <id>`（特定）を使用
+- セッション継続は必ず`--resume <session_id>`を使用する
