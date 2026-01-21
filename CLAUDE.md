@@ -67,6 +67,7 @@ agent -p "<prompt>" --model gpt-5.2-high --output-format stream-json
 - 質問・確認が必要な場合は必ずAskUserQuestionツールを使用
 - 必要なタイミングで躊躇なく積極的に質問する
 - **IMPORTANT**: 曖昧な点があればエスパーせず必ず質問する。勝手な解釈は禁止
+- **CRITICAL**: タスクスコープの勝手な縮小は禁止。技術的理由があっても、一部をスキップ・除外する場合は必ずユーザーに確認すること
 
 ## コミット
 - git-cz形式、絵文字なし、prefix以外は日本語
