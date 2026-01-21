@@ -48,8 +48,12 @@ ${MEMORY_DIR}/
 
 **セッション2以降で実行**: 指定タスクを実装
 
-1. 00_plan.md と 指定タスクファイル（例: 03_apps_data_base.md）を読込
-2. Phase 0-5を適用して実装
+1. **タスクファイルの特定（推測禁止）**
+   - **IMPORTANT**: ファイル名を推測しない。必ずGlobでディレクトリ内を確認
+   - `Glob("${tasks_dir}/*.md")` でファイル一覧を取得
+   - `<task_num>_` で始まるファイルを特定
+2. 00_plan.md と 特定したタスクファイルを読込
+3. Phase 0-5を適用して実装
    - reference: user-level CLAUDE.md, @context/workflow-rules.md
    - Phase 0: memory/YYMMDD_<task>/ にメモリディレクトリ作成
    - Phase 1-4: タスクファイルに従って実装
