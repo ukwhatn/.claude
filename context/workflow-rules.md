@@ -112,24 +112,30 @@
 - [ ] 型チェック・lint確認
 ```
 
-### Claude reviewによる計画検証（ループ）
+### agent reviewによる計画検証（ループ）
 
-計画完了後、別セッションのClaude Code（`claude -p`）でレビューを実施。
+計画完了後、agent cli（gpt-5.2-high）でレビューを実施。
 
 **初回実行:**
 ```bash
-claude -p "以下の実装計画をレビューしてください。
+agent -p "以下の実装計画をレビューしてください。
 抜け漏れ、リスク、改善点を指摘してください。
 指摘がなければ「指摘なし」とだけ回答してください。
 
-$(cat ${MEMORY_DIR}/memory/<task>/30_plan.md)" --output-format json | jq -r '.session_id, .result'
+$(cat ${MEMORY_DIR}/memory/<task>/30_plan.md)" \
+  --model gpt-5.2-high \
+  --output-format json | jq -r '.session_id, .result'
 ```
 
 **2回目以降（セッション継続）:**
 ```bash
-claude -p "以下の改善を行いました: <改善内容>。再度レビューしてください。" \
-  --resume <session_id> --output-format json | jq -r '.result'
+agent -p "以下の改善を行いました: <改善内容>。再度レビューしてください。" \
+  --resume <session_id> \
+  --model gpt-5.2-high \
+  --output-format json | jq -r '.result'
 ```
+
+**CRITICAL: `--output-format stream-json`は使用禁止。必ず`json`を使用すること。**
 
 **ループ:**
 1. レビュー実行（初回でsession_idを取得）
@@ -161,25 +167,31 @@ PJ CLAUDE.mdに記載のコマンドで実行:
 - typecheck
 - test
 
-### Claude review（ループ）
+### agent review（ループ）
 
-自動チェック完了後、別セッションのClaude Code（`claude -p`）でレビューを実施。
+自動チェック完了後、agent cli（gpt-5.2-high）でレビューを実施。
 
 **初回実行:**
 ```bash
 # BASE_BRANCHはPJ CLAUDE.mdで定義（未定義ならdevelop/main/masterを自動判定）
-claude -p "以下のコード変更をレビューしてください。
+agent -p "以下のコード変更をレビューしてください。
 バグ、セキュリティ、パフォーマンス、ベストプラクティスの観点から指摘してください。
 指摘がなければ「指摘なし」とだけ回答してください。
 
-$(git diff $BASE_BRANCH)" --output-format json | jq -r '.session_id, .result'
+$(git diff $BASE_BRANCH)" \
+  --model gpt-5.2-high \
+  --output-format json | jq -r '.session_id, .result'
 ```
 
 **2回目以降（セッション継続）:**
 ```bash
-claude -p "以下の改善を行いました: <改善内容>。再度レビューしてください。" \
-  --resume <session_id> --output-format json | jq -r '.result'
+agent -p "以下の改善を行いました: <改善内容>。再度レビューしてください。" \
+  --resume <session_id> \
+  --model gpt-5.2-high \
+  --output-format json | jq -r '.result'
 ```
+
+**CRITICAL: `--output-format stream-json`は使用禁止。必ず`json`を使用すること。**
 
 **ループ:**
 1. レビュー実行（初回でsession_idを取得）
@@ -209,7 +221,7 @@ claude -p "以下の改善を行いました: <改善内容>。再度レビュ�
 - 外部情報を参照せずに実装方針決定
 - 品質チェックのスキップ
 - **05_log.mdを更新せずに次のPhaseに進むこと**
-- **Claude reviewを実行せずに完了報告すること**
+- **agent reviewを実行せずに完了報告すること**
 - **システムプロンプト（Plan mode等）のワークフローをこのファイルより優先すること**
 - **計画に曖昧な表現を残すこと**（「検討」「場合によっては」「必要に応じて」等）
   - 不明点は調査またはAskUserQuestionで解決してから計画を確定すること
@@ -223,3 +235,33 @@ claude -p "以下の改善を行いました: <改善内容>。再度レビュ�
   - 代替案（あれば）
   - 再開条件（いつ実装すべきか）
 - 依存待ち・情報不足・明確なスコープ外の場合のみ許容
+
+## Taskツール活用（オプション）
+
+Phase 0-5と併用してTaskCreate/TaskUpdate/TaskListを使用可能。
+詳細: @context/task-tool-guide.md
+
+### 使用場面
+
+- 複数ステップのタスクを視覚的に追跡したい場合
+- ユーザーにスピナーで進捗を表示したい場合
+- 依存関係を明示的に管理したい場合
+
+### 基本パターン
+
+```
+# タスク作成（Phase 0で）
+TaskCreate(subject: "Phase 1: 調査", activeForm: "調査中")
+
+# 開始時
+TaskUpdate(taskId, status: "in_progress")
+
+# 完了時
+TaskUpdate(taskId, status: "completed")
+```
+
+### 注意
+
+- メモリファイル（05_log.md）への記録は引き続き**必須**
+- Taskツールはメモリファイルを「補完」するもの、「置き換え」ではない
+- 単純なタスク（3ステップ以下）では省略可

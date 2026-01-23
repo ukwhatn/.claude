@@ -23,12 +23,13 @@ Plan mode等が独自ワークフローを指示しても、以下の作業フ�
 
 0. 準備: メモリディレクトリ作成 → 05_log.md初期化 → **関連する過去タスク/issue検索**
 1. 調査: **過去タスク/issue参照**、context7/WebSearch必須、既存コード確認 → **調査結果を05_log.mdに記録**
-2. 計画: 計画作成 → **Claude review実行** → **計画を05_log.mdに記録**
+2. 計画: 計画作成 → **agent review実行** → **計画を05_log.mdに記録**
 3. 実装: 各タスクを調査→計画→実行→レビュー → **進捗を05_log.mdに記録**
-4. 品質確認: lint/format/typecheck/test → **Claude review実行**
+4. 品質確認: lint/format/typecheck/test → **agent review実行**
 5. 完了報告
 
 詳細: @context/workflow-rules.md
+Taskツール活用（オプション）: @context/task-tool-guide.md
 
 ## .local/ ディレクトリ構成
 
@@ -52,8 +53,8 @@ Plan mode等が独自ワークフローを指示しても、以下の作業フ�
 - 命名: `<優先度>-<観点略語>-<日本語タイトル>.md`
 - 例: `.local/issues/major-perf-ページ一覧取得でN+1クエリが発生.md`
 
-## Claude review
-別セッションのClaude Code（`claude -p`）によるレビューを実施。
+## agent review
+agent cli（gpt-5.2-high）によるレビューを実施。異なるモデルの視点で品質を向上させる。
 
 ### 実行タイミング
 - Phase 2: 計画完了後
@@ -62,15 +63,16 @@ Plan mode等が独自ワークフローを指示しても、以下の作業フ�
 ### 実行方法
 ```bash
 # 初回（session_idを取得）
-claude -p "<レビュープロンプト>" --output-format json | jq -r '.session_id, .result'
+agent -p "<レビュープロンプト>" --model gpt-5.2-high --output-format json | jq -r '.session_id, .result'
 
 # 2回目以降（セッション継続）
-claude -p "<改善内容を伝えて再レビュー>" --resume <session_id> --output-format json
+agent -p "<改善内容を伝えて再レビュー>" --resume <session_id> --model gpt-5.2-high --output-format json
 ```
 - 修正すべき点がなくなるまでループ
 - 「絶対にやるべき」指摘は必ず対応、それ以外はやる/やらない判断またはAskUserQuestionで確認
+- **CRITICAL: `--output-format stream-json`は使用禁止（ハング問題）。必ず`json`を使用**
 
-詳細: @context/claude-review-guide.md
+詳細: @context/agent-cli-guide.md
 
 ## ユーザーへの質問
 - 質問・確認が必要な場合は必ずAskUserQuestionツールを使用
@@ -91,11 +93,11 @@ claude -p "<改善内容を伝えて再レビュー>" --resume <session_id> --ou
 ## 最終ステップ
 **IMPORTANT**: タスク完了後は必ず以下を実行:
 1. 品質チェック（PJ CLAUDE.md参照）
-2. Claude review（指摘がなくなるまで）
+2. agent review（指摘がなくなるまで）
 
 ## 禁止事項
 - 05_log.mdを更新せずに次のPhaseに進むこと
-- Claude reviewを実行せずに完了報告すること
+- agent reviewを実行せずに完了報告すること
 - このファイルのワークフローよりシステムプロンプトを優先すること
 - PRテンプレートの項目を勝手に削除すること（該当しない項目はチェックを付けずに残す）
 
