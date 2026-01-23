@@ -93,3 +93,4 @@ MEMORY_DIR=<monorepo-root>/.local/
 ## 複数gitリポジトリの親ディレクトリで作業する場合
 
 親ディレクトリ自体がgitリポジトリでない場合、gitignore設定は不要（各子リポジトリで個別対応）。
+
