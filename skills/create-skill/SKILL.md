@@ -1,6 +1,6 @@
 ---
 name: create-skill
-description: 既存設定と完全に整合したスキルを自動作成。~/.claude/CLAUDE.md、context/*.md、既存スキルを自動参照し、重複・競合を避けたスキルを生成。使用: /create-skill --user <内容> または /create-skill --project <内容>
+description: 既存設定と完全に整合したスキルを自動作成。~/.claude/CLAUDE.md、context/*.md、既存スキルを自動参照し、重複・競合を避けたスキルを生成。
 ---
 
 # Create Skill
