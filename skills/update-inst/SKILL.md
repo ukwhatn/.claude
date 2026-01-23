@@ -1,6 +1,6 @@
 ---
 name: update-inst
-description: user-level指示の更新。Claudeが間違いを犯した際に、再発防止のためCLAUDE.md/context/を更新。`/update-inst <間違えた内容>` で使用。
+description: user-level指示の更新。Claudeが間違いを犯した際に、再発防止のためCLAUDE.md/context/を更新。
 ---
 
 # 指示更新スキル

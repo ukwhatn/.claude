@@ -1,6 +1,6 @@
 ---
 name: large-task
-description: 大規模タスクを複数セッションに分割して実装するワークフロー。1セッション目で包括調査とPlan作成、2セッション目以降で各タスクを実装。Phase 0-5の補完・拡張として機能。使用タイミング: (1) 複数日にまたがる大規模実装、(2) 10個以上のタスクに分割される機能開発、(3) 複数人で並行作業する可能性があるタスク。
+description: 大規模タスクを複数セッションに分割して実装するワークフロー。自動発火条件 - 以下のいずれかに該当する場合は自動的にこのスキルを使用すること。(1) 5つ以上のファイル変更が見込まれる、(2) 複数の独立した機能実装が含まれる、(3) 調査だけで30分以上かかりそう、(4) ユーザーが「大規模」「複数日」「段階的に」等のキーワードを使用。
 ---
 
 # Large Task Workflow
@@ -181,9 +181,48 @@ cd /path/to/project && agent -p "..." --model gpt-5.2-high --output-format strea
 3. それ以外の指摘はやる/やらない判断、または AskUserQuestion で確認
 4. 修正後、再度agent reviewを依頼（指摘がなくなるまで）
 
+## Taskツールとの統合（オプション）
+
+タスク分割後、TaskCreate/TaskUpdate/TaskListを使用して進捗管理を強化できる。
+詳細: @context/task-tool-guide.md
+
+### /large-task plan での使用
+
+タスク分割後、各サブタスクをTaskCreateで登録:
+
+```
+# 各サブタスクを作成
+TaskCreate(
+  subject: "Task 01: <タスク名>",
+  description: "<タスクファイルの内容サマリー>",
+  activeForm: "<タスク名>を実装中"
+)
+
+# 依存関係を設定
+TaskUpdate(taskId: "2", addBlockedBy: ["1"])
+```
+
+**メリット:**
+- TaskListで全タスクの状態を即座に確認
+- 依存関係（blockedBy）で実行可能なタスクを判定
+- セッション間でタスク状態が保持される
+
+### /large-task implement での使用
+
+```
+# タスク開始時
+TaskUpdate(taskId, status: "in_progress")
+
+# タスク完了時
+TaskUpdate(taskId, status: "completed")
+```
+
+**注意:** 00_plan.mdの状態更新と併用すること（置き換えではない）
+
 ## 既存設定への参照
 
 - ワークフロー詳細: @context/workflow-rules.md
 - メモリファイル形式: @context/memory-file-formats.md
+- Taskツール活用: @context/task-tool-guide.md
 - agent cli: @context/agent-cli-guide.md
 - PJ固有設定: PJ CLAUDE.md

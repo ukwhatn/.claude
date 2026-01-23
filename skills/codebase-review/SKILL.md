@@ -543,6 +543,30 @@ ${MEMORY_DIR}/
 --skip-multimodel   agent cli並行レビューをスキップ（Claude Codeのみ）
 ```
 
+## Taskツールによる進捗表示（オプション）
+
+6つのサブエージェント起動前にタスクを作成し、進捗を可視化できる。
+詳細: @context/task-tool-guide.md
+
+```
+# 各観点のタスクを作成
+TaskCreate(subject: "Performance観点レビュー", activeForm: "パフォーマンス分析中")
+TaskCreate(subject: "Security観点レビュー", activeForm: "セキュリティ分析中")
+TaskCreate(subject: "Test観点レビュー", activeForm: "テスト分析中")
+TaskCreate(subject: "Architecture観点レビュー", activeForm: "アーキテクチャ分析中")
+TaskCreate(subject: "Code Quality観点レビュー", activeForm: "コード品質分析中")
+TaskCreate(subject: "Documentation観点レビュー", activeForm: "ドキュメント分析中")
+```
+
+サブエージェント完了後:
+```
+TaskUpdate(taskId, status: "completed", metadata: {issues_found: 3})
+```
+
+**メリット:**
+- TaskListで各観点の進捗をリアルタイム確認
+- 完了した観点と未完了の観点が一目で分かる
+
 ## 注意事項
 
 - サブエージェントは必ず並列で起動する（順次実行しない）
