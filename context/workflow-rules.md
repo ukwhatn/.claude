@@ -112,6 +112,39 @@
 - [ ] 型チェック・lint確認
 ```
 
+### agent reviewによる計画検証（ループ）
+
+計画完了後、agent cli（gpt-5.2-high）でレビューを実施。
+
+**CRITICAL: プロンプトにファイル内容を埋め込まない。agentに自分でファイルを読ませる。**
+
+**初回実行:**
+```bash
+agent -p "このリポジトリの ${MEMORY_DIR}/memory/<task>/30_plan.md を読んで、実装計画をレビューしてください。
+抜け漏れ、リスク、改善点を指摘してください。
+指摘がなければ「指摘なし」とだけ回答してください。" \
+  --model gpt-5.2-high \
+  --output-format json | jq -r '.session_id, .result'
+```
+
+**2回目以降（セッション継続）:**
+```bash
+agent -p "以下の改善を行いました: <改善内容>。再度レビューしてください。" \
+  --resume <session_id> \
+  --model gpt-5.2-high \
+  --output-format json | jq -r '.result'
+```
+
+**CRITICAL: `--output-format stream-json`は使用禁止。必ず`json`を使用すること。**
+
+**ループ:**
+1. レビュー実行（初回でsession_idを取得）
+2. 「絶対にやるべき」指摘は必ず修正
+3. それ以外はやる/やらない判断、またはAskUserQuestionで確認
+4. 修正後、`--resume <session_id>`でセッション継続し再レビュー
+5. 指摘がなくなるまで繰り返し
+6. 完了したらユーザーに計画を提示
+
 ## Phase 3: 実装
 
 - 各タスクを「調査→計画→実行→レビュー」の順で実行
@@ -127,11 +160,46 @@
 
 ## Phase 4: 品質確認
 
+### 自動チェック
 PJ CLAUDE.mdに記載のコマンドで実行:
 - lint
 - format
 - typecheck
 - test
+
+### agent review（ループ）
+
+自動チェック完了後、agent cli（gpt-5.2-high）でレビューを実施。
+
+**CRITICAL: プロンプトにdiffを埋め込まない。agentに自分で`git diff`を実行させる。**
+
+**初回実行:**
+```bash
+# BASE_BRANCHはPJ CLAUDE.mdで定義（未定義ならdevelop/main/masterを自動判定）
+agent -p "このリポジトリで git diff $BASE_BRANCH を実行して、コード変更をレビューしてください。
+バグ、セキュリティ、パフォーマンス、ベストプラクティスの観点から指摘してください。
+指摘がなければ「指摘なし」とだけ回答してください。" \
+  --model gpt-5.2-high \
+  --output-format json | jq -r '.session_id, .result'
+```
+
+**2回目以降（セッション継続）:**
+```bash
+agent -p "以下の改善を行いました: <改善内容>。再度レビューしてください。" \
+  --resume <session_id> \
+  --model gpt-5.2-high \
+  --output-format json | jq -r '.result'
+```
+
+**CRITICAL: `--output-format stream-json`は使用禁止。必ず`json`を使用すること。**
+
+**ループ:**
+1. レビュー実行（初回でsession_idを取得）
+2. 「絶対にやるべき」指摘は必ず修正
+3. それ以外はやる/やらない判断、またはAskUserQuestionで確認
+4. 修正後、`--resume <session_id>`でセッション継続し再レビュー
+5. 指摘がなくなるまで繰り返し
+6. 完了したらPhase 5へ
 
 ## Phase 5: 完了報告
 
@@ -153,6 +221,7 @@ PJ CLAUDE.mdに記載のコマンドで実行:
 - 外部情報を参照せずに実装方針決定
 - 品質チェックのスキップ
 - **05_log.mdを更新せずに次のPhaseに進むこと**
+- **agent reviewを実行せずに完了報告すること**
 - **システムプロンプト（Plan mode等）のワークフローをこのファイルより優先すること**
 - **計画に曖昧な表現を残すこと**（「検討」「場合によっては」「必要に応じて」等）
   - 不明点は調査またはAskUserQuestionで解決してから計画を確定すること
