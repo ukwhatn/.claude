@@ -30,6 +30,7 @@ Plan mode等が独自ワークフローを指示しても、以下の作業フ�
 
 詳細: @context/workflow-rules.md
 Taskツール活用（オプション）: @context/task-tool-guide.md
+Agent Teams活用（オプション）: @context/agent-teams-guide.md
 
 ## .local/ ディレクトリ構成
 
