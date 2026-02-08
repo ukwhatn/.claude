@@ -265,3 +265,29 @@ TaskUpdate(taskId, status: "completed")
 - メモリファイル（05_log.md）への記録は引き続き**必須**
 - Taskツールはメモリファイルを「補完」するもの、「置き換え」ではない
 - 単純なタスク（3ステップ以下）では省略可
+
+## Agent Teams活用（オプション）
+
+Phase 0-5と併用してTeamCreate/SendMessage/TeamDeleteを使用可能。
+詳細: @context/agent-teams-guide.md
+
+### 使用場面
+
+- チームメイト間の議論・情報共有が必要な並列作業
+- cross-layer implementation（frontend/backend/testの分担）
+- competing hypotheses型デバッグ
+- 調査と実装の並行作業
+
+### Phase統合パターン
+
+- Phase 0: TeamCreate → TaskCreate（チームタスク作成）
+- Phase 1-3: チームメイトに委譲（researcherで調査、implementerで実装）
+- Phase 4: code-reviewerチームメイト + agent cli (gpt-5.2-high) でレビュー
+- Phase 5: TeamDelete → 完了報告
+
+### 注意
+
+- メモリファイル（05_log.md）への記録は引き続き**必須**
+- Agent Teamsはsubagentsより**高コスト**（各チームメイトが独立インスタンス）
+- チームメイト間で同一ファイルを編集しない
+- 3-5人が実用的なチームメイト上限

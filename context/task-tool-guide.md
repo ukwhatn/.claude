@@ -206,6 +206,42 @@ CLAUDE_CODE_TASK_LIST_ID=<task_list_id> claude -p "Task 3を実装してくだ�
 TaskCreateやTaskList実行後、内部的にタスクリストIDが割り当てられる。
 IDは`~/.claude/tasks/`ディレクトリ内のUUIDディレクトリ名。
 
+## Agent Teamsとの連携
+
+Agent Teams使用時、TaskCreate/TaskUpdateはチーム共有タスクリストに自動的に紐づく。
+
+### 基本パターン
+
+```
+# チーム作成（タスクリストも自動作成される）
+TeamCreate(team_name: "feature-x", description: "Feature Xの実装")
+
+# タスク作成（チームのタスクリストに登録される）
+TaskCreate(subject: "API調査", activeForm: "API調査中")
+TaskCreate(subject: "フロントエンド実装", activeForm: "フロントエンド実装中")
+TaskCreate(subject: "テスト作成", activeForm: "テスト作成中")
+
+# 依存関係設定
+TaskUpdate(taskId: "2", addBlockedBy: ["1"])
+
+# チームメイトをspawn
+Task(prompt: "...", subagent_type: "general-purpose", team_name: "feature-x", name: "researcher")
+
+# チームメイトがTaskUpdateで状態を更新
+# TaskUpdate(taskId: "1", status: "completed") → Task 2がunblock
+```
+
+### Subagentsとの違い
+
+| 項目 | Subagents (Task tool) | Agent Teams |
+|------|----------------------|-------------|
+| タスクリスト | セッション内 | チーム共有 |
+| 通信 | 結果返却のみ | SendMessage |
+| 自己調整 | 不可 | TaskListで自律的にタスク取得 |
+| コスト | 低い | 高い（独立インスタンス） |
+
+詳細: @context/agent-teams-guide.md
+
 ## 注意事項
 
 - Taskツールの使用は**オプション**（強制ではない）
