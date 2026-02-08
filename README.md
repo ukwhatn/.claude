@@ -16,9 +16,20 @@ git clone <this-repo> ~/.claude
 ```
 ~/.claude/
 ├── CLAUDE.md              # グローバル設定（ワークフロー、変数）
+├── agents/                # カスタムエージェント定義
+│   ├── researcher.md      # 調査専門
+│   ├── implementer.md     # 実装専門
+│   ├── code-reviewer.md   # レビュー専門
+│   ├── test-writer.md     # テスト作成専門
+│   └── planner.md         # 計画策定専門
 ├── commands/              # ユーザー実行コマンド
 │   ├── commit.md          # /commit
 │   └── pr.md              # /pr
+├── context/               # エージェント向けコンテキスト
+│   ├── agent-teams-guide.md
+│   ├── workflow-rules.md
+│   ├── task-tool-guide.md
+│   └── ...
 ├── skills/                # 自動トリガースキル
 │   ├── codebase-review/
 │   ├── create-skill/
@@ -48,6 +59,18 @@ git clone <this-repo> ~/.claude
 | **create-skill** | 既存設定と整合したスキル自動作成 | `/create-skill <内容>` |
 | **update-inst** | 間違いの再発防止ルール追加 | `/update-inst <間違えた内容>` |
 | **ui-ux-design** | プロダクショングレードのUI/UX生成 | UI構築依頼時 |
+
+## カスタムエージェント一覧
+
+| エージェント | 説明 | ツール制限 |
+|------------|------|-----------|
+| **researcher** | 調査専門（context7/WebSearch活用） | Write/Edit不可 |
+| **implementer** | 実装専門（計画に従った実装） | 制限なし |
+| **code-reviewer** | レビュー専門（バグ/セキュリティ/パフォーマンス） | Write/Edit不可 |
+| **test-writer** | テスト作成専門（既存パターン踏襲） | 制限なし |
+| **planner** | 計画策定専門（リスク評価、実装計画） | Write/Edit不可 |
+
+Agent TeamsまたはSubagentとして使用可能。詳細: `context/agent-teams-guide.md`
 
 ## コマンド一覧
 
