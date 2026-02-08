@@ -8,5 +8,7 @@
 !/context/**
 !/skills/
 !/skills/**
+!/agents/
+!/agents/**
 !/templates/
 !/templates/**
