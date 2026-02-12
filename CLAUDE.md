@@ -121,8 +121,23 @@ agent -p "<改善内容を伝えて再レビュー>" --resume <session_id> --mod
 - PRテンプレートの項目を勝手に削除すること（該当しない項目はチェックを付けずに残す）
 - スキルが存在するタスクで直接ツールを呼び出すこと
 - **Teammate/Subagentの完了待機中に`sleep`コマンドやポーリングループを使用すること**（詳細: @context/agent-teams-guide.md「待機パターン」）
+- **Context compaction後にteam config/task listを確認せずチームメイトをspawnすること**（詳細: @context/agent-teams-guide.md「Context Compaction後の状態復元」）
+
+## Compact Instructions
+
+When compacting, always preserve the following information:
+- Active Agent Teams: team name, all teammate names, their current task assignments and status
+- Task list state: which tasks are in_progress, completed, or pending, and their owners
+- Current phase (Phase 0-5) and progress within the phase
 
 ## GitHub CLIについて
 リポジトリによってGitHubアカウントが異なる場合がある。
 gh cliを利用する際は必ずgh auth statusを利用して現在アクティブなアカウントを確認し、必要に応じて `gh auth switch -u <username>` でアカウントを切り替えること。
 原則として username = ukwhatn が利用される。他のアカウントを利用すべき場合はその旨をPJ-level CLAUDE.mdに記載する。
+
+## Cloudflare (wrangler) について
+- wranglerはbunでインストールする（`bun add -d wrangler`）
+- **CRITICAL: 複数のCloudflareアカウントが存在する。デプロイ先アカウントは必ずAskUserQuestionで確認すること（推測・仮定は禁止）**
+- `bunx wrangler whoami` で利用可能なアカウント一覧を確認してからユーザーに提示・質問する
+- PJ CLAUDE.mdまたはpackage.jsonに`CLOUDFLARE_ACCOUNT_ID`が明記されている場合はそれを使用する
+- アカウントが明記されていない場合、デフォルトは `ukwhatn`（`40903f86185f39b5108a3dc845090406`）
