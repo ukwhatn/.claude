@@ -136,8 +136,4 @@ gh cliを利用する際は必ずgh auth statusを利用して現在アクティ
 原則として username = ukwhatn が利用される。他のアカウントを利用すべき場合はその旨をPJ-level CLAUDE.mdに記載する。
 
 ## Cloudflare (wrangler) について
-- wranglerはbunでインストールする（`bun add -d wrangler`）
-- **CRITICAL: 複数のCloudflareアカウントが存在する。デプロイ先アカウントは必ずAskUserQuestionで確認すること（推測・仮定は禁止）**
-- `bunx wrangler whoami` で利用可能なアカウント一覧を確認してからユーザーに提示・質問する
-- PJ CLAUDE.mdまたはpackage.jsonに`CLOUDFLARE_ACCOUNT_ID`が明記されている場合はそれを使用する
-- アカウントが明記されていない場合、デフォルトは `ukwhatn`（`40903f86185f39b5108a3dc845090406`）
+詳細: @context/cloudflare-development.md
