@@ -11,6 +11,8 @@
 4. global gitignoreで`.local/`は除外済みのためコミット不要
 5. **05_log.mdを初期化し、ユーザーからの最初の指示を記録**
 6. **関連する過去タスク・issueを検索**（詳細は1.0参照）
+7. **TeamCreate でチームを作成**（Agent Teams + Leadオーケストレーション）
+8. **TaskCreate でタスクを作成し、依存関係を設定**
 
 ## Phase 1: 調査（最重要）
 
@@ -147,18 +149,36 @@ agent -p "以下の改善を行いました: <改善内容>。再度レビュー
 5. 指摘がなくなるまで繰り返し
 6. 完了したらユーザーに計画を提示
 
-## Phase 3: 実装
+## Phase 3: 実装（Lead Orchestration）
 
+**CRITICAL: leadは自分で実装コードを書かない。implementerチームメイトに委譲する。**
+
+leadの役割:
+- タスクの依存関係に基づいて実行順序を管理
+- implementerチームメイトをspawnし、タスクを割り当て
+- チームメイトの完了報告を受けて次のタスクをアサイン
+- 並列実行可能なタスクは同時にspawn
+- 05_log.mdへの進捗記録
+
+implementerチームメイトの役割:
 - 各タスクを「調査→計画→実行→レビュー」の順で実行
-- **IMPORTANT: 品質チェック（format/lint/typecheck）は実装中にこまめに実行**
+- **品質チェック（format/lint/typecheck）は実装中にこまめに実行**
   - ファイル編集後、コミット前に必ず実行
   - エラーがあれば即座に修正
-- **IMPORTANT: コミットはこまめに（高頻度で）打つ**
+- **コミットはこまめに（高頻度で）打つ**
   - 1つの機能・修正が完了したら即座にコミット
   - 大きな変更を溜め込まない
 - コミット: git-cz形式、意味的に独立した単位ごと
 - コメント: Whyのみ記載
 - docstring/jsdoc: 既存形式に従う
+- 完了したらleadにSendMessageで報告
+
+### Leadオーケストレーションの理由
+
+Context compaction発生時にleadのコンテキストが圧縮されても:
+- 各implementerチームメイトは独立インスタンスで作業フロー/品質基準を維持
+- CLAUDE.mdの指示がチームメイトに直接読み込まれるため忘却しない
+- leadはTaskList/team configの再確認で状態を復元可能
 
 ## Phase 4: 品質確認
 
@@ -228,6 +248,8 @@ agent -p "以下の改善を行いました: <改善内容>。再度レビュー
 - **計画に曖昧な表現を残すこと**（「検討」「場合によっては」「必要に応じて」等）
   - 不明点は調査またはAskUserQuestionで解決してから計画を確定すること
   - 計画は実行可能で具体的でなければならない
+- **leadが直接コード実装を行うこと**（例外条件を満たす場合を除く）
+  - 例外: 変更ファイル1-2個 かつ 実装ステップ3以下 かつ 短いタスク
 
 ## 「後回し」「実装しない」判断時のルール
 
@@ -268,24 +290,39 @@ TaskUpdate(taskId, status: "completed")
 - Taskツールはメモリファイルを「補完」するもの、「置き換え」ではない
 - 単純なタスク（3ステップ以下）では省略可
 
-## Agent Teams活用（オプション）
+## Agent Teams + Leadオーケストレーション（CRITICAL: デフォルト動作）
 
-Phase 0-5と併用してTeamCreate/SendMessage/TeamDeleteを使用可能。
+**CRITICAL: あらゆる実装タスクでAgent Teams + Leadオーケストレーションをデフォルトで使用する。**
+
+leadは自分でコードを書かず、オーケストレーションに専念する。
+これにより、context compactionによる指示の忘却、品質の乱れ、ワークフロー/ログ記録の欠落を防止する。
+
 詳細: @context/agent-teams-guide.md
 
-### 使用場面
+### デフォルトワークフロー
 
-- チームメイト間の議論・情報共有が必要な並列作業
-- cross-layer implementation（frontend/backend/testの分担）
-- competing hypotheses型デバッグ
-- 調査と実装の並行作業
-
-### Phase統合パターン
-
-- Phase 0: TeamCreate → TaskCreate（チームタスク作成）
-- Phase 1-3: チームメイトに委譲（researcherで調査、implementerで実装）
+- Phase 0: TeamCreate → TaskCreate（タスク作成 + 依存関係設定）
+- Phase 1: researcherチームメイト（または自身）で調査
+- Phase 2: 計画作成 → agent review
+- Phase 3: **implementerチームメイトに実装を委譲**（leadはオーケストレーション専念）
 - Phase 4: code-reviewerチームメイト + agent cli (gpt-5.2-high) でレビュー
-- Phase 5: TeamDelete → 完了報告
+- Phase 5: 全チームメイトshutdown → TeamDelete → 完了報告
+
+### Leadの責務
+
+- タスクの依存関係管理・実行順序制御
+- implementerチームメイトのspawn・タスクアサイン
+- 完了報告の受信→次タスクのアサイン
+- 並列実行可能なタスクの同時spawn
+- 05_log.mdへの進捗記録
+- 品質チェック・agent reviewの実施
+
+### 例外: Agent Teamsを使わなくてよい場合
+
+以下の**すべて**を満たす場合のみ、leadが直接実装してよい:
+- 変更ファイルが1-2個
+- 実装ステップが3以下
+- context compactionのリスクがない（短いタスク）
 
 ### 注意
 

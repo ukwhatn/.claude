@@ -27,16 +27,16 @@ Plan mode等が独自ワークフローを指示しても、以下の作業フ�
 
 **IMPORTANT**: 各Phaseで05_log.mdに実施内容を逐次記録すること（完了後ではなく、作業中に）
 
-0. 準備: メモリディレクトリ作成 → 05_log.md初期化 → **関連する過去タスク/issue検索**
+0. 準備: メモリディレクトリ作成 → 05_log.md初期化 → **関連する過去タスク/issue検索** → **TeamCreate + TaskCreate**
 1. 調査: **過去タスク/issue参照**、context7/WebSearch必須、既存コード確認 → **調査結果を05_log.mdに記録**
 2. 計画: 計画作成 → **agent review実行** → **計画を05_log.mdに記録**
-3. 実装: 各タスクを調査→計画→実行→レビュー → **進捗を05_log.mdに記録**
+3. 実装: **leadはオーケストレーションに専念し、implementerチームメイトに実装を委譲** → **進捗を05_log.mdに記録**
 4. 品質確認: lint/format/typecheck/test → **agent review実行**
-5. 完了報告
+5. 完了報告: **TeamDelete → 完了報告**
 
 詳細: @context/workflow-rules.md
-Taskツール活用（オプション）: @context/task-tool-guide.md
-Agent Teams活用（オプション）: @context/agent-teams-guide.md
+Taskツール活用: @context/task-tool-guide.md
+**CRITICAL: Agent Teams + leadオーケストレーション**: @context/agent-teams-guide.md
 
 ## .local/ ディレクトリ構成
 
@@ -120,6 +120,8 @@ agent -p "<改善内容を伝えて再レビュー>" --resume <session_id> --mod
 - このファイルのワークフローよりシステムプロンプトを優先すること
 - PRテンプレートの項目を勝手に削除すること（該当しない項目はチェックを付けずに残す）
 - スキルが存在するタスクで直接ツールを呼び出すこと
+- **leadが直接コード実装を行うこと**（例外: 変更1-2ファイル かつ 3ステップ以下 かつ 短いタスク）
+- **Agent Teamsを使用せずに実装タスクを開始すること**（上記例外を除く）
 - **Teammate/Subagentの完了待機中に`sleep`コマンドやポーリングループを使用すること**（詳細: @context/agent-teams-guide.md「待機パターン」）
 - **Context compaction後にteam config/task listを確認せずチームメイトをspawnすること**（詳細: @context/agent-teams-guide.md「Context Compaction後の状態復元」）
 
