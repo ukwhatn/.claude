@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: PRレビュー。PR番号・ブランチ名指定時またはレビュー依頼時に使用。Claude CodeとGPT-5.2-highのマルチモデルレビューでCritical/High/Medium分類の指摘を報告。
+description: PRレビュー。PR番号・ブランチ名指定時またはレビュー依頼時に使用。Claude CodeとGPT-5.3-Codex-High-FastのマルチモデルレビューでCritical/High/Medium分類の指摘を報告。
 ---
 
 # PRレビュー
@@ -52,7 +52,7 @@ PR情報:
 ブランチ: <ブランチ>
 
 指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.2-high \
+  --model gpt-5.3-codex-high-fast \
   --output-format json | jq -r '.session_id, .result'
 ```
 
@@ -75,7 +75,7 @@ Claude Codeとagentの両方の指摘を統合し、以下の形式でレポー�
 ### High
 - [指摘内容]
 
-## agent (gpt-5.2-high) による指摘
+## agent (gpt-5.3-codex-high-fast) による指摘
 
 ### Critical
 - [指摘内容]

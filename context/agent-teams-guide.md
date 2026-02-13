@@ -144,7 +144,7 @@ Task(
 | Phase 1 | 調査（researcher or 自身） |
 | Phase 2 | 計画作成 → agent review |
 | Phase 3 | **implementerチームメイトをspawn → タスクアサイン → 完了待ち → 次タスク**（leadはコード実装しない） |
-| Phase 4 | 品質チェック + code-reviewerチームメイト + agent cli (gpt-5.2-high) でレビュー |
+| Phase 4 | 品質チェック + code-reviewerチームメイト + agent cli (gpt-5.3-codex-high-fast) でレビュー |
 | Phase 5 | 全チームメイトshutdown → TeamDelete → 完了報告 |
 
 **IMPORTANT**: 05_log.mdへの記録はAgent Teams使用時も必須（leadが記録する）。
@@ -284,7 +284,7 @@ Context compaction（コンテキスト圧縮）が発生すると、team-lead�
 
 - 同一ファイルの編集をチームメイト間で分担しない（上書き競合の原因）
 - チームメイトはCLAUDE.mdを読み込むが、リードの会話履歴は引き継がない
-- agent cli (gpt-5.2-high) レビューはAgent Teamsとは別に実施（Phase 4）
+- agent cli (gpt-5.3-codex-high-fast) レビューはAgent Teamsとは別に実施（Phase 4）
 - チームメイトの名前（name）で参照する（agentIdは使用しない）
 - broadcastはコスト高（N人 = N回のAPI呼び出し）、必要な場合のみ使用
 - TeamDeleteは全チームメイトのシャットダウン完了後のみ実行可能

@@ -202,7 +202,7 @@ find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.md" 
    - 推測ではなく、コードを実際に読んで判断
    - 優先度は厳格に判断（critの乱用禁止）
    - コードベースの一部だけを見て終わりにしない" \
-     --model gpt-5.2-high \
+     --model gpt-5.3-codex-high-fast \
      --output-format json | jq -r '.session_id, .result'
    ```
 
@@ -220,7 +220,7 @@ find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.md" 
    ```markdown
    ## マルチモデル検証
    - Claude Code: 検出
-   - agent cli (gpt-5.2-high): 検出/未検出
+   - agent cli (gpt-5.3-codex-high-fast): 検出/未検出
    - 信頼度: 高/中
    - 優先度差異: なし / あり（Claude Code={X}, agent cli={Y} → 採用: {Z}）
    ```

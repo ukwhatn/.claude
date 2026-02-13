@@ -158,7 +158,7 @@ cd <project_root> && agent -p "メモリディレクトリ <memory_dir_full_path
 git diff HEAD -- <changed_dir>/ を実行してコード変更をレビューしてください。
 バグ、セキュリティ、パフォーマンス、ベストプラクティスの観点から指摘してください。
 指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.2-high \
+  --model gpt-5.3-codex-high-fast \
   --output-format json | jq -r '.session_id, .result'
 ```
 
@@ -168,7 +168,7 @@ git diff HEAD -- <changed_dir>/ を実行してコード変更をレビューし
 agent reviewコマンドを実行してください:
 
 \`\`\`bash
-cd /path/to/project && agent -p "..." --model gpt-5.2-high --output-format json | jq -r '.session_id, .result'
+cd /path/to/project && agent -p "..." --model gpt-5.3-codex-high-fast --output-format json | jq -r '.session_id, .result'
 \`\`\`
 
 レビュー結果を教えてください。

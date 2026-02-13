@@ -50,7 +50,7 @@ git clone <this-repo> ~/.claude
 | スキル | 説明 | トリガー |
 |--------|------|----------|
 | **codebase-review** | 6観点（perf/sec/test/arch/cq/docs）で並列レビュー | `/codebase-review`、品質監査依頼時 |
-| **pr-review** | Claude + GPT-5.2マルチモデルレビュー | PRレビュー依頼時 |
+| **pr-review** | Claude + GPT-5.3 Codexマルチモデルレビュー | PRレビュー依頼時 |
 | **project-init** | CLAUDE.md・.claude/の初期設定 | PJ初期化依頼時 |
 | **project-sync** | CLAUDE.mdとcontext/の整合性確保 | ドキュメント整理依頼時 |
 | **documentation** | コード変更に伴うドキュメント更新 | API/環境変数追加検出時 |
@@ -106,10 +106,10 @@ CLAUDE.mdで定義された6フェーズワークフロー:
 
 ## agent cli連携
 
-別モデル（GPT-5.2-high）によるレビューを実施:
+別モデル（GPT-5.3-Codex-High-Fast）によるレビューを実施:
 
 ```bash
-agent -p "<prompt>" --model gpt-5.2-high --output-format stream-json
+agent -p "<prompt>" --model gpt-5.3-codex-high-fast --output-format json | jq -r '.session_id, .result'
 ```
 
 - 修正すべき点がなくなるまでループ
