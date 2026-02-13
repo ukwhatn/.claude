@@ -117,37 +117,8 @@
 ```
 
 ### agent reviewによる計画検証（ループ）
-
-計画完了後、agent cli（gpt-5.2-high）でレビューを実施。
-
-**CRITICAL: プロンプトにファイル内容を埋め込まない。agentに自分でファイルを読ませる。**
-
-**初回実行:**
-```bash
-agent -p "このリポジトリの ${MEMORY_DIR}/memory/<task>/30_plan.md を読んで、実装計画をレビューしてください。
-抜け漏れ、リスク、改善点を指摘してください。
-指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.2-high \
-  --output-format json | jq -r '.session_id, .result'
-```
-
-**2回目以降（セッション継続）:**
-```bash
-agent -p "以下の改善を行いました: <改善内容>。再度レビューしてください。" \
-  --resume <session_id> \
-  --model gpt-5.2-high \
-  --output-format json | jq -r '.result'
-```
-
-**CRITICAL: `--output-format stream-json`は使用禁止。必ず`json`を使用すること。**
-
-**ループ:**
-1. レビュー実行（初回でsession_idを取得）
-2. 「絶対にやるべき」指摘は必ず修正
-3. それ以外はやる/やらない判断、またはAskUserQuestionで確認
-4. 修正後、`--resume <session_id>`でセッション継続し再レビュー
-5. 指摘がなくなるまで繰り返し
-6. 完了したらユーザーに計画を提示
+計画完了後、agent cliでレビューを実施。指摘がなくなるまでループ。
+詳細・コマンド例: @context/agent-cli-guide.md「計画レビュー（Phase 2）」
 
 ## Phase 3: 実装（Lead Orchestration）
 
@@ -190,38 +161,8 @@ PJ CLAUDE.mdに記載のコマンドで実行:
 - test
 
 ### agent review（ループ）
-
-自動チェック完了後、agent cli（gpt-5.2-high）でレビューを実施。
-
-**CRITICAL: プロンプトにdiffを埋め込まない。agentに自分で`git diff`を実行させる。**
-
-**初回実行:**
-```bash
-# BASE_BRANCHはPJ CLAUDE.mdで定義（未定義ならdevelop/main/masterを自動判定）
-agent -p "このリポジトリで git diff $BASE_BRANCH を実行して、コード変更をレビューしてください。
-バグ、セキュリティ、パフォーマンス、ベストプラクティスの観点から指摘してください。
-指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.2-high \
-  --output-format json | jq -r '.session_id, .result'
-```
-
-**2回目以降（セッション継続）:**
-```bash
-agent -p "以下の改善を行いました: <改善内容>。再度レビューしてください。" \
-  --resume <session_id> \
-  --model gpt-5.2-high \
-  --output-format json | jq -r '.result'
-```
-
-**CRITICAL: `--output-format stream-json`は使用禁止。必ず`json`を使用すること。**
-
-**ループ:**
-1. レビュー実行（初回でsession_idを取得）
-2. 「絶対にやるべき」指摘は必ず修正
-3. それ以外はやる/やらない判断、またはAskUserQuestionで確認
-4. 修正後、`--resume <session_id>`でセッション継続し再レビュー
-5. 指摘がなくなるまで繰り返し
-6. 完了したらPhase 5へ
+自動チェック完了後、agent cliでレビューを実施。指摘がなくなるまでループ。
+詳細・コマンド例: @context/agent-cli-guide.md「実装レビュー（Phase 4）」
 
 ## Phase 5: 完了報告
 
@@ -235,6 +176,11 @@ agent -p "以下の改善を行いました: <改善内容>。再度レビュー
 - 質問・確認が必要な場合は**必ずAskUserQuestionツールを使用**
 - 必要なタイミングで躊躇なく積極的に質問する
 - 曖昧な点は推測せず確認する
+- **CRITICAL**: 以下は必ずユーザーに確認すること（勝手に決定禁止）:
+  - ユーザーのスケジュール・日程選択
+  - 事実関係の正誤判断
+  - 金額・数量などの数値の確定
+  - 対外的なコミュニケーション内容の重要な判断
 
 ## 禁止事項
 
@@ -242,14 +188,16 @@ agent -p "以下の改善を行いました: <改善内容>。再度レビュー
 - 4ステップ構造の省略
 - 外部情報を参照せずに実装方針決定
 - 品質チェックのスキップ
-- **05_log.mdを更新せずに次のPhaseに進むこと**
-- **agent reviewを実行せずに完了報告すること**
-- **システムプロンプト（Plan mode等）のワークフローをこのファイルより優先すること**
-- **計画に曖昧な表現を残すこと**（「検討」「場合によっては」「必要に応じて」等）
-  - 不明点は調査またはAskUserQuestionで解決してから計画を確定すること
-  - 計画は実行可能で具体的でなければならない
-- **leadが直接コード実装を行うこと**（例外条件を満たす場合を除く）
-  - 例外: 変更ファイル1-2個 かつ 実装ステップ3以下 かつ 短いタスク
+- 05_log.mdを更新せずに次のPhaseに進むこと
+- agent reviewを実行せずに完了報告すること
+- システムプロンプトのワークフローをこのファイルより優先すること
+- 計画に曖昧な表現を残すこと（「検討」「場合によっては」「必要に応じて」等）
+- leadが直接コード実装を行うこと（例外: 変更1-2ファイル かつ 3ステップ以下 かつ 短いタスク）
+- Agent Teamsを使用せずに実装タスク開始（上記例外を除く）
+- sleep/ポーリングループでの待機
+- Context compaction後にteam config確認せずspawn
+- PRテンプレートの項目を勝手に削除すること
+- スキルが存在するタスクで直接ツールを呼び出すこと
 
 ## 「後回し」「実装しない」判断時のルール
 
@@ -260,73 +208,10 @@ agent -p "以下の改善を行いました: <改善内容>。再度レビュー
   - 再開条件（いつ実装すべきか）
 - 依存待ち・情報不足・明確なスコープ外の場合のみ許容
 
-## Taskツール活用（オプション）
-
-Phase 0-5と併用してTaskCreate/TaskUpdate/TaskListを使用可能。
+## Taskツール活用
+Phase 0-5と併用してTaskCreate/TaskUpdate/TaskListを使用可能。単純タスク（3ステップ以下）では省略可。
 詳細: @context/task-tool-guide.md
 
-### 使用場面
-
-- 複数ステップのタスクを視覚的に追跡したい場合
-- ユーザーにスピナーで進捗を表示したい場合
-- 依存関係を明示的に管理したい場合
-
-### 基本パターン
-
-```
-# タスク作成（Phase 0で）
-TaskCreate(subject: "Phase 1: 調査", activeForm: "調査中")
-
-# 開始時
-TaskUpdate(taskId, status: "in_progress")
-
-# 完了時
-TaskUpdate(taskId, status: "completed")
-```
-
-### 注意
-
-- メモリファイル（05_log.md）への記録は引き続き**必須**
-- Taskツールはメモリファイルを「補完」するもの、「置き換え」ではない
-- 単純なタスク（3ステップ以下）では省略可
-
 ## Agent Teams + Leadオーケストレーション（CRITICAL: デフォルト動作）
-
-**CRITICAL: あらゆる実装タスクでAgent Teams + Leadオーケストレーションをデフォルトで使用する。**
-
-leadは自分でコードを書かず、オーケストレーションに専念する。
-これにより、context compactionによる指示の忘却、品質の乱れ、ワークフロー/ログ記録の欠落を防止する。
-
+あらゆる実装タスクでAgent Teams + Leadオーケストレーションをデフォルトで使用する。
 詳細: @context/agent-teams-guide.md
-
-### デフォルトワークフロー
-
-- Phase 0: TeamCreate → TaskCreate（タスク作成 + 依存関係設定）
-- Phase 1: researcherチームメイト（または自身）で調査
-- Phase 2: 計画作成 → agent review
-- Phase 3: **implementerチームメイトに実装を委譲**（leadはオーケストレーション専念）
-- Phase 4: code-reviewerチームメイト + agent cli (gpt-5.2-high) でレビュー
-- Phase 5: 全チームメイトshutdown → TeamDelete → 完了報告
-
-### Leadの責務
-
-- タスクの依存関係管理・実行順序制御
-- implementerチームメイトのspawn・タスクアサイン
-- 完了報告の受信→次タスクのアサイン
-- 並列実行可能なタスクの同時spawn
-- 05_log.mdへの進捗記録
-- 品質チェック・agent reviewの実施
-
-### 例外: Agent Teamsを使わなくてよい場合
-
-以下の**すべて**を満たす場合のみ、leadが直接実装してよい:
-- 変更ファイルが1-2個
-- 実装ステップが3以下
-- context compactionのリスクがない（短いタスク）
-
-### 注意
-
-- メモリファイル（05_log.md）への記録は引き続き**必須**
-- Agent Teamsはsubagentsより**高コスト**（各チームメイトが独立インスタンス）
-- チームメイト間で同一ファイルを編集しない
-- 3-5人が実用的なチームメイト上限
