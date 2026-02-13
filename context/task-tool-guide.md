@@ -131,13 +131,13 @@ TaskCreate(subject: "Security観点レビュー", activeForm: "セキュリテ�
 TaskUpdate(taskId, status: "completed", metadata: {issues_found: 3})
 ```
 
-### 4. Claude reviewループ
+### 4. agent reviewループ
 
 レビュー履歴の構造化:
 
 ```
 # 初回
-TaskCreate(subject: "Claude review: 計画レビュー", metadata: {loop: 1})
+TaskCreate(subject: "agent review: 計画レビュー", metadata: {loop: 1})
 
 # 指摘対応後
 TaskUpdate(taskId, metadata: {
@@ -177,7 +177,7 @@ TaskOutput(task_id, block: false)
 - `npm install` / `pip install`（依存関係インストール）
 - `npm run build`（ビルド）
 - `npm test` / `pytest`（テスト実行）
-- `claude -p`（Claude review）
+- `claude -p`（agent review）
 
 ## セッション間でのタスクリスト共有
 
@@ -244,7 +244,7 @@ Task(prompt: "...", subagent_type: "general-purpose", team_name: "feature-x", na
 
 ## 注意事項
 
-- Taskツールの使用は**オプション**（強制ではない）
-- 単純なタスクでは不要（3ステップ以下なら省略可）
+- Agent Teams使用時: TaskCreate/TaskUpdateは必須（チーム共有タスクリストとして機能）
+- Agent Teams不使用時（例外的な小規模タスク）: オプション（3ステップ以下なら省略可）
 - 依存関係はタスク作成後にTaskUpdateで設定
 - metadataは任意のキー・値を格納可能
