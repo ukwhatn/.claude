@@ -18,8 +18,8 @@ description: PRレビュー。PR番号・ブランチ名指定時またはレビ
 # PR詳細を取得
 gh pr view <番号> --json title,body,author,headRefName,baseRefName,files
 
-# diffを取得
-gh pr diff <番号> > /tmp/pr-<番号>.diff
+# diffを確認（必要に応じて）
+gh pr diff <番号>
 ```
 
 ### 2. PJルールの確認
@@ -41,22 +41,19 @@ CLAUDE.mdを読み、以下を把握:
 別モデルの観点を追加。
 
 ```bash
-agent -p "以下のPRをレビューしてください:
+agent -p "gh pr diff <番号> を実行してPR #<番号> の変更内容をレビューしてください。
 - コードの品質（バグ、セキュリティ、パフォーマンス）
 - 設計の妥当性
 - テストの十分性
 - ドキュメントの必要性
 
-指摘がなければ「指摘なし」とだけ回答してください。
-
 PR情報:
 タイトル: <タイトル>
 ブランチ: <ブランチ>
 
-変更内容:
-$(cat /tmp/pr-<番号>.diff)" \
+指摘がなければ「指摘なし」とだけ回答してください。" \
   --model gpt-5.2-high \
-  --output-format stream-json
+  --output-format json | jq -r '.session_id, .result'
 ```
 
 ### 5. 結果の統合

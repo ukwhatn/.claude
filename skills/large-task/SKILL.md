@@ -154,12 +154,12 @@ bun run test
 ### コマンドテンプレート
 
 ```bash
-cd <project_root> && agent -p "メモリディレクトリ <memory_dir_full_path> の内容を読み、以下のコード変更をレビューしてください。
+cd <project_root> && agent -p "メモリディレクトリ <memory_dir_full_path> の内容を読み、
+git diff HEAD -- <changed_dir>/ を実行してコード変更をレビューしてください。
 バグ、セキュリティ、パフォーマンス、ベストプラクティスの観点から指摘してください。
-指摘がなければ「指摘なし」とだけ回答してください。
-
-変更内容:
-$(git diff HEAD -- <changed_dir>/)" --model gpt-5.2-high --output-format stream-json
+指摘がなければ「指摘なし」とだけ回答してください。" \
+  --model gpt-5.2-high \
+  --output-format json | jq -r '.session_id, .result'
 ```
 
 ### 実行依頼の例
@@ -168,7 +168,7 @@ $(git diff HEAD -- <changed_dir>/)" --model gpt-5.2-high --output-format stream-
 agent reviewコマンドを実行してください:
 
 \`\`\`bash
-cd /path/to/project && agent -p "..." --model gpt-5.2-high --output-format stream-json
+cd /path/to/project && agent -p "..." --model gpt-5.2-high --output-format json | jq -r '.session_id, .result'
 \`\`\`
 
 レビュー結果を教えてください。
