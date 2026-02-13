@@ -2,7 +2,7 @@
 
 ## 概要
 
-agent cliのnon-interactive modeを使用して、別モデル（gpt-5.2-high）によるレビューを実施する。
+agent cliのnon-interactive modeを使用して、別モデル（gpt-5.3-codex-high-fast）によるレビューを実施する。
 Claude Codeとは異なる観点からの分析により、計画・実装の品質を向上させる。
 
 **重要**: レビューは「指摘がなくなるまで修正→再レビューを繰り返す」ループで実施する。
@@ -11,10 +11,10 @@ Claude Codeとは異なる観点からの分析により、計画・実装の品
 
 ```bash
 # 初回（session_idを取得）
-agent -p "<プロンプト>" --model gpt-5.2-high --output-format json | jq -r '.session_id, .result'
+agent -p "<プロンプト>" --model gpt-5.3-codex-high-fast --output-format json | jq -r '.session_id, .result'
 
 # 2回目以降（セッション継続）
-agent -p "<プロンプト>" --resume <session_id> --model gpt-5.2-high --output-format json | jq -r '.result'
+agent -p "<プロンプト>" --resume <session_id> --model gpt-5.3-codex-high-fast --output-format json | jq -r '.result'
 ```
 
 ### 主要オプション
@@ -22,7 +22,7 @@ agent -p "<プロンプト>" --resume <session_id> --model gpt-5.2-high --output
 | オプション | 説明 |
 |-----------|------|
 | `-p, --print` | 非対話モード、結果を出力 |
-| `--model <model>` | 使用モデル（gpt-5.2-high推奨） |
+| `--model <model>` | 使用モデル（gpt-5.3-codex-high-fast推奨） |
 | `--output-format json` | JSON形式で出力（session_id取得に必須） |
 | `--resume <session_id>` | 特定のセッションを再開 |
 
@@ -70,7 +70,7 @@ agent -p "このリポジトリの ${MEMORY_DIR}/memory/<task>/30_plan.md を読
 - より良いアプローチの提案
 
 指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.2-high \
+  --model gpt-5.3-codex-high-fast \
   --output-format json | jq -r '.session_id, .result'
 ```
 
@@ -82,7 +82,7 @@ agent -p "以下の改善を行いました:
 
 再度レビューしてください。指摘がなければ「指摘なし」とだけ回答してください。" \
   --resume <session_id> \
-  --model gpt-5.2-high \
+  --model gpt-5.3-codex-high-fast \
   --output-format json | jq -r '.result'
 ```
 
@@ -98,7 +98,7 @@ agent -p "このリポジトリで git diff $BASE_BRANCH を実行して、コ�
 - ベストプラクティス違反
 
 指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.2-high \
+  --model gpt-5.3-codex-high-fast \
   --output-format json | jq -r '.session_id, .result'
 ```
 
@@ -110,7 +110,7 @@ agent -p "以下の改善を行いました:
 
 再度レビューしてください。指摘がなければ「指摘なし」とだけ回答してください。" \
   --resume <session_id> \
-  --model gpt-5.2-high \
+  --model gpt-5.3-codex-high-fast \
   --output-format json | jq -r '.result'
 ```
 
@@ -123,7 +123,7 @@ agent -p "gh pr diff <番号> を実行して、PRの変更内容をレビュー
 - ドキュメントの更新必要性
 
 指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.2-high \
+  --model gpt-5.3-codex-high-fast \
   --output-format json | jq -r '.session_id, .result'
 ```
 
@@ -183,8 +183,7 @@ session_id=$(... | jq -r '.session_id')
 
 | モデル | 特徴 | 推奨用途 |
 |--------|------|----------|
-| `gpt-5.2-high` | 高精度（デフォルト推奨） | コードレビュー全般 |
-| `sonnet-4` | バランス型 | 軽微なレビュー |
+| `gpt-5.3-codex-high-fast` | 高精度+高速（デフォルト） | コードレビュー全般 |
 
 ```bash
 # モデル一覧を確認
