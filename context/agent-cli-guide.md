@@ -11,10 +11,10 @@ Claude Codeとは異なる観点からの分析により、計画・実装の品
 
 ```bash
 # 初回（session_idを取得）
-agent -p "<プロンプト>" --model gpt-5.3-codex-high-fast --output-format json | jq -r '.session_id, .result'
+agent -p "<プロンプト>" --trust --model gpt-5.3-codex-high-fast --output-format json 2>/dev/null | jq -r '.session_id, .result'
 
 # 2回目以降（セッション継続）
-agent -p "<プロンプト>" --resume <session_id> --model gpt-5.3-codex-high-fast --output-format json | jq -r '.result'
+agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.3-codex-high-fast --output-format json 2>/dev/null | jq -r '.result'
 ```
 
 ### 主要オプション
@@ -22,6 +22,7 @@ agent -p "<プロンプト>" --resume <session_id> --model gpt-5.3-codex-high-fa
 | オプション | 説明 |
 |-----------|------|
 | `-p, --print` | 非対話モード、結果を出力 |
+| `--trust` | **必須**。ワークスペース信頼を自動承認（省略するとインタラクティブ確認が発生しnon-interactiveモードで失敗する） |
 | `--model <model>` | 使用モデル（gpt-5.3-codex-high-fast推奨） |
 | `--output-format json` | JSON形式で出力（session_id取得に必須） |
 | `--resume <session_id>` | 特定のセッションを再開 |
@@ -70,8 +71,8 @@ agent -p "このリポジトリの ${MEMORY_DIR}/memory/<task>/30_plan.md を読
 - より良いアプローチの提案
 
 指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.3-codex-high-fast \
-  --output-format json | jq -r '.session_id, .result'
+  --trust --model gpt-5.3-codex-high-fast \
+  --output-format json 2>/dev/null | jq -r '.session_id, .result'
 ```
 
 **2回目以降:**
@@ -81,9 +82,9 @@ agent -p "以下の改善を行いました:
 - [改善内容2]
 
 再度レビューしてください。指摘がなければ「指摘なし」とだけ回答してください。" \
-  --resume <session_id> \
+  --resume <session_id> --trust \
   --model gpt-5.3-codex-high-fast \
-  --output-format json | jq -r '.result'
+  --output-format json 2>/dev/null | jq -r '.result'
 ```
 
 ### 2. 実装レビュー（Phase 4）
@@ -98,8 +99,8 @@ agent -p "このリポジトリで git diff $BASE_BRANCH を実行して、コ�
 - ベストプラクティス違反
 
 指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.3-codex-high-fast \
-  --output-format json | jq -r '.session_id, .result'
+  --trust --model gpt-5.3-codex-high-fast \
+  --output-format json 2>/dev/null | jq -r '.session_id, .result'
 ```
 
 **2回目以降:**
@@ -109,9 +110,9 @@ agent -p "以下の改善を行いました:
 - [改善内容2]
 
 再度レビューしてください。指摘がなければ「指摘なし」とだけ回答してください。" \
-  --resume <session_id> \
+  --resume <session_id> --trust \
   --model gpt-5.3-codex-high-fast \
-  --output-format json | jq -r '.result'
+  --output-format json 2>/dev/null | jq -r '.result'
 ```
 
 ### 3. PRレビュー
@@ -123,8 +124,8 @@ agent -p "gh pr diff <番号> を実行して、PRの変更内容をレビュー
 - ドキュメントの更新必要性
 
 指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.3-codex-high-fast \
-  --output-format json | jq -r '.session_id, .result'
+  --trust --model gpt-5.3-codex-high-fast \
+  --output-format json 2>/dev/null | jq -r '.session_id, .result'
 ```
 
 ## 出力形式
@@ -194,5 +195,15 @@ agent --list-models
 
 - `-p`モード（非対話モード）ではスキル（`/commit`等）は使用不可
 - セッション継続は必ず`--resume <session_id>`を使用する
+- **`--trust`は必須**（省略するとWorkspace Trust確認が発生し、non-interactiveモードで失敗する）
 - **`--output-format stream-json`は使用禁止**（ハング問題のため）
 - **プロンプトにdiff/ファイル内容を`$()`で埋め込むことは禁止**（トークン超過のため）
+
+### CRITICAL: パイプ実行時のエラーハンドリング
+
+`agent ... | jq` のようにパイプで繋ぐと、agent側のエラー（stderr）がjqのパースエラーに隠蔽される。
+
+**ルール:**
+1. **`2>/dev/null`でstderrを分離する**（基本コマンド例の通り）
+2. **jqがパースエラーを返した場合、パイプを外して`agent`単体で再実行し、エラーメッセージを確認する**
+3. **同じコマンドをjqの書式変更やプロンプト簡素化でリトライすることを禁止する** — jqパースエラーの原因は十中八九agent側のエラー出力であり、jq側の問題ではない
