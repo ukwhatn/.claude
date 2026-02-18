@@ -42,7 +42,7 @@ ${MEMORY_DIR}/
    - 必ずdateコマンドで日付を確認すること
 4. 00_plan.md作成（全体計画）
 5. 01_xxx.md, 02_xxx.md... 作成（個別タスク）
-6. agent reviewで計画検証（**ユーザーに実行を依頼** - 下記「agent review」セクション参照）
+6. agent reviewで計画検証（reviewerチームメイトが自動実行 - @context/agent-cli-guide.md参照）
 
 ### /large-task implement <task_num>
 
@@ -144,42 +144,19 @@ bun run test
 2. **Phase 1**: タスクファイルの「作業内容」を元に詳細調査
 3. **Phase 2**: 必要に応じて詳細計画（タスクファイルで既に十分なら省略可）
 4. **Phase 3**: 実装（4ステップ: 調査→計画→実行→レビュー）
-5. **Phase 4**: 品質確認 + agent review（**ユーザーに実行を依頼** - 下記「agent review」セクション参照）
+5. **Phase 4**: 品質確認 + agent review（reviewerチームメイトが自動実行 - @context/agent-cli-guide.md参照）
 6. **Phase 5**: 完了報告、00_plan.mdの状態更新
 
 ## agent review
 
-**IMPORTANT**: agent reviewは自分で実行せず、ユーザーにコマンドを提示して実行を依頼すること。
+Agent Teams内でreviewerチームメイトが自動実行する。
 
-### コマンドテンプレート
+詳細: @context/agent-cli-guide.md「Agent Teams内での実行パターン」
 
-```bash
-cd <project_root> && agent -p "メモリディレクトリ <memory_dir_full_path> の内容を読み、
-git diff HEAD -- <changed_dir>/ を実行してコード変更をレビューしてください。
-バグ、セキュリティ、パフォーマンス、ベストプラクティスの観点から指摘してください。
-指摘がなければ「指摘なし」とだけ回答してください。" \
-  --model gpt-5.3-codex-high-fast \
-  --output-format json | jq -r '.session_id, .result'
-```
-
-### 実行依頼の例
-
-```
-agent reviewコマンドを実行してください:
-
-\`\`\`bash
-cd /path/to/project && agent -p "..." --model gpt-5.3-codex-high-fast --output-format json | jq -r '.session_id, .result'
-\`\`\`
-
-レビュー結果を教えてください。
-```
-
-### レビュー結果への対応
-
-1. ユーザーからレビュー結果を受け取る
-2. 「絶対にやるべき」指摘は必ず修正
-3. それ以外の指摘はやる/やらない判断、または AskUserQuestion で確認
-4. 修正後、再度agent reviewを依頼（指摘がなくなるまで）
+### leadの判断基準
+- Action Required → 必ず修正（implementerに委譲）
+- Recommended/Minor → 必要性に基づいて判断
+- 打ち切り: Action Required = 0 / 同一指摘2R連続 / 安全上限5R
 
 ## Taskツールとの統合（オプション）
 

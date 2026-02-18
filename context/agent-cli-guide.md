@@ -5,7 +5,9 @@
 agent cliのnon-interactive modeを使用して、別モデル（gpt-5.3-codex-high-fast）によるレビューを実施する。
 Claude Codeとは異なる観点からの分析により、計画・実装の品質を向上させる。
 
-**重要**: レビューは「指摘がなくなるまで修正→再レビューを繰り返す」ループで実施する。
+Agent Teams内ではreviewerチームメイト（general-purpose）がBash経由でagent CLIを自動実行する。leadやimplementerが手動でコマンドを実行する必要はない。
+
+**重要**: レビューはSeverity分類に基づく収束条件付きループで実施する（詳細は「レビューループの流れ」参照）。
 
 ## 基本コマンド
 
@@ -70,6 +72,11 @@ agent -p "このリポジトリの ${MEMORY_DIR}/memory/<task>/30_plan.md を読
 - リスクや懸念点
 - より良いアプローチの提案
 
+指摘は以下の形式で分類してください:
+- **Action Required**: バグ・セキュリティ・データ損失リスク（マージ不可）
+- **Recommended**: 改善推奨だが動作には直接影響しない
+- **Minor**: スタイル・命名等の軽微な指摘
+
 指摘がなければ「指摘なし」とだけ回答してください。" \
   --trust --model gpt-5.3-codex-high-fast \
   --output-format json 2>/dev/null | jq -r '.session_id, .result'
@@ -81,7 +88,7 @@ agent -p "以下の改善を行いました:
 - [改善内容1]
 - [改善内容2]
 
-再度レビューしてください。指摘がなければ「指摘なし」とだけ回答してください。" \
+再度レビューしてください。同じSeverity分類形式で回答してください。指摘がなければ「指摘なし」とだけ回答してください。" \
   --resume <session_id> --trust \
   --model gpt-5.3-codex-high-fast \
   --output-format json 2>/dev/null | jq -r '.result'
@@ -98,6 +105,11 @@ agent -p "このリポジトリで git diff $BASE_BRANCH を実行して、コ�
 - パフォーマンス改善点
 - ベストプラクティス違反
 
+指摘は以下の形式で分類してください:
+- **Action Required**: バグ・セキュリティ・データ損失リスク（マージ不可）
+- **Recommended**: 改善推奨だが動作には直接影響しない
+- **Minor**: スタイル・命名等の軽微な指摘
+
 指摘がなければ「指摘なし」とだけ回答してください。" \
   --trust --model gpt-5.3-codex-high-fast \
   --output-format json 2>/dev/null | jq -r '.session_id, .result'
@@ -109,7 +121,7 @@ agent -p "以下の改善を行いました:
 - [改善内容1]
 - [改善内容2]
 
-再度レビューしてください。指摘がなければ「指摘なし」とだけ回答してください。" \
+再度レビューしてください。同じSeverity分類形式で回答してください。指摘がなければ「指摘なし」とだけ回答してください。" \
   --resume <session_id> --trust \
   --model gpt-5.3-codex-high-fast \
   --output-format json 2>/dev/null | jq -r '.result'
@@ -168,17 +180,84 @@ session_id=$(... | jq -r '.session_id')
 1. **初回レビュー実行**
    - `agent -p`でレビュープロンプトを送信
    - `--output-format json`でsession_idを取得
-   - 結果を確認
+   - 結果のSeverity分類を確認
 
-2. **指摘への対応**
-   - 「絶対にやるべき」指摘は必ず修正
-   - それ以外はやる/やらない判断
-   - 不明点はAskUserQuestionで確認
+2. **Severity別のlead判断**
+   - leadがレビュー結果を受け取り、Severity別に修正/スキップを判断
+   - 修正が必要な指摘はimplementerチームメイトに委譲
+   - スキップした指摘と理由は05_log.mdに記録
 
 3. **再レビュー（セッション継続）**
    - `--resume <session_id>`でセッション継続
    - 改善内容を伝えて再度レビューを依頼
-   - 指摘がなくなるまで繰り返し
+
+4. **打ち切り条件（いずれかを満たした時点で終了）**
+   - Action Requiredがゼロ
+   - 同じ指摘が2ラウンド連続で出現（既知制限として05_log.mdに記録）
+   - 安全上限: 5ラウンドで強制打ち切り（残存指摘はissueファイルに記録）
+
+## Severity別のlead判断基準
+
+| Severity | 判断 |
+|----------|------|
+| Action Required | 必ず修正（implementerに委譲） |
+| Recommended | 必要性で判断（将来のバグ温床/保守性低下→修正、好みの問題/実害なし→スキップ） |
+| Minor | 必要性で判断（一貫性/生産性に影響→修正、純粋なスタイル差→スキップ） |
+
+スキップ理由は05_log.mdに記録すること。
+
+## Agent Teams内での実行パターン
+
+Agent Teams使用時、agent reviewはreviewerチームメイトがBash経由で自動実行する。
+
+### reviewerチームメイトのspawn指示テンプレート
+
+```
+あなたは「{team_name}」チームのreviewerです。
+
+## 役割
+agent CLIをBash経由で実行し、レビュー結果をleadに報告する。
+
+## 実行手順
+1. Bashでagent CLIコマンドを実行（初回: session_id取得）
+2. 結果をleadにSendMessageで報告（Severity分類付き）
+3. leadからの修正完了報告を受け、--resume で再レビュー
+4. 打ち切り条件を満たすまでループ
+
+## 初回コマンド（Phase 2: 計画レビュー）
+agent -p "<プロンプト>" --trust --model gpt-5.3-codex-high-fast --output-format json 2>/dev/null | jq -r '.session_id, .result'
+
+## 再レビューコマンド
+agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.3-codex-high-fast --output-format json 2>/dev/null | jq -r '.result'
+
+## 打ち切り条件
+- Action Required = 0
+- 同一指摘が2ラウンド連続
+- 安全上限: 5ラウンド
+```
+
+### 連携フロー
+
+```
+lead → reviewer（spawn + レビュー依頼）
+  reviewer: agent CLI実行 → leadに指摘報告
+  lead: Severity判断 → implementerに修正委譲
+  implementer: 修正 → leadに完了報告
+  lead → reviewer（再レビュー依頼）
+  reviewer: --resume で再レビュー → leadに報告
+  （打ち切り条件まで繰り返し）
+```
+
+### 長寿命パターン
+
+reviewerはPhase 2（計画レビュー）からPhase 4（実装レビュー）まで存続可能。
+agent CLIのセッションはPhaseごとに新規作成するが、reviewerチームメイト自体は跨いで再利用する。
+これにより、コードベースへの理解を保持した状態でレビューの質を維持できる。
+
+### --resume によるセッション継続
+
+同一Phase内の修正→再レビューループでは `--resume <session_id>` を使用してagent CLIセッションを継続する。
+前回のレビュー文脈が保持されるため、差分のみに集中した効率的なレビューが可能。
 
 ## モデル選択ガイド
 

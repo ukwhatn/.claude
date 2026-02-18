@@ -13,7 +13,7 @@
 1. 調査: 過去タスク/issue参照、context7/WebSearch必須、既存コード確認
 2. 計画: 計画作成 → agent review実行
 3. 実装: leadはオーケストレーションに専念、implementerチームメイトに委譲
-4. 品質確認: lint/format/typecheck/test → agent review実行
+4. 品質確認: lint/format/typecheck/test → reviewerチームメイトがagent review自動実行
 5. 完了報告: TeamDelete → 完了報告
 
 **IMPORTANT**: 各Phaseで05_log.mdに実施内容を逐次記録すること
