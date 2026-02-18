@@ -116,8 +116,8 @@
 - [ ] 型チェック・lint確認
 ```
 
-### agent reviewによる計画検証（ループ）
-計画完了後、agent cliでレビューを実施。指摘がなくなるまでループ。
+### agent reviewによる計画検証（自動実行ループ）
+計画完了後、reviewerチームメイトがagent CLIを自動実行。Action Requiredゼロまでループ（安全上限5R）。
 詳細・コマンド例: @context/agent-cli-guide.md「計画レビュー（Phase 2）」
 
 ## Phase 3: 実装（Lead Orchestration）
@@ -160,9 +160,15 @@ PJ CLAUDE.mdに記載のコマンドで実行:
 - typecheck
 - test
 
-### agent review（ループ）
-自動チェック完了後、agent cliでレビューを実施。指摘がなくなるまでループ。
-詳細・コマンド例: @context/agent-cli-guide.md「実装レビュー（Phase 4）」
+### agent review（自動実行ループ）
+自動チェック完了後、reviewerチームメイト（general-purpose）がagent CLIを自動実行:
+1. reviewerチームメイトをspawnし、Bash経由でagent CLIを実行
+2. 指摘があればSeverityに基づいてlead判断:
+   - Action Required → implementerに修正委譲
+   - Recommended/Minor → 必要性に基づいて修正/スキップ
+3. 修正後、reviewerが --resume で再レビュー
+4. 打ち切り条件: Action Required = 0 / 同一指摘2R連続 / 安全上限5R
+詳細: @context/agent-cli-guide.md「Agent Teams内での実行パターン」
 
 ## Phase 5: 完了報告
 

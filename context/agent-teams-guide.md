@@ -144,7 +144,7 @@ Task(
 | Phase 1 | 調査（researcher or 自身） |
 | Phase 2 | 計画作成 → agent review |
 | Phase 3 | **implementerチームメイトをspawn → タスクアサイン → 完了待ち → 次タスク**（leadはコード実装しない） |
-| Phase 4 | 品質チェック + code-reviewerチームメイト + agent cli (gpt-5.3-codex-high-fast) でレビュー |
+| Phase 4 | 品質チェック + reviewerチームメイトがagent CLI自動実行（Severity分類 + 収束条件） |
 | Phase 5 | 全チームメイトshutdown → TeamDelete → 完了報告 |
 
 **IMPORTANT**: 05_log.mdへの記録はAgent Teams使用時も必須（leadが記録する）。
@@ -224,11 +224,41 @@ researcher-C（仮説3）
 - 互いにSendMessageで反論・補強
 - リードが最終的な結論をまとめる
 
+### パターン5: Review + Fix ループ（agent review自動化）
+
+```
+lead（オーケストレーション）
+  ├─→ reviewer（長寿命: agent CLI実行）
+  │     ├─ R1: agent -p ... | jq → leadに指摘報告
+  │     ├─ R2: --resume → leadに報告
+  │     └─ Rn: 指摘なし → leadに報告
+  │
+  └─→ implementer（長寿命: 修正担当）
+        ├─ R1の修正
+        ├─ R2の追加修正
+        └─ 全修正完了 → leadに報告
+```
+
+- reviewerはagent CLIセッションを --resume で継続し、レビュー文脈を保持
+- implementerは複数ラウンドの修正をコンテキスト付きで処理
+- leadはSeverity判断とオーケストレーションに専念
+- 打ち切り条件: Action Required = 0 / 同一指摘2R連続 / 安全上限5R
+
+## チームメイトのライフサイクル
+
+shutdownタイミングは「タスク完了時」ではなく「役割完了時」:
+- reviewer: 全レビューラウンド完了後（Phase 2→4を跨いで存続可能）
+- implementer: 担当する連続タスク群・修正ラウンド群が全て完了後
+- researcher: 調査フェーズ完了後
+
+理由: コンテキスト保持により、前回作業を参照した質の高い作業が可能。
+spawn/shutdownのオーバーヘッドも削減される。
+
 ## コスト考慮
 
 - 各チームメイトは独立したClaudeインスタンス（コンテキスト×チームメイト数）
 - **実用的な上限: 3-5人**
-- 不要になったチームメイトは即座にshutdown_requestを送信
+- 役割が完了したチームメイトにshutdown_requestを送信
 - 単純なタスクにはSubagents（Task tool）を使用してコストを抑える
 
 ## 待機パターン（CRITICAL）
@@ -284,7 +314,7 @@ Context compaction（コンテキスト圧縮）が発生すると、team-lead�
 
 - 同一ファイルの編集をチームメイト間で分担しない（上書き競合の原因）
 - チームメイトはCLAUDE.mdを読み込むが、リードの会話履歴は引き継がない
-- agent cli (gpt-5.3-codex-high-fast) レビューはAgent Teamsとは別に実施（Phase 4）
+- agent reviewはreviewerチームメイトがBash経由で自動実行する（@context/agent-cli-guide.md参照）
 - チームメイトの名前（name）で参照する（agentIdは使用しない）
 - broadcastはコスト高（N人 = N回のAPI呼び出し）、必要な場合のみ使用
 - TeamDeleteは全チームメイトのシャットダウン完了後のみ実行可能
