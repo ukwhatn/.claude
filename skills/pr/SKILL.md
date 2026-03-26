@@ -1,12 +1,16 @@
 ---
+name: pr
+description: Draft PRを作成。`/pr`で実行。引数にベースブランチを指定可能。
 allowed-tools: Bash(git:*), Bash(gh:*)
-argument-hint: [base-branch]
-description: Draft PRを作成
 ---
 
-# /pr コマンド
+# /pr
 
-Draft PRを作成します。
+Draft PRを作成する。
+
+## 引数
+
+- ベースブランチ名（省略時: PJ CLAUDE.mdのBASE_BRANCH）
 
 ## 実行手順
 
@@ -15,7 +19,7 @@ Draft PRを作成します。
 ```bash
 git branch --show-current
 git status
-git log $ARGUMENTS..HEAD --oneline
+git log <base-branch>..HEAD --oneline
 ```
 
 ### 2. PRテンプレートの確認
@@ -27,8 +31,8 @@ ls .github/PULL_REQUEST_TEMPLATE.md 2>/dev/null
 ### 3. 変更内容の確認
 
 ```bash
-git diff $ARGUMENTS --name-only
-git diff $ARGUMENTS
+git diff <base-branch> --name-only
+git diff <base-branch>
 ```
 
 ### 4. PR本文の作成
@@ -62,7 +66,7 @@ git diff $ARGUMENTS
 
 ```bash
 gh pr create --draft \
-  --base $ARGUMENTS \
+  --base <base-branch> \
   --title "<タイトル>" \
   --body "$(cat <<'EOF'
 <本文>

@@ -149,17 +149,17 @@ Task(
 
 **IMPORTANT**: 05_log.mdへの記録はAgent Teams使用時も必須（leadが記録する）。
 
-## カスタムエージェント一覧
+## エージェントロール一覧
 
-| エージェント | 用途 | ツール制限 | memory |
-|------------|------|-----------|--------|
-| researcher | 調査専門（context7/WebSearch活用） | Write/Edit不可 | user |
-| implementer | 実装専門（計画に従った実装） | 制限なし | - |
-| code-reviewer | レビュー専門（バグ/セキュリティ/パフォーマンス） | Write/Edit不可 | user |
-| test-writer | テスト作成専門（既存パターン踏襲） | 制限なし | - |
-| planner | 計画策定専門（リスク評価、実装計画） | Write/Edit不可 | - |
+以下のロールはgeneral-purposeサブエージェントにインライン指示で付与する。
+専用の定義ファイルは不要（旧`~/.claude/agents/`は廃止済み）。
 
-定義ファイル: `~/.claude/agents/`
+| ロール | 用途 | 推奨ツール制限（インライン指示で明示） |
+|--------|------|--------------------------------------|
+| researcher | 調査専門（context7/WebSearch活用） | Write/Edit不可 |
+| implementer | 実装専門（計画に従った実装） | 制限なし |
+| reviewer | レビュー専門（バグ/セキュリティ/パフォーマンス） | Write/Edit不可 |
+| test-writer | テスト作成専門（既存パターン踏襲） | 制限なし |
 
 ## チーム構成パターン
 
