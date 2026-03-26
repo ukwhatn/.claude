@@ -1,12 +1,12 @@
 ---
+name: commit
+description: 変更をコミット。`/commit`で実行。`--push`引数でpushも実行。
 allowed-tools: Bash(git:*)
-argument-hint: [--push]
-description: 変更をコミット
 ---
 
-# /commit コマンド
+# /commit
 
-変更をコミットします。`--push` 引数でpushも実行。
+変更をコミットする。`--push` 引数でpushも実行。
 
 ## 引数
 
@@ -27,7 +27,6 @@ git log --oneline -5
 変更内容を分析し、git-cz形式でコミットメッセージを作成:
 
 - prefix: feat/fix/docs/refactor/test/chore など
-- 絵文字なし
 - prefix以外は日本語
 - 例: `feat: ユーザー認証機能を追加`
 
@@ -50,7 +49,7 @@ EOF
 
 ### 5. push（引数に --push がある場合のみ）
 
-$ARGUMENTS に `--push` が含まれる場合:
+引数に `--push` が含まれる場合:
 
 ```bash
 git push

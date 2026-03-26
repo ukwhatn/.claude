@@ -43,7 +43,38 @@ npm test
 - [PJ固有のルール]
 ```
 
-### 3. gitignore設定
+### 3. .claudeignoreの作成
+
+コンテキスト最適化のため、`.claudeignore`を作成する（**最大の単一改善**）:
+
+```bash
+# プロジェクトの技術スタックに応じて作成
+cat > .claudeignore << 'EOF'
+# Lock files (30K-80K tokens)
+package-lock.json
+pnpm-lock.yaml
+bun.lockb
+yarn.lock
+
+# Build output
+dist/
+build/
+.next/
+out/
+
+# Dependencies
+node_modules/
+
+# Minified files
+*.min.js
+*.min.css
+
+# Generated
+*.generated.*
+EOF
+```
+
+### 4. gitignore設定
 
 `.local/`がgitに追跡されないよう設定:
 
@@ -54,30 +85,28 @@ if git config --global core.excludesfile &>/dev/null; then
   if grep -q "^\.local/$" "$GLOBAL_GITIGNORE" 2>/dev/null; then
     echo "global gitignoreで.local/は除外済み"
   else
-    # gitリポジトリ内かどうか確認
     if git rev-parse --git-dir &>/dev/null; then
-      # gitリポジトリ内の場合、.git/info/excludeに追加
       echo ".local/" >> "$(git rev-parse --git-dir)/info/exclude"
       echo ".git/info/excludeに.local/を追加"
     else
-      # gitリポジトリ外（複数リポジトリの親ディレクトリ等）の場合はスキップ
       echo "gitリポジトリ外のため、gitignore設定をスキップ"
     fi
   fi
 fi
 ```
 
-### 4. ユーザーへの確認（AskUserQuestion使用）
+### 5. ユーザーへの確認（AskUserQuestion使用）
 
 AskUserQuestionツールで以下を確認:
 1. メモリディレクトリの場所（モノレポの場合は調整が必要）
 2. 品質チェックコマンド
 3. ベースブランチ
 4. PJ固有のルール
+5. .claudeignoreに追加すべきパターン
 
-### 5. 設定の調整
+### 6. 設定の調整
 
-ユーザーの回答に基づいてCLAUDE.mdを調整。
+ユーザーの回答に基づいてCLAUDE.mdと.claudeignoreを調整。
 
 ## モノレポの場合
 
@@ -88,9 +117,24 @@ AskUserQuestionツールで以下を確認:
 MEMORY_DIR=<monorepo-root>/.local/
 ```
 
-これにより、サブディレクトリで作業中も正しい場所にメモリディレクトリが作成される。
-
 ## 複数gitリポジトリの親ディレクトリで作業する場合
 
 親ディレクトリ自体がgitリポジトリでない場合、gitignore設定は不要（各子リポジトリで個別対応）。
 
+## .claude/rules/の活用（オプション）
+
+パス固有のルールがある場合、`.claude/rules/`を作成:
+
+```bash
+mkdir -p .claude/rules
+```
+
+```yaml
+# .claude/rules/api-rules.md
+---
+paths:
+  - "src/api/**/*.ts"
+---
+# API開発ルール
+- すべてのAPIエンドポイントに入力バリデーションを含めること
+```

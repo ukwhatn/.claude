@@ -30,13 +30,14 @@ description: 既存設定と完全に整合したスキルを自動作成。~/.c
 **常に読み込む:**
 - `~/.claude/CLAUDE.md` - user-level設定
 - `~/.claude/context/*.md` - 特に以下が重要:
-  - `claude-customization-guide.md` - Skills/Commands/CLAUDE.mdの使い分け
+  - `claude-customization-guide.md` - 設計原則、Skills/Commands/CLAUDE.mdの使い分け
   - `workflow-rules.md` - Phase 0-5ワークフロー
   - `memory-file-formats.md` - メモリディレクトリ構造
 
 **--project時に追加で読み込む:**
 - `./CLAUDE.md` - project-level設定
-- `./context/*.md` - project-level参照ファイル
+- `./.claude/context/*.md` - project-level参照ファイル
+- `./.claude/rules/*.md` - project-levelルール
 
 **既存スキルの確認:**
 - `~/.claude/skills/*/SKILL.md` のfrontmatter（name, description）を取得
@@ -48,9 +49,10 @@ description: 既存設定と完全に整合したスキルを自動作成。~/.c
 
 | 選択 | 条件 |
 |------|------|
-| **Skill** | 自動トリガー、ドメイン知識、スクリプト同梱 |
-| **Command** | ユーザー制御、引数必須、ショートカット |
-| **CLAUDE.md追記** | 常時適用ルール、60行以下に収まる |
+| **Skill**（推奨） | 自動トリガー、ドメイン知識、スクリプト同梱 |
+| **CLAUDE.md追記** | 常時適用ルール、200行以下に収まる |
+
+**NOTE**: Commands（`.claude/commands/`）はレガシー形式。新規作成時はSkills形式を使用する。
 
 ### Step 4: 整合性チェック
 
@@ -105,6 +107,9 @@ description: PRレビュー。
 ---
 name: <skill-name>
 description: <何をするか>。<いつ使うか>。使用タイミング: (1) xxx、(2) yyy。
+# オプション:
+# allowed-tools: Read, Grep, Glob          # 使用可能ツールの制限
+# disable-model-invocation: true           # 手動起動のみ（副作用のある操作向け）
 ---
 
 # <Skill Name>
@@ -133,13 +138,15 @@ description: <何をするか>。<いつ使うか>。使用タイミング: (1) 
 - SKILL.mdに500行以上記載
 - references/内で更にファイル参照（1階層まで）
 - descriptionに「いつ使うか」がない
+- Commands形式（`.claude/commands/`）での新規作成
 
 ## チェックリスト
 
 - [ ] ~/.claude/CLAUDE.md を読んだか
 - [ ] ~/.claude/context/claude-customization-guide.md を確認したか
 - [ ] 既存スキル一覧を確認したか
-- [ ] Skill/Command/CLAUDE.md追記の判定をしたか
+- [ ] Skill/CLAUDE.md追記の判定をしたか
 - [ ] descriptionに「何を」「いつ」が含まれるか
 - [ ] SKILL.mdは500行以下か
 - [ ] @context/xxx.md 形式で参照を記載したか
+- [ ] 新フロントマター（allowed-tools, disable-model-invocation）を検討したか
