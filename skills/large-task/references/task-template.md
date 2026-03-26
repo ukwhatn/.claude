@@ -41,6 +41,21 @@
 - `path/to/reference.ts` - [何を参考にするか]
 - `path/to/pattern.ts` - [パターンの参照元]
 
+### 既存パターン踏襲チェック（FEタスクの場合）
+
+同類の既存画面を特定し、以下のパターンが適用されているか確認:
+- [ ] セキュリティ: `getSafeReturnToUrl` / サニタイズ適用
+- [ ] ダブルクリック防止: `usePreventDoubleClick` の `complete()` 呼び出し
+- [ ] UIパターン: FloatingBanner / CheckBox / Modal の組み合わせ
+- [ ] 共通ロジック: 既存hookやヘルパーの再利用（重複コードの回避）
+- [ ] 未使用import/依存の排除
+
+### Procedure/Router変更チェック（権限変更タスクの場合）
+
+- [ ] 影響を受ける全routerファイルのprocedure一覧を確認
+- [ ] 変更対象外のrouterも含め、新しいアカウント種別でのアクセス可否を明示的に判断
+- [ ] 退会処理など関連する非同期処理への影響を確認
+
 ### コミット
 
 - `feat: [コミットメッセージ]`

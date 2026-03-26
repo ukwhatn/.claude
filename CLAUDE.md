@@ -3,6 +3,7 @@
 ## 最優先指示: 推測禁止・調査先行
 - 推測を一切禁止。事実と調査結果に基づいてのみ発言すること
 - 修正前に対象技術の公式仕様をcontext7/WebSearchで調査すること（仕様理解→計画→修正）
+- **UI仕様の確認時はFigma（`get_design_context`）を一次ソースとすること。ローカル仕様書は二次ソース**（詳細: @context/figma-verification.md）
 - 不明な点は調査するか、AskUserQuestionで質問すること
 
 ## 優先順位
@@ -35,6 +36,7 @@ agent review: @context/agent-cli-guide.md
 ## コミット・ブランチ
 - コミット: git-cz形式、絵文字なし、prefix以外は日本語。こまめにコミット
 - ブランチ: BASE_BRANCH（PJ CLAUDE.md参照、未定義時: develop→main→master）、命名: feature/<issue_num>-<title>
+- ブランチ作り直し時: 既存コミットをrebase/cherry-pickで保全してからブランチ削除（コミット消失防止）
 
 ## スキル発火ルール
 **CRITICAL**: Available skillsに該当するスキルが存在する場合、直接ツールを呼び出さずスキルを発火させること
@@ -47,10 +49,7 @@ agent review: @context/agent-cli-guide.md
 - スキル存在時の直接ツール呼び出し
 
 ## Compact Instructions
-When compacting, always preserve the following information:
-- Active Agent Teams: team name, all teammate names, their current task assignments and status
-- Task list state: which tasks are in_progress, completed, or pending, and their owners
-- Current phase (Phase 0-5) and progress within the phase
+When compacting, preserve: Active Agent Teams (name, members, task assignments, status), Task list state (in_progress/completed/pending + owners), Current phase (0-5) and progress.
 
 ## GitHub CLI
 gh cli利用時は`gh auth status`でアカウント確認。原則 username = ukwhatn。詳細はPJ CLAUDE.md参照。
