@@ -17,11 +17,12 @@
 
 ## メモリディレクトリ構成
 
-場所: `${MEMORY_DIR}/memory/YYMMDD_<task_name>/`
+場所: `${MEMORY_DIR}/memory/YYMMDD_<context_name>/`
 - MEMORY_DIRはPJ CLAUDE.mdで定義（デフォルト: `.local/`）
-- **YYMMDD**: システムプロンプトの`Today's date`から取得した実際の日付（年2桁+月2桁+日2桁）
-- task_nameはタスクを識別する短い名前（例: `auth-feature`, `bug-fix-123`）
-- **IMPORTANT**: 例示の日付をコピーせず、必ずシステムプロンプトの日付を使用すること
+- **YYMMDD**: ディレクトリを最初に作成した日付（年2桁+月2桁+日2桁）
+- context_nameはコンテキスト（機能・プロジェクト）を識別する短い名前（例: `instant-account`, `bug-fix-123`）
+- **IMPORTANT**: 同一コンテキストの継続作業は既存ディレクトリを再利用すること。新規ディレクトリを作成しない
+- **IMPORTANT**: 例示の日付をコピーせず、必ずシステムプロンプトの日付を使用すること（新規作成時）
 
 | ファイル | 用途 | 作成タイミング |
 |---------|------|--------------|
