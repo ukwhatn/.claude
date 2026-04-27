@@ -115,12 +115,14 @@
 
 ### Agent Teams 発動時（Lead Orchestration）
 
-leadはコード実装を行わず、以下に専念:
+lead は原則としてオーケストレーションに専念:
 - タスクの依存関係に基づいて実行順序を管理
 - implementerチームメイトをspawnしてタスクを割り当て
 - チームメイトの完了報告を受けて次のタスクをアサイン
 - 並列実行可能なタスクは同時にspawn
 - 05_log.mdへの進捗記録
+
+ただし、leadが直接実装した方が明らかに効率的なファイル（方針判断を伴う中核ファイル等）は自身で編集してよい（@context/agent-teams-guide.md「Lead Orchestration パターン」参照）。
 
 ### モデル判断による直接実装時
 

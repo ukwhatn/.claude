@@ -99,12 +99,12 @@ Opus 4.7 ベストプラクティスに従い、Agent Teams は**限定発動**:
 
 ## メモリディレクトリ
 
-各タスクの作業ログを `.local/memory/YYMMDD_<task_name>/` に保存:
+各タスクの作業ログを `.local/memory/YYMMDD_<context_name>/` に保存:
 
 ```
 .local/
 ├── memory/
-│   └── YYMMDD_<task>/
+│   └── YYMMDD_<context_name>/
 │       ├── 05_log.md      # 作業ログ（必須）
 │       ├── 30_plan.md     # 実装計画
 │       └── ...
