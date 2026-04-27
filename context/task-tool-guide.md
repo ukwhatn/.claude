@@ -244,7 +244,7 @@ Task(prompt: "...", subagent_type: "general-purpose", team_name: "feature-x", na
 
 ## 注意事項
 
-- Agent Teams使用時: TaskCreate/TaskUpdateは必須（チーム共有タスクリストとして機能）
-- Agent Teams不使用時（例外的な小規模タスク）: オプション（3ステップ以下なら省略可）
+- Agent Teams 発動時: TaskCreate/TaskUpdateは必須（チーム共有タスクリストとして機能）
+- 単独作業時: 複雑タスクで使用（3ステップ以下なら省略可）
 - 依存関係はタスク作成後にTaskUpdateで設定
 - metadataは任意のキー・値を格納可能
