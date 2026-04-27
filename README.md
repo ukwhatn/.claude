@@ -15,34 +15,34 @@ git clone <this-repo> ~/.claude
 
 ```
 ~/.claude/
-├── CLAUDE.md              # グローバル設定（ワークフロー、変数）
-├── agents/                # カスタムエージェント定義
-│   ├── researcher.md      # 調査専門
-│   ├── implementer.md     # 実装専門
-│   ├── code-reviewer.md   # レビュー専門
-│   ├── test-writer.md     # テスト作成専門
-│   └── planner.md         # 計画策定専門
-├── commands/              # ユーザー実行コマンド
-│   ├── commit.md          # /commit
-│   └── pr.md              # /pr
+├── CLAUDE.md              # グローバル設定（ワークフロー、変数、Agent Teams発動条件）
 ├── context/               # エージェント向けコンテキスト
-│   ├── agent-teams-guide.md
-│   ├── workflow-rules.md
-│   ├── task-tool-guide.md
-│   └── ...
+│   ├── workflow-rules.md         # Phase 0-5 詳細
+│   ├── agent-teams-guide.md      # Agent Teams 発動条件と構成例
+│   ├── task-tool-guide.md        # TaskCreate/TaskUpdate
+│   ├── agent-cli-guide.md        # 別モデル（GPT-5.3 Codex）レビュー
+│   ├── claude-customization-guide.md  # CLAUDE.md設計原則, Opus 4.7 BP
+│   ├── memory-file-formats.md
+│   ├── figma-verification.md
+│   └── cloudflare-development.md
 ├── skills/                # 自動トリガースキル
 │   ├── codebase-review/
+│   ├── commit/
+│   ├── create-draft-pr/
 │   ├── create-skill/
 │   ├── database-migration/
+│   ├── doc-review/
 │   ├── documentation/
+│   ├── findmem/
 │   ├── large-task/
 │   ├── pr-review/
 │   ├── project-init/
 │   ├── project-sync/
 │   ├── ui-ux-design/
 │   └── update-inst/
-└── templates/             # プロジェクト初期化テンプレート
-    └── project/
+├── templates/             # プロジェクト初期化テンプレート
+│   └── project/
+└── settings.json          # 権限・環境変数・hooks
 ```
 
 ## スキル一覧
@@ -50,6 +50,7 @@ git clone <this-repo> ~/.claude
 | スキル | 説明 | トリガー |
 |--------|------|----------|
 | **codebase-review** | 6観点（perf/sec/test/arch/cq/docs）で並列レビュー | `/codebase-review`、品質監査依頼時 |
+| **doc-review** | Agent Teamsによる多角的ドキュメントレビュー | ドキュメントレビュー依頼時 |
 | **pr-review** | Claude + GPT-5.3 Codexマルチモデルレビュー | PRレビュー依頼時 |
 | **project-init** | CLAUDE.md・.claude/の初期設定 | PJ初期化依頼時 |
 | **project-sync** | CLAUDE.mdとcontext/の整合性確保 | ドキュメント整理依頼時 |
@@ -59,36 +60,42 @@ git clone <this-repo> ~/.claude
 | **create-skill** | 既存設定と整合したスキル自動作成 | `/create-skill <内容>` |
 | **update-inst** | 間違いの再発防止ルール追加 | `/update-inst <間違えた内容>` |
 | **ui-ux-design** | プロダクショングレードのUI/UX生成 | UI構築依頼時 |
+| **commit** | git-cz形式のコミット | `/commit [--push]` |
+| **create-draft-pr** | Draft PR作成 | `/create-draft-pr [base-branch]` |
+| **findmem** | メモリディレクトリ検索 | `/findmem <keyword>` |
 
-## カスタムエージェント一覧
+## エージェントロール
 
-| エージェント | 説明 | ツール制限 |
-|------------|------|-----------|
-| **researcher** | 調査専門（context7/WebSearch活用） | Write/Edit不可 |
-| **implementer** | 実装専門（計画に従った実装） | 制限なし |
-| **code-reviewer** | レビュー専門（バグ/セキュリティ/パフォーマンス） | Write/Edit不可 |
-| **test-writer** | テスト作成専門（既存パターン踏襲） | 制限なし |
-| **planner** | 計画策定専門（リスク評価、実装計画） | Write/Edit不可 |
+カスタムエージェント定義ファイルは廃止済み。general-purpose サブエージェントにインライン指示でロールを付与する。
 
-Agent TeamsまたはSubagentとして使用可能。詳細: `context/agent-teams-guide.md`
+| ロール | 用途 |
+|------|------|
+| **researcher** | 調査専門（context7/WebSearch活用） |
+| **implementer** | 実装専門（計画に従った実装） |
+| **reviewer** | レビュー専門（バグ/セキュリティ/パフォーマンス） |
+| **test-writer** | テスト作成専門 |
 
-## コマンド一覧
-
-| コマンド | 説明 | 引数 |
-|----------|------|------|
-| `/commit` | git-cz形式でコミット | `--push`: コミット後push |
-| `/pr` | Draft PR作成 | `[base-branch]`: マージ先 |
+詳細: `context/agent-teams-guide.md`
 
 ## ワークフロー
 
-CLAUDE.mdで定義された6フェーズワークフロー:
+CLAUDE.mdで定義された 6 フェーズフレームワーク（**複雑タスク向け**。小規模はskip可）:
 
-1. **Phase 0: 準備** - メモリディレクトリ作成、過去タスク検索
+1. **Phase 0: 準備** - メモリディレクトリ作成、過去タスク検索、TaskCreate（必要ならTeamCreate）
 2. **Phase 1: 調査** - context7/WebSearch必須、既存コード確認
-3. **Phase 2: 計画** - agent reviewで検証（指摘なくなるまで）
-4. **Phase 3: 実装** - 調査→計画→実行→レビューの4ステップ
-5. **Phase 4: 品質確認** - lint/format/typecheck/test + agent review
+3. **Phase 2: 計画** - agent reviewで検証（Action Required ゼロまで）
+4. **Phase 3: 実装** - モデル判断で直接実装 or Agent Teams（発動条件参照）
+5. **Phase 4: 品質確認** - lint/format/typecheck/test + 必要に応じて agent review
 6. **Phase 5: 完了報告**
+
+## Agent Teams 発動条件
+
+Opus 4.7 ベストプラクティスに従い、Agent Teams は**限定発動**:
+- (a) 5+ファイル並列変更が見込まれる
+- (b) 独立タスク3つ以上
+- (c) ユーザーが明示的に「チームで」指示
+
+それ以外はモデル判断（直接実装または単発Subagent）。詳細: `context/agent-teams-guide.md`
 
 ## メモリディレクトリ
 
@@ -109,7 +116,7 @@ CLAUDE.mdで定義された6フェーズワークフロー:
 別モデル（GPT-5.3-Codex-High-Fast）によるレビューを実施:
 
 ```bash
-agent -p "<prompt>" --model gpt-5.3-codex-high-fast --output-format json | jq -r '.session_id, .result'
+agent -p "<prompt>" --trust --model gpt-5.3-codex-high-fast --output-format json | jq -r '.session_id, .result'
 ```
 
 - 修正すべき点がなくなるまでループ
@@ -117,24 +124,7 @@ agent -p "<prompt>" --model gpt-5.3-codex-high-fast --output-format json | jq -r
 
 ## プロジェクト設定
 
-新規プロジェクトでは `/project-init` を実行、または `templates/project/CLAUDE.md` をコピー:
-
-```markdown
-# <プロジェクト名>
-
-## 変数
-MEMORY_DIR=.local/
-BASE_BRANCH=develop
-
-## 品質チェック
-npm run lint
-npm run format
-npm run typecheck
-npm test
-
-## 特記事項
-- [PJ固有のルール]
-```
+新規プロジェクトでは `/project-init` を実行、または `templates/project/CLAUDE.md` をコピー。
 
 ## ライセンス
 
