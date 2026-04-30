@@ -20,7 +20,7 @@ git clone <this-repo> ~/.claude
 │   ├── workflow-rules.md         # Phase 0-5 詳細
 │   ├── agent-teams-guide.md      # Agent Teams 発動条件と構成例
 │   ├── task-tool-guide.md        # TaskCreate/TaskUpdate
-│   ├── agent-cli-guide.md        # 別モデル（GPT-5.3 Codex）レビュー
+│   ├── agent-cli-guide.md        # 別モデル（GPT-5.4-High-Fast）レビュー
 │   ├── claude-customization-guide.md  # CLAUDE.md設計原則, Opus 4.7 BP
 │   ├── memory-file-formats.md
 │   ├── figma-verification.md
@@ -51,7 +51,7 @@ git clone <this-repo> ~/.claude
 |--------|------|----------|
 | **codebase-review** | 6観点（perf/sec/test/arch/cq/docs）で並列レビュー | `/codebase-review`、品質監査依頼時 |
 | **doc-review** | Agent Teamsによる多角的ドキュメントレビュー | ドキュメントレビュー依頼時 |
-| **pr-review** | Claude + GPT-5.3 Codexマルチモデルレビュー | PRレビュー依頼時 |
+| **pr-review** | Claude + GPT-5.4-High-Fastマルチモデルレビュー | PRレビュー依頼時 |
 | **project-init** | CLAUDE.md・.claude/の初期設定 | PJ初期化依頼時 |
 | **project-sync** | CLAUDE.mdとcontext/の整合性確保 | ドキュメント整理依頼時 |
 | **documentation** | コード変更に伴うドキュメント更新 | API/環境変数追加検出時 |
@@ -113,10 +113,10 @@ Opus 4.7 ベストプラクティスに従い、Agent Teams は**限定発動**:
 
 ## agent cli連携
 
-別モデル（GPT-5.3-Codex-High-Fast）によるレビューを実施:
+別モデル（GPT-5.4-High-Fast）によるレビューを実施:
 
 ```bash
-agent -p "<prompt>" --trust --model gpt-5.3-codex-high-fast --output-format json | jq -r '.session_id, .result'
+agent -p "<prompt>" --trust --model gpt-5.4-high-fast --output-format json | jq -r '.session_id, .result'
 ```
 
 - 修正すべき点がなくなるまでループ
