@@ -11,7 +11,7 @@ Agent Teamsを活用し、6つの独立したAgentが異なる観点からドキ
 ## 既存設定との関係
 
 - **Agent Teams（@context/agent-teams-guide.md）**: TeamCreate/SendMessage/TeamDeleteで構成
-- **agent CLI（@context/agent-cli-guide.md）**: gpt-5.3-codex-high-fastによる第三者レビュー
+- **agent CLI（@context/agent-cli-guide.md）**: gpt-5.4-high-fastによる第三者レビュー
 - **Phase 0-5（@context/workflow-rules.md）**: Phase 2（計画レビュー）やPhase 4（品質確認）で使用可能
 - **codebase-reviewスキル**: コードベース対象（本スキルはドキュメント対象で競合しない）
 
@@ -77,7 +77,7 @@ Agent Teamsを活用し、6つの独立したAgentが異なる観点からドキ
 | Agent | 観点 |
 |-------|------|
 | devils-advocate | 根本的な前提への挑戦、見落とされたリスク、代替案 |
-| agent-cli-reviewer | gpt-5.3-codex-high-fastによる第三者レビュー |
+| agent-cli-reviewer | gpt-5.4-high-fastによる第三者レビュー |
 
 ### Step 3: チーム作成
 
@@ -190,7 +190,7 @@ Task(subagent_type: "general-purpose", model: "opus", team_name: ..., name: "age
 agent CLIをBash経由で実行。詳細は @context/agent-cli-guide.md 参照。
 
 ```bash
-agent -p "<プロンプト>" --trust --model gpt-5.3-codex-high-fast --output-format json 2>/dev/null | jq -r '.session_id, .result'
+agent -p "<プロンプト>" --trust --model gpt-5.4-high-fast --output-format json 2>/dev/null | jq -r '.session_id, .result'
 ```
 
 プロンプトにはファイルパスのみを指定し、ファイル内容の埋め込みは禁止（agentに自分で読ませる）。
