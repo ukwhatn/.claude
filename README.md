@@ -116,7 +116,7 @@ Opus 4.7 ベストプラクティスに従い、Agent Teams は**限定発動**:
 別モデル（GPT-5.4-High-Fast）によるレビューを実施:
 
 ```bash
-agent -p "<prompt>" --trust --model gpt-5.4-high-fast --output-format json | jq -r '.session_id, .result'
+agent -p "<prompt>" --trust --model gpt-5.5-high-fast --output-format json | jq -r '.session_id, .result'
 ```
 
 - 修正すべき点がなくなるまでループ
