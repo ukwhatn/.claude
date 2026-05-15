@@ -1,0 +1,172 @@
+{
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
+    "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
+    "CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING": "1"
+  },
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "permissions": {
+    "allow": [
+      "mcp__atlassian__atlassianUserInfo",
+      "mcp__atlassian__fetch",
+      "mcp__atlassian__get*",
+      "mcp__atlassian__list*",
+      "mcp__atlassian__lookup*",
+      "mcp__atlassian__read*",
+      "mcp__atlassian__search*",
+      "mcp__context7",
+      "mcp__github-dena",
+      "mcp__github-personal",
+      "WebFetch",
+      "WebSearch",
+      "Bash(git add:*)",
+      "Bash(git blame:*)",
+      "Bash(git branch:*)",
+      "Bash(git cat-file:*)",
+      "Bash(git commit:*)",
+      "Bash(git config --get:*)",
+      "Bash(git config --list:*)",
+      "Bash(git describe:*)",
+      "Bash(git diff:*)",
+      "Bash(git fetch:*)",
+      "Bash(git grep:*)",
+      "Bash(git log:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git reflog:*)",
+      "Bash(git remote:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git shortlog:*)",
+      "Bash(git show:*)",
+      "Bash(git status:*)",
+      "Bash(git switch:*)",
+      "Bash(git tag:*)",
+      "Bash(cat:*)",
+      "Bash(chmod:*)",
+      "Bash(df:*)",
+      "Bash(du:*)",
+      "Bash(file:*)",
+      "Bash(find:*)",
+      "Bash(head:*)",
+      "Bash(less:*)",
+      "Bash(ls:*)",
+      "Bash(mkdir:*)",
+      "Bash(more:*)",
+      "Bash(pwd:*)",
+      "Bash(stat:*)",
+      "Bash(tail:*)",
+      "Bash(tree:*)",
+      "Bash(awk:*)",
+      "Bash(cut:*)",
+      "Bash(echo:*)",
+      "Bash(grep:*)",
+      "Bash(sed -n:*)",
+      "Bash(sort:*)",
+      "Bash(uniq:*)",
+      "Bash(wc:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh pr diff:*)",
+      "Bash(gh pr view:*)",
+      "Bash(INTEGRATION_TEST=1 npx jest:*)",
+      "Bash(npm run tsc:*)",
+      "Bash(npm test:*)",
+      "Bash(npx tsc:*)",
+      "Bash(python3:*)",
+      "Bash(whereis:*)",
+      "Bash(which:*)"
+    ],
+    "deny": [
+      "mcp__github-dena__create_or_update_file",
+      "mcp__github-dena__create_repository",
+      "mcp__github-dena__delete_file",
+      "mcp__github-dena__fork_repository",
+      "mcp__github-dena__issue_write",
+      "mcp__github-dena__merge_pull_request",
+      "mcp__github-dena__push_files",
+      "mcp__github-dena__request_copilot_review",
+      "mcp__github-personal__assign_copilot_to_issue",
+      "mcp__github-personal__create_or_update_file",
+      "mcp__github-personal__create_repository",
+      "mcp__github-personal__delete_file",
+      "mcp__github-personal__fork_repository",
+      "mcp__github-personal__issue_write",
+      "mcp__github-personal__merge_pull_request",
+      "mcp__github-personal__push_files",
+      "mcp__github-personal__request_copilot_review",
+      "Bash(git reset:*)",
+      "Bash(nc:*)",
+      "Bash(sudo:*)",
+      "Bash(wget:*)",
+      "Write(.env*)"
+    ],
+    "ask": [
+      "mcp__atlassian__add*",
+      "mcp__atlassian__archive*",
+      "mcp__atlassian__create*",
+      "mcp__atlassian__delete*",
+      "mcp__atlassian__edit*",
+      "mcp__atlassian__move*",
+      "mcp__atlassian__post*",
+      "mcp__atlassian__put*",
+      "mcp__atlassian__remove*",
+      "mcp__atlassian__set*",
+      "mcp__atlassian__transition*",
+      "mcp__atlassian__update*"
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[リマインド] Phase 0: メモリディレクトリを作成または既存を再利用してください。05_log.mdを初期化し、最初の指示を記録してください。'"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[リマインド] Context compaction発生。チーム状態(team config)・タスク状態(TaskList)を確認してください。05_log.mdへの記録を継続してください。'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '[リマインド] 05_log.mdに実施内容を記録しましたか？未記録なら次のターンで記録してください。'"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "sh ~/.claude/statusline-command.sh",
+    "padding": 0,
+    "refreshInterval": 10
+  },
+  "enabledPlugins": {
+    "document-skills@anthropic-agent-skills": true
+  },
+  "language": "日本語",
+  "effortLevel": "xhigh",
+  "promptSuggestionEnabled": false,
+  "skipDangerousModePermissionPrompt": true,
+  "preferredNotifChannel": "ghostty",
+  "teammateMode": "auto",
+  "remoteControlAtStartup": false,
+  "skipAutoPermissionPrompt": true
+}

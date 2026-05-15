@@ -2,6 +2,8 @@
 !.gitignore
 !/README.md
 !/CLAUDE.md
+!/settings.json
+!/statusline-command.sh
 !/commands/
 !/commands/**
 !/context/
