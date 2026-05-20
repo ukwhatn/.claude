@@ -161,6 +161,9 @@
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true
   },
+  "worktree": {
+    "bgIsolation": "none"
+  },
   "language": "日本語",
   "effortLevel": "xhigh",
   "promptSuggestionEnabled": false,
