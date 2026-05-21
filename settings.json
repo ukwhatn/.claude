@@ -162,7 +162,8 @@
     "document-skills@anthropic-agent-skills": true
   },
   "worktree": {
-    "bgIsolation": "none"
+    "bgIsolation": "none",
+    "baseRef": "fresh"
   },
   "language": "日本語",
   "effortLevel": "xhigh",
