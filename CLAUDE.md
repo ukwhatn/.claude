@@ -52,6 +52,7 @@ agent review: @context/agent-cli-guide.md
 - issues: `${MEMORY_DIR}/issues/<優先度>-<観点略語>-<タイトル>.md`
 - gitignore: global gitignoreで除外済み
 - フォーマット: @context/memory-file-formats.md
+- **絶対パス固定（CRITICAL）**: Phase 0 で**元repo（worktreeに入る前のrepo）のメモリディレクトリ絶対パス**を確定し、05_log.md 冒頭に記録すること。以後 EnterWorktree で worktree に移動しても、メモリ・issue ファイルの読み書きは必ずその**絶対パス**で行う（worktree 内には `.local/` ディレクトリが存在しないため、相対パス `.local/` でアクセスすると ENOENT になるか、書き込みなら worktree 内に新規作成されて元repoと分離される）
 
 ## ユーザーへの質問
 - AskUserQuestionツールを使用。曖昧な点は推測せず必ず質問する
@@ -60,8 +61,57 @@ agent review: @context/agent-cli-guide.md
 ## コミット・ブランチ・PR
 - コミット: `/commit`スキル使用。git-cz形式、絵文字なし、prefix以外は日本語。こまめにコミット
 - PR作成: `/create-draft-pr`スキル使用。直接`gh pr create`を実行しない
-- ブランチ: BASE_BRANCH（PJ CLAUDE.md参照、未定義時: develop→main→master）、命名: feature/<issue_num>-<title>
+- ブランチ: BASE_BRANCH（PJ CLAUDE.md参照、未定義時: develop→main→master）
+- ブランチ命名: `feature/<issue_num>-<title-kebab>`、issue番号がない場合は `feature/<title-kebab>`。**prefixは原則 `feature/` で統一**（コミットメッセージのprefixはgit-cz形式と独立）
 - ブランチ作り直し時: 既存コミットをrebase/cherry-pickで保全してからブランチ削除（コミット消失防止）
+
+## worktree 運用ルール（CRITICAL）
+
+**前提**: `settings.json` で `worktree.bgIsolation: "none"` / `worktree.baseRef: "fresh"` を設定済み。
+- `bgIsolation: "none"` は bg session の自動 worktree 隔離を抑止する設定。これにより bg session は元repoの working directory で起動し、元repoの `.local/memory/` に直接アクセスできる（隔離されると到達不能になるため必要）
+- **副作用**: 並列 bg session が同じファイルを編集すると競合する。これは「コード編集を伴う作業では明示的に EnterWorktree を呼ぶ」運用で回避する（foreground/bg session 共通）
+
+### EnterWorktree を呼ぶケース（原則）
+**コード編集 or ブランチ切替を伴う作業すべて** で EnterWorktree を呼ぶ:
+- 新規ファイル作成・既存コード修正・リファクタ
+- 新規ブランチ作成・既存ブランチへの切替
+- 並列に進む可能性のある実装作業
+
+### EnterWorktree を呼ばないケース（例外）
+- `.claude/` 配下の設定ファイル・グローバル CLAUDE.md・context ガイドのみの編集
+- メモリディレクトリ（`.local/memory/`、`.local/issues/`）のみの編集
+- 純粋な調査・質問応答・読み取り専用作業
+- ユーザーが「worktree 不要」「このタスクは worktree 切らなくていい」等と明示した場合
+
+### worktree 作成とブランチ命名フロー（新規ブランチの場合）
+EnterWorktree の `name` パラメータは sanitize される（`/` → `+`）。さらに **ブランチ名は強制で `worktree-<sanitized-name>`** になるため、`name: 'feature/foo'` を渡してもブランチは `worktree-feature+foo` になり、`feature/` で統一できない。
+
+そのため以下のフローを必ず踏むこと:
+1. `git fetch origin` で origin を最新化（baseRef `fresh` の起点を最新に）
+2. **ブランチ名衝突確認**: `git branch -a` で、想定する `feature/<issue_num>-<title-kebab>` および一時ブランチ `worktree-<title-kebab>` のどちらも既存と衝突しないことを確認。衝突する場合は title を変えるか、ユーザーに確認（並列 bg session で同じ title を選ぶと EnterWorktree 自体が失敗する）
+3. `EnterWorktree(name: '<title-kebab>')` （例: `name: 'add-foo-123'`）→ worktree 作成、ブランチは `worktree-<title-kebab>`
+4. **直後に** `git branch -m worktree-<title-kebab> feature/<issue_num>-<title-kebab>` で改名（例: `git branch -m worktree-add-foo-123 feature/123-add-foo`）。改名後のブランチは `git worktree list` にも反映される
+5. 以後は `feature/<issue_num>-<title-kebab>` ブランチで作業
+
+### 既存ブランチで作業を再開する場合
+ケースが複雑なため（既存 worktree 残存有無、remote-only ブランチ、別 worktree で checkout 済み等）、この CLAUDE.md ではフローを規定しない。再開時は `git worktree list` と `git branch -a` で現状を確認し、判断に迷う点があればユーザーに方針確認すること。
+
+### baseRef と BASE_BRANCH の不一致
+baseRef は `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.md の `BASE_BRANCH` が `origin/<default-branch>` と異なる場合（例: default が `main` だが PR ベースは `develop`）、worktree 起点と PR ベースがずれる。その場合は EnterWorktree 後に `git rebase <BASE_BRANCH>` 等で base を揃えるか、ユーザーに確認すること。
+
+### worktree の片付け（ExitWorktree の注意）
+`ExitWorktree(action: 'remove')` は **EnterWorktree が作った元のブランチ名**（`worktree-<sanitized>`）を削除しようとする。上記フローで `feature/...` に改名している場合、改名後のブランチは消えない。
+- **基本方針**: 改名後ブランチは残す（PR 作成・マージのため）
+- 不要ブランチを削除する場合は CLAUDE.md「コミット・ブランチ・PR」の「ブランチ作り直し時」ルールに従う:
+  - **`-D`（強制削除）は使用前にユーザー確認必須**（破壊的操作。merge されていないコミットを失う）
+  - 未 push のコミットがあれば、rebase/cherry-pick で別ブランチに保全してから削除
+  - merge 済み・コミットなしの場合は `git branch -d <name>` （安全削除）を優先
+
+### 並列 bg session の指針
+- 各 bg session が自分で EnterWorktree を呼べば、**作業ディレクトリ上での同時編集競合**は回避できる（注: 別ブランチで同じファイルを編集すれば、後続の merge/rebase/PR 統合時には別途競合し得る）
+- 各 bg session は独立して起動され（`claude agents` の Agent View から dispatch 等）、自分で Phase 0 を実施して自分の `.local/memory/YYMMDD_<context_name>/` を作るため、`05_log.md` は自然に別ファイルで競合しない
+- メモリ・issue ファイルへの書き込みは必ず **Phase 0 で確定した元repoの絶対パス**で行うこと（worktree 内には `.local/` が存在しないため）
+- 一時ファイル（スクリプト・クエリ・中間出力等）は `/tmp` ではなく **`$CLAUDE_JOB_DIR`** を使う（並列 bg session が `/tmp` を共有して上書きするため）
 
 ## スキル発火ルール
 **CRITICAL**: Available skillsに該当するスキルが存在する場合、直接ツールを呼び出さずスキルを発火させること
