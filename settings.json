@@ -152,6 +152,10 @@
       }
     ]
   },
+  "worktree": {
+    "baseRef": "fresh",
+    "bgIsolation": "none"
+  },
   "statusLine": {
     "type": "command",
     "command": "sh ~/.claude/statusline-command.sh",
@@ -160,10 +164,6 @@
   },
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true
-  },
-  "worktree": {
-    "bgIsolation": "none",
-    "baseRef": "fresh"
   },
   "language": "日本語",
   "effortLevel": "xhigh",
