@@ -140,3 +140,7 @@ gh cli利用時は`gh auth status`でアカウント確認。原則 username = u
 
 ## Cloudflare
 詳細: @context/cloudflare-development.md
+
+## マシンローカル設定（git管理外）
+このマシン固有の設定・運用メモ（gitignore対象。存在しない環境ではimportは無視される）:
+@CLAUDE.local.md
