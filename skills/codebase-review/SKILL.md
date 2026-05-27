@@ -153,11 +153,11 @@ find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.md" 
 
 ---
 
-自分のレビューと並行して、agent cliで同じタスクを実行し、結果を突き合わせる:
+自分のレビューと並行して、外部CLI（**cursorの`agent`を優先、無ければcodex** — `command -v cursor-agent || command -v agent` で判定、無ければ `codex`）で同じタスクを実行し、結果を突き合わせる。CLI判定の詳細は @context/agent-cli-guide.md「使用するCLIの選択」参照:
 
-1. **agent cliで同じ観点のレビューを実行**
+1. **外部CLIで同じ観点のレビューを実行**
 
-   サブエージェントと同等の情報量でagent cliに指示する:
+   サブエージェントと同等の情報量でCLIに指示する（プロンプト本文は両CLI共通）:
 
    ```bash
    agent -p "あなたは「{観点名}」の専門レビュアーです。
@@ -202,8 +202,14 @@ find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.md" 
    - 推測ではなく、コードを実際に読んで判断
    - 優先度は厳格に判断（critの乱用禁止）
    - コードベースの一部だけを見て終わりにしない" \
-     --model gpt-5.5-high-fast \
-     --output-format json | jq -r '.session_id, .result'
+     --trust --model gpt-5.5-high-fast \
+     --output-format json 2>/dev/null | jq -r '.session_id, .result'
+   ```
+
+   cursorが無い環境では codex に読み替える（プロンプト本文は同一）:
+   ```bash
+   codex exec --model gpt-5.4 -c model_reasoning_effort="high" --json "<上と同じプロンプト>" 2>/dev/null \
+     | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'
    ```
 
 2. **結果を突き合わせ**

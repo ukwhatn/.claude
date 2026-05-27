@@ -111,16 +111,22 @@ Opus 4.7 ベストプラクティスに従い、Agent Teams は**限定発動**:
 └── issues/                # codebase-reviewで生成
 ```
 
-## agent cli連携
+## 外部CLIレビュー連携（cursor優先 / codex fallback）
 
-別モデル（GPT-5.4-High-Fast）によるレビューを実施:
+別モデルによるレビューを実施。**cursorの`agent` CLIを優先し、無い環境ではcodex CLIにfallback**:
 
 ```bash
+# cursor（agent / cursor-agent）優先
 agent -p "<prompt>" --trust --model gpt-5.5-high-fast --output-format json | jq -r '.session_id, .result'
+
+# codex fallback（cursorが無い環境）
+codex exec --model gpt-5.4 -c model_reasoning_effort="high" --json "<prompt>" \
+  | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'
 ```
 
 - 修正すべき点がなくなるまでループ
-- `--resume <session_id>`でセッション継続
+- セッション継続: cursorは `--resume <session_id>`、codexは `codex exec resume --last`
+- 詳細・CLI判定ロジック: `context/agent-cli-guide.md`「使用するCLIの選択」
 
 ## プロジェクト設定
 

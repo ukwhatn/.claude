@@ -187,13 +187,16 @@ Task(subagent_type: "general-purpose", model: "opus", team_name: ..., name: "age
 
 **agent-cli-reviewerの特別指示:**
 
-agent CLIをBash経由で実行。詳細は @context/agent-cli-guide.md 参照。
+外部CLIをBash経由で実行。**cursorの`agent`を優先し、無い環境ではcodexにfallback**。詳細・CLI判定は @context/agent-cli-guide.md「使用するCLIの選択」参照。
 
 ```bash
+# cursor優先
 agent -p "<プロンプト>" --trust --model gpt-5.5-high-fast --output-format json 2>/dev/null | jq -r '.session_id, .result'
+# codex fallback（cursorが無い環境）
+codex exec --model gpt-5.4 -c model_reasoning_effort="high" --json "<プロンプト>" 2>/dev/null | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'
 ```
 
-プロンプトにはファイルパスのみを指定し、ファイル内容の埋め込みは禁止（agentに自分で読ませる）。
+プロンプトにはファイルパスのみを指定し、ファイル内容の埋め込みは禁止（CLIに自分で読ませる）。
 
 ### Step 6: 結果収集・統合
 
