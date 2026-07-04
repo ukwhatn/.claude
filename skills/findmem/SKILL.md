@@ -1,6 +1,7 @@
 ---
 name: findmem
 description: メモリディレクトリ内の過去タスク・issueをキーワード検索し、関連する作業履歴を表示。使用タイミング: (1) /findmem [keyword]で呼び出された時、(2) Phase 1.0「過去タスク・issue参照」で過去の知見を探す時、(3) 過去の作業を振り返りたい時。
+allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(grep:*)
 ---
 
 # findmem - メモリディレクトリ探索

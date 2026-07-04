@@ -50,8 +50,8 @@ ls -la .claude/ 2>/dev/null
 ls -la .claude/rules/ 2>/dev/null
 ls -la docs/ 2>/dev/null
 
-# コンテキスト最適化の確認
-cat .claudeignore 2>/dev/null || echo ".claudeignore not found"
+# コンテキスト除外設定の確認（permissions.deny の Read ルール / claudeMdExcludes）
+cat .claude/settings.json 2>/dev/null || echo ".claude/settings.json not found"
 
 # user-level設定の確認
 cat ~/.claude/CLAUDE.md
@@ -64,13 +64,13 @@ ls ~/.claude/context/
 
 | 項目 | 確認内容 |
 |------|---------|
-| CLAUDE.md行数 | 200行以下か |
+| CLAUDE.mdのサイズ | 肥大せず簡潔か（@context/claude-customization-guide.md §3 参照） |
 | 変数定義 | MEMORY_DIR, BASE_BRANCH があるか |
 | 品質チェック | lint/format/typecheck/test コマンドがあるか |
 | 検証方針 | テスト/E2E/スクショ/期待出力の指針があるか |
 | @参照 | 詳細をcontext/に委譲しているか |
 | 分離原則 | 人間向け/エージェント向けが分離されているか |
-| .claudeignore | 存在し、適切にコンテキストを最適化しているか |
+| コンテキスト除外 | 秘匿・不要パスがpermissions.denyのReadルールで除外されているか（.claudeignoreは公式機能に存在しない。残存していれば削除提案） |
 | .claude/rules/ | パス固有ルールが活用されているか |
 | **user-level設定との重複** | 「サブエージェント呼び出し時の追加情報」「Agent Teams必須」等、user-level CLAUDE.md/context/に既にある内容が重複していないか |
 | **過度な指示** | 「こまめに」「必ず」「逐次」等の過度な強制表現がないか（Opus 4.7 自律実行ベストプラクティス参照） |
@@ -110,14 +110,12 @@ npm test
 - [PJ固有ルール - サブエージェント呼び出しの強制は記載しない]
 ```
 
-### .claudeignore（未作成の場合）
-**提案:** 以下を作成
+### コンテキスト除外（必要な場合のみ）
+**提案:** 秘匿・不要パスを `.claude/settings.json` の `permissions.deny` に追加
+```json
+{ "permissions": { "deny": ["Read(secrets/**)", "Read(*.pem)"] } }
 ```
-package-lock.json
-node_modules/
-dist/
-.next/
-```
+（`.claudeignore`は公式機能に存在しない。残存していれば削除を提案する）
 
 ### .claude/rules/（パス固有ルールがある場合）
 **提案:** 以下を作成
@@ -147,8 +145,8 @@ AskUserQuestionで以下を確認:
 
 承認後、以下を実行:
 
-1. CLAUDE.mdの更新（200行以下に）
-2. .claudeignoreの作成・更新
+1. CLAUDE.mdの更新（肥大させず簡潔に。@context/claude-customization-guide.md §3 参照）
+2. コンテキスト除外設定の更新（必要な場合。permissions.denyのReadルール）
 3. .claude/rules/の作成（必要な場合）
 4. 不要ファイルの削除
 5. ファイルの移動・リネーム
@@ -162,17 +160,12 @@ wc -l CLAUDE.md
 
 # 構造確認
 ls -la .claude/
-
-# .claudeignore確認
-cat .claudeignore
 ```
 
 ## CLAUDE.md設計原則
 
-### 200行以下ルール
-- 200行以下で92%以上のルール適用率（400行超で71%に低下）
-- 詳細は`@.claude/context/`に委譲
-- Progressive Disclosure（段階的開示）を活用
+### サイズ・記述の原則
+- CLAUDE.md のサイズ・強調・命令形・理由付け等の設計原則は @context/claude-customization-guide.md §3 に従う（公式目標は1ファイル200行未満。肥大させず、詳細は `@.claude/context/` へ委譲する）
 
 ### 必須セクション
 ```markdown
@@ -213,14 +206,14 @@ BASE_BRANCH=<branch>
 
 ## チェックリスト
 
-- [ ] CLAUDE.mdが200行以下
+- [ ] CLAUDE.mdが肥大せず簡潔（@context/claude-customization-guide.md §3 準拠）
 - [ ] 変数（MEMORY_DIR, BASE_BRANCH）が定義済み
 - [ ] 品質チェックコマンドが記載済み
 - [ ] 検証方針セクションがある（テスト/E2E/スクショ/期待出力）
 - [ ] ドキュメント分離原則に従っている
 - [ ] 不要ファイルが削除済み
 - [ ] @参照が正しく設定済み
-- [ ] .claudeignoreが作成・最適化済み
+- [ ] コンテキスト除外（必要な場合のpermissions.deny Readルール）を確認済み
 - [ ] .claude/rules/が活用されている（パス固有ルールがある場合）
 - [ ] user-level設定との重複指示がない
 - [ ] 「こまめに」「必ず」等の過度な強制表現がない

@@ -95,46 +95,7 @@ ${MEMORY_DIR}/
 
 ### 個別タスクファイル（01_xxx.md等）
 
-テンプレート: [references/task-template.md](references/task-template.md)
-
-```markdown
-# Task XX: <タスク名>
-
-## 目的
-[このタスクで何を達成するか]
-
-## 前提条件
-- [ ] 依存タスク（あれば）
-- [ ] 必要な環境・設定
-
-## 完了条件
-- [ ] 検証可能な条件1
-- [ ] 検証可能な条件2
-
-## 作業内容
-### 変更対象ファイル
-- path/to/file1.ts
-- path/to/file2.ts
-
-### 詳細手順
-1. [手順1]
-2. [手順2]
-3. ...
-
-### コミット
-- `feat: ...`
-
-## 検証手順
-```bash
-# 検証コマンド
-bun run typecheck
-bun run test
-```
-
-## 注意事項
-- [ハマりポイント1]
-- [ハマりポイント2]
-```
+テンプレートは [references/task-template.md](references/task-template.md) をReadして使用する。本文には再掲しない（テンプレートの二重管理による記述ずれを避けるため）。
 
 ## Phase 0-5との統合
 

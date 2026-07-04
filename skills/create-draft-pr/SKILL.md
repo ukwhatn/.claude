@@ -1,6 +1,6 @@
 ---
 name: create-draft-pr
-description: PRを作成。`/create-draft-pr`で実行。引数にベースブランチを指定可能。
+description: PRを作成（原則Draft）。使用タイミング: PR作成を依頼された時、実装が一段落しPR化する時、/create-draft-prで実行。引数にベースブランチを指定可能。境界: 直接gh pr createは実行せず本スキルを使う。特定レビューコメントへの対応はpr-comment、PRレビューはpr-review。
 allowed-tools: Bash(git:*), Bash(gh:*)
 ---
 
@@ -29,7 +29,7 @@ git log <base-branch>..HEAD --oneline
 cat .github/PULL_REQUEST_TEMPLATE.md 2>/dev/null || cat .github/pull_request_template.md 2>/dev/null
 ```
 
-**CRITICAL**: テンプレートが存在する場合、すべてのセクションを埋めること。セクションの削除禁止。
+**CRITICAL**: テンプレートが存在する場合、すべてのセクションを埋める。セクションを削除しない（レビュアーが記入を前提にした項目が欠けると差し戻しの原因になり、テンプレートの意図が損なわれるため）。
 
 ### 3. 変更内容の確認
 
@@ -80,7 +80,7 @@ EOF
 )"
 ```
 
-**CRITICAL**: `--assignee @me` は必須。省略禁止。
+**CRITICAL**: `--assignee @me` を必ず付ける（未アサインのPRはレビュー担当・追跡の割り当てが漏れるため）。
 `--no-draft` 引数が指定された場合のみ `--draft` を外す。
 
 ### 6. 結果の報告

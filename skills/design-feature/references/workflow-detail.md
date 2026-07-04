@@ -119,7 +119,7 @@ Agent 5: テンプレート・命名規約・規約同意・通知メール
 
 Explore agent の判定をそのまま信用しない:
 
-- **重要な「差異あり」報告は私が Read で実コード確認**
+- **重要な「差異あり」報告は Read で実コードを直接確認する**
 - agent は **Phase X で追加する内容を「現状無いから差異」と誤判定** する傾向あり
 - 関数内部だけ見て**呼び出し元のガードを見落とす**こともある
 
@@ -257,11 +257,11 @@ fi
 
 ```bash
 # 初回
-agent -p "$PROMPT" --trust --model gpt-5.5-high-fast --output-format json 2>/dev/null | jq -r '.session_id, .result'
+agent -p "$PROMPT" --trust --model gpt-5.5-xhigh-fast --output-format json 2>/dev/null | jq -r '.session_id, .result'
 
 # 2 回目以降（同一 session）
 agent -p "以下の改善を行いました: <差分>。再度レビューしてください。" \
-  --resume <session_id> --trust --model gpt-5.5-high-fast --output-format json 2>/dev/null | jq -r '.result'
+  --resume <session_id> --trust --model gpt-5.5-xhigh-fast --output-format json 2>/dev/null | jq -r '.result'
 ```
 
 打ち切り:
@@ -271,7 +271,7 @@ agent -p "以下の改善を行いました: <差分>。再度レビューして
 
 ### 4.4 指摘の実コード裏取り（CRITICAL）
 
-agent の Action Required を反映する前に、私が Read で実コードを確認:
+agent の Action Required を反映する前に、Read で実コードを直接確認する:
 
 - 関数の処理順序
 - 呼び出し元のガード（関数内部だけでなく）
