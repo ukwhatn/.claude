@@ -3,6 +3,8 @@
 以下は共通テンプレートの `## あなたの担当観点` セクションに挿入する内容。
 **共通テンプレートのタスク1〜4と組み合わせて使用すること。**
 
+目次: 1. Performance (perf) / 2. Security (sec) / 3. Test (test) / 4. Architecture (arch) / 5. Code Quality (cq) / 6. Documentation (docs)
+
 ## 1. Performance (perf) エージェント
 
 ```

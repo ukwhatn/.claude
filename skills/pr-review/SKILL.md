@@ -63,11 +63,10 @@ CLAUDE.mdを読み、以下を把握:
 
 ### 5. 外部CLIによるレビュー（cursor優先 / codex fallback）
 
-別モデルの観点を追加。**cursorの`agent`を優先し、無い環境ではcodexにfallback**（CLI判定: @context/agent-cli-guide.md「使用するCLIの選択」）。プロンプト本文は両CLI共通。
+別モデルの観点を追加する。CLI判定（cursor優先／codex fallback）・コマンド形式（`--trust`・`--output-format json`・jq抽出等）は @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」に従う。プロンプト本文は両CLI共通で以下を渡す:
 
-```bash
-# cursor優先
-agent -p "gh pr diff <番号> を実行してPR #<番号> の変更内容をレビューしてください。
+```
+gh pr diff <番号> を実行してPR #<番号> の変更内容をレビューしてください。
 - コードの品質（バグ、セキュリティ、パフォーマンス）
 - 設計の妥当性
 - テストの十分性
@@ -77,13 +76,7 @@ PR情報:
 タイトル: <タイトル>
 ブランチ: <ブランチ>
 
-指摘がなければ「指摘なし」とだけ回答してください。" \
-  --trust --model gpt-5.5-high-fast \
-  --output-format json 2>/dev/null | jq -r '.session_id, .result'
-
-# codex fallback（同じプロンプトを渡す）
-codex exec --model gpt-5.4 -c model_reasoning_effort="high" --json "<上と同じプロンプト>" 2>/dev/null \
-  | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'
+指摘がなければ「指摘なし」とだけ回答してください。
 ```
 
 ### 6. 結果の統合
