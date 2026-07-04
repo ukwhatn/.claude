@@ -20,7 +20,7 @@ git clone <this-repo> ~/.claude
 │   ├── workflow-rules.md         # Phase 0-5 詳細
 │   ├── agent-teams-guide.md      # Agent Teams 発動条件と構成例
 │   ├── task-tool-guide.md        # TaskCreate/TaskUpdate
-│   ├── agent-cli-guide.md        # 別モデル（GPT-5.4-High-Fast）レビュー
+│   ├── agent-cli-guide.md        # 外部CLI（cursor agent / codex）レビュー
 │   ├── claude-customization-guide.md  # CLAUDE.md設計原則, Opus 4.7 BP
 │   ├── memory-file-formats.md
 │   ├── figma-verification.md
@@ -31,14 +31,17 @@ git clone <this-repo> ~/.claude
 │   ├── create-draft-pr/
 │   ├── create-skill/
 │   ├── database-migration/
+│   ├── design-feature/
 │   ├── doc-review/
-│   ├── documentation/
 │   ├── findmem/
 │   ├── large-task/
+│   ├── pr-comment/
 │   ├── pr-review/
 │   ├── project-init/
 │   ├── project-sync/
+│   ├── self-review/
 │   ├── ui-ux-design/
+│   ├── ukwhatn-writing/
 │   └── update-inst/
 ├── templates/             # プロジェクト初期化テンプレート
 │   └── project/
@@ -50,17 +53,20 @@ git clone <this-repo> ~/.claude
 | スキル | 説明 | トリガー |
 |--------|------|----------|
 | **codebase-review** | 6観点（perf/sec/test/arch/cq/docs）で並列レビュー | `/codebase-review`、品質監査依頼時 |
-| **doc-review** | Agent Teamsによる多角的ドキュメントレビュー | ドキュメントレビュー依頼時 |
-| **pr-review** | Claude + GPT-5.4-High-Fastマルチモデルレビュー | PRレビュー依頼時 |
+| **doc-review** | Agent Teamsによる多角的ドキュメントレビュー | `/doc-review`、「チームでレビュー」等の明示依頼時 |
+| **pr-review** | Claude + 外部CLI（cursor agent / codex）マルチモデルレビュー | PRレビュー依頼時 |
+| **pr-comment** | PRの特定レビューコメントへの対応（取得→実装→返信ドラフト） | PR URL+discussion指定の対応依頼時 |
+| **self-review** | 自ブランチのPR提出前チェック（消し忘れ・変更漏れ・要件突合） | 「セルフレビューして」「diffを徹底チェック」時 |
+| **design-feature** | 抽象要件から要件定義・システム要件書を作成 | `/design-feature`、機能設計依頼時 |
 | **project-init** | CLAUDE.md・.claude/の初期設定 | PJ初期化依頼時 |
-| **project-sync** | CLAUDE.mdとcontext/の整合性確保 | ドキュメント整理依頼時 |
-| **documentation** | コード変更に伴うドキュメント更新 | API/環境変数追加検出時 |
-| **database-migration** | ORM検出、マイグレーション作成支援 | スキーマ変更依頼時 |
+| **project-sync** | CLAUDE.mdとcontext/の整合性確保 + コード変更後のドキュメント同期 | ドキュメント整理・同期依頼時 |
+| **database-migration** | ORM検出、マイグレーション作成・統合（squash）・同値性確認 | スキーマ変更・統合依頼時 |
 | **large-task** | 複数セッションにまたがる大規模タスク分割 | 大規模実装時 |
 | **create-skill** | 既存設定と整合したスキル自動作成 | `/create-skill <内容>` |
-| **update-inst** | 間違いの再発防止ルール追加 | `/update-inst <間違えた内容>` |
+| **update-inst** | user/PJ-level指示・スキルの更新（再発防止・知見反映） | `/update-inst <内容>` |
 | **ui-ux-design** | プロダクショングレードのUI/UX生成 | UI構築依頼時 |
-| **commit** | git-cz形式のコミット | `/commit [--push]` |
+| **ukwhatn-writing** | 本人の文体での日本語文章作成・推敲 | PR概要・レビュー返信・社内文書作成時 |
+| **commit** | git-cz形式のコミット | `/commit [--push]`、「コミットして」時 |
 | **create-draft-pr** | Draft PR作成 | `/create-draft-pr [base-branch]` |
 | **findmem** | メモリディレクトリ検索 | `/findmem <keyword>` |
 

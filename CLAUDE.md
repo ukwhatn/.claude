@@ -45,6 +45,8 @@ agent review: @context/agent-cli-guide.md
 
 長時間タスクで context compaction が懸念される場合は、(a)(b)(c) のいずれかに該当することが多いはず。該当しないなら通常通りモデル判断で進めて構わない。
 
+**単発Subagentの活用（Agent Teams非発動時）**: 大量のファイル読み・コードベース調査・ログ解析は、コンテキスト保護のため単発subagent（Explore等）への委譲を優先し、本体には結論のみ持ち帰る（実測: subagent委譲セッションはトークン消費約半分・compaction 1/6）。
+
 ## メモリ・issueディレクトリ
 - **ワークフローメモリ（Phase 0-5用、05_log.md等）**: `${MEMORY_DIR}/memory/YYMMDD_<context_name>/`
   - MEMORY_DIRはPJルート配下の相対パス。未定義時はPJルート直下の`.local/`
@@ -52,6 +54,7 @@ agent review: @context/agent-cli-guide.md
 - issues: `${MEMORY_DIR}/issues/<優先度>-<観点略語>-<タイトル>.md`
 - gitignore: global gitignoreで除外済み
 - フォーマット: @context/memory-file-formats.md
+- **ファイル運用**: 追記・編集はEdit/Writeツールで行う（Bashのcat>>禁止）。頻繁に編集するファイルは300行超で分割（詳細: @context/memory-file-formats.md「ファイル運用ルール」）
 - **絶対パス固定（CRITICAL）**: Phase 0 で**元repo（worktreeに入る前のrepo）のメモリディレクトリ絶対パス**を確定し、05_log.md 冒頭に記録すること。以後 EnterWorktree で worktree に移動しても、メモリ・issue ファイルの読み書きは必ずその**絶対パス**で行う（worktree 内には `.local/` ディレクトリが存在しないため、相対パス `.local/` でアクセスすると ENOENT になるか、書き込みなら worktree 内に新規作成されて元repoと分離される）
 
 ## ユーザーへの質問
@@ -78,7 +81,7 @@ agent review: @context/agent-cli-guide.md
 - 並列に進む可能性のある実装作業
 
 ### EnterWorktree を呼ばないケース（例外）
-- `.claude/` 配下の設定ファイル・グローバル CLAUDE.md・context ガイドのみの編集
+- `.claude/` 配下の設定ファイル・グローバル CLAUDE.md・context ガイドのみの編集（**ただしPJの`.claude/`等をコミットする場合は例外にせず、実装開始前ゲート（@context/workflow-rules.md Phase 3）に従い作業ブランチで行う**）
 - メモリディレクトリ（`.local/memory/`、`.local/issues/`）のみの編集
 - 純粋な調査・質問応答・読み取り専用作業
 - ユーザーが「worktree 不要」「このタスクは worktree 切らなくていい」等と明示した場合
@@ -133,13 +136,18 @@ baseRef は `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.md の `BASE
 - スキル存在時の直接ツール呼び出し
 
 ## Compact Instructions
-When compacting, preserve: Active Agent Teams (name, members, task assignments, status), Task list state (in_progress/completed/pending + owners), Current phase (0-5) and progress.
+When compacting, preserve: Active Agent Teams (name, members, task assignments, status), Task list state (in_progress/completed/pending + owners), Current phase (0-5) and progress, メモリディレクトリ絶対パスと計画ファイル（30_plan.md等）のパス.
+
+**compaction後の復帰手順**: (1) Active Teamがあればまずteam config再確認とTaskList（@context/agent-teams-guide.md「Context Compaction後の状態復元」） → (2) 05_log.mdと計画ファイルを再読して文脈を復元する。ユーザーに文脈の再説明を求めない。
 
 ## GitHub CLI
 gh cli利用時は`gh auth status`でアカウント確認。原則 username = ukwhatn。詳細はPJ CLAUDE.md参照。
 
 ## Cloudflare
 詳細: @context/cloudflare-development.md
+
+## パス表記の規約
+本ファイルおよびcontext/skills内の `~/.claude/` 表記はユーザー設定ディレクトリを指す。`CLAUDE_CONFIG_DIR` を設定している環境ではそのディレクトリに読み替える（マシン固有の実パスは @CLAUDE.local.md 参照）。
 
 ## マシンローカル設定（git管理外）
 このマシン固有の設定・運用メモ（gitignore対象。存在しない環境ではimportは無視される）:
