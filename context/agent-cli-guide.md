@@ -271,6 +271,8 @@ session_id=$(... | jq -r '.session_id')
 
 Action Required判定は correctness / security / data integrity / 明示要件に影響するgapのみとする（adversarial reviewerは健全な実装にもgapを報告しがちなため。既存のAction Required定義=バグ・セキュリティ・データ損失リスクを格下げするものではない）。
 
+**レビュー指摘自体も検証対象とする**: Action Requiredを適用する前に、指摘の根拠を実挙動・一次情報で確認する（レビュアーは誤ることがあり、誤指摘をそのまま適用すると正常な設定・コードを壊すため）。反証できた指摘はスキップし、反証根拠とともに05_log.mdに記録する。
+
 スキップ理由は05_log.mdに記録すること。
 
 ## Agent Teams内での実行パターン
