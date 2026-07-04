@@ -14,3 +14,5 @@
 !/agents/**
 !/templates/
 !/templates/**
+!/output-styles/
+!/output-styles/**

@@ -127,6 +127,7 @@
     "document-skills@anthropic-agent-skills": true
   },
   "language": "日本語",
+  "outputStyle": "ukwhatn-style",
   "effortLevel": "xhigh",
   "promptSuggestionEnabled": false,
   "askUserQuestionTimeout": "never",
