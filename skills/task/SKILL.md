@@ -18,11 +18,17 @@ disable-model-invocation: true
 
 ### Step 0: カタログの動的生成（両モード共通・毎回実行）
 
-スキル一覧をハードコードせず、実行時にfrontmatterから取得する（スキルの追加・変更に自動追従させるため。真実源は各スキルのdescription）:
+スキル一覧をハードコードせず、実行時にfrontmatterから取得する（スキルの追加・変更に自動追従させるため。真実源は各スキルのdescription）。**frontmatter先頭ブロックのみを対象にする**（単純なgrepは本文コードフェンス内の`description:`例を誤って拾い、`description: |`の複数行形式を取りこぼすため）:
 
 ```bash
-grep -A3 "^---" ~/.claude/skills/*/SKILL.md | grep -E "^.*(name|description):" 
-ls ./.claude/skills/*/SKILL.md 2>/dev/null && grep -E "(name|description):" ./.claude/skills/*/SKILL.md
+for dir in ~/.claude/skills ./.claude/skills; do
+  [ -d "$dir" ] || continue
+  for f in "$dir"/*/SKILL.md; do
+    echo "== $(basename "$(dirname "$f")")"
+    awk '/^---$/{c++; next} c>=2{exit} c==1' "$f" \
+      | awk '/^description:/{d=1} d && /^[a-zA-Z_-]+:/ && !/^description:/{exit} d{print}'
+  done
+done
 ```
 
 加えて、システムプロンプトのAvailable skills（ビルトイン: code-review/verify/simplify等）も候補に含める。
