@@ -1,35 +1,14 @@
 {
-  "agentPushNotifEnabled": true,
-  "attribution": {
-    "commit": "",
-    "pr": ""
-  },
-  "effortLevel": "xhigh",
-  "enabledPlugins": {
-    "document-skills@anthropic-agent-skills": true
-  },
   "env": {
     "CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING": "1",
     "CLAUDE_CODE_DISABLE_AUTO_MEMORY": "1",
     "CLAUDE_CODE_DISABLE_FEEDBACK_SURVEY": "1",
     "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "command": "bash '/Users/ukwhatn/.claude/hooks/herdr-agent-state.sh' session",
-            "timeout": 10,
-            "type": "command"
-          }
-        ],
-        "matcher": "*"
-      }
-    ]
+  "attribution": {
+    "commit": "",
+    "pr": ""
   },
-  "language": "日本語",
-  "model": "claude-fable-5[1m]",
   "permissions": {
     "allow": [
       "WebFetch",
@@ -97,6 +76,13 @@
       "Grep",
       "NotebookEdit"
     ],
+    "deny": [
+      "Bash(git reset:*)",
+      "Bash(nc:*)",
+      "Bash(sudo:*)",
+      "Bash(wget:*)",
+      "Write(.env*)"
+    ],
     "ask": [
       "mcp__atlassian__add*",
       "mcp__atlassian__archive*",
@@ -114,31 +100,50 @@
       "mcp__playwright__browser_evaluate",
       "mcp__Claude_in_Chrome__javascript_tool"
     ],
-    "defaultMode": "acceptEdits",
-    "deny": [
-      "Bash(git reset:*)",
-      "Bash(nc:*)",
-      "Bash(sudo:*)",
-      "Bash(wget:*)",
-      "Write(.env*)"
+    "defaultMode": "auto"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash '/Users/ukwhatn/.claude/hooks/herdr-agent-state.sh' session",
+            "timeout": 10
+          }
+        ]
+      }
     ]
   },
-  "preferredNotifChannel": "ghostty",
-  "promptSuggestionEnabled": false,
-  "remoteControlAtStartup": false,
-  "skipAutoPermissionPrompt": true,
-  "skipDangerousModePermissionPrompt": true,
-  "skipWorkflowUsageWarning": true,
-  "statusLine": {
-    "command": "sh ~/.claude/statusline-command.sh",
-    "padding": 0,
-    "refreshInterval": 10,
-    "type": "command"
-  },
-  "teammateMode": "auto",
-  "tui": "fullscreen",
   "worktree": {
     "baseRef": "fresh",
     "bgIsolation": "none"
-  }
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "sh ~/.claude/statusline-command.sh",
+    "padding": 0,
+    "refreshInterval": 10
+  },
+  "enabledPlugins": {
+    "document-skills@anthropic-agent-skills": true
+  },
+  "language": "日本語",
+  "effortLevel": "xhigh",
+  "promptSuggestionEnabled": false,
+  "askUserQuestionTimeout": "never",
+  "tui": "fullscreen",
+  "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
+  "theme": "auto",
+  "editorMode": "normal",
+  "preferredNotifChannel": "auto",
+  "autoCompactEnabled": false,
+  "switchModelsOnFlag": true,
+  "teammateMode": "auto",
+  "remoteControlAtStartup": false,
+  "inputNeededNotifEnabled": true,
+  "agentPushNotifEnabled": true,
+  "skipAutoPermissionPrompt": true
 }
