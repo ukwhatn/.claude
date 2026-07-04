@@ -102,39 +102,6 @@
     ],
     "defaultMode": "acceptEdits"
   },
-  "hooks": {
-    "SessionStart": [
-      {
-        "matcher": "startup",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '[リマインド] Phase 0: メモリディレクトリを作成または既存を再利用してください。05_log.mdを初期化し、最初の指示を記録してください。'"
-          }
-        ]
-      }
-    ],
-    "PostCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '[リマインド] Context compaction発生。チーム状態(team config)・タスク状態(TaskList)を確認してください。05_log.mdへの記録を継続してください。'"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "echo '[リマインド] 05_log.mdに実施内容を記録しましたか？未記録なら次のターンで記録してください。'"
-          }
-        ]
-      }
-    ]
-  },
   "worktree": {
     "baseRef": "fresh",
     "bgIsolation": "none"
