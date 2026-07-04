@@ -1,6 +1,6 @@
 ---
 name: commit
-description: 変更をコミット。`/commit`で実行。`--push`引数でpushも実行。
+description: 変更をコミット。`/commit`で実行、または「コミットして」「pushして」「コミットしてpushして」等の自然言語依頼時にも使用。`--push`引数（または「pushして」の依頼）でpushも実行。
 allowed-tools: Bash(git:*)
 ---
 
@@ -11,6 +11,11 @@ allowed-tools: Bash(git:*)
 ## 引数
 
 - `--push`: コミット後にpushする（デフォルト: false）
+
+## 自然言語依頼の正規化
+
+- 「pushして」「コミットしてpushして」等のpush依頼は `--push` 相当として扱う
+- 未コミットの変更がない状態で「pushして」と依頼された場合は、新規コミットを作らず既存コミットのpushのみ行う（`git status` で判定）
 
 ## 実行手順
 

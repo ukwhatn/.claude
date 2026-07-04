@@ -1,6 +1,6 @@
 ---
 name: doc-review
-description: Agent Teamsによる多角的ドキュメントレビュー。設計書・仕様書・計画書等のドキュメントを6 Agent（通常4 + Devil's Advocate + agent CLI）で並列レビュー。使用タイミング: (1) ドキュメントレビュー依頼時、(2) 設計の妥当性を多角的に検証したい時、(3) 「レビューして」「チームでレビューして」等の依頼時。
+description: Agent Teamsによる多角的ドキュメントレビュー。設計書・仕様書・計画書等のドキュメントを6 Agent（通常4 + Devil's Advocate + agent CLI）で並列レビュー。使用タイミング: (1) /doc-review 明示実行時、(2) 「チームでレビューして」「多角的にレビューして」等の明示依頼時（Agent Teams発動条件(c)相当）。通常の「レビューして」だけの依頼では発火しない（単独レビューまたはagent CLIで対応し、必要なら本スキルを提案する）。
 ---
 
 # doc-review - Agent Teams ドキュメントレビュー
@@ -11,7 +11,7 @@ Agent Teamsを活用し、6つの独立したAgentが異なる観点からドキ
 ## 既存設定との関係
 
 - **Agent Teams（@context/agent-teams-guide.md）**: TeamCreate/SendMessage/TeamDeleteで構成
-- **agent CLI（@context/agent-cli-guide.md）**: gpt-5.5-high-fastによる第三者レビュー
+- **agent CLI（@context/agent-cli-guide.md）**: 外部CLI（cursor agent / codex）による第三者レビュー
 - **Phase 0-5（@context/workflow-rules.md）**: Phase 2（計画レビュー）やPhase 4（品質確認）で使用可能
 - **codebase-reviewスキル**: コードベース対象（本スキルはドキュメント対象で競合しない）
 
@@ -77,7 +77,7 @@ Agent Teamsを活用し、6つの独立したAgentが異なる観点からドキ
 | Agent | 観点 |
 |-------|------|
 | devils-advocate | 根本的な前提への挑戦、見落とされたリスク、代替案 |
-| agent-cli-reviewer | gpt-5.5-high-fastによる第三者レビュー |
+| agent-cli-reviewer | 外部CLI（cursor agent / codex）による第三者レビュー |
 
 ### Step 3: チーム作成
 
@@ -174,20 +174,21 @@ leadにSendMessageで以下を報告:
 
 ### Step 5: Agent spawn（並列）
 
-全6 Agentを並列でspawnする。モデルはOpus 4.6を使用。
+全6 Agentを並列でspawnする。モデルは指定しない（セッションのモデルを継承）。
 
 ```
-Task(subagent_type: "code-reviewer", model: "opus", team_name: ..., name: "reviewer-1", prompt: ...)
-Task(subagent_type: "code-reviewer", model: "opus", team_name: ..., name: "reviewer-2", prompt: ...)
-Task(subagent_type: "code-reviewer", model: "opus", team_name: ..., name: "reviewer-3", prompt: ...)
-Task(subagent_type: "code-reviewer", model: "opus", team_name: ..., name: "reviewer-4", prompt: ...)
-Task(subagent_type: "code-reviewer", model: "opus", team_name: ..., name: "devils-advocate", prompt: ...)
-Task(subagent_type: "general-purpose", model: "opus", team_name: ..., name: "agent-cli-reviewer", prompt: ...)
+Task(subagent_type: "code-reviewer", team_name: ..., name: "reviewer-1", prompt: ...)
+Task(subagent_type: "code-reviewer", team_name: ..., name: "reviewer-2", prompt: ...)
+Task(subagent_type: "code-reviewer", team_name: ..., name: "reviewer-3", prompt: ...)
+Task(subagent_type: "code-reviewer", team_name: ..., name: "reviewer-4", prompt: ...)
+Task(subagent_type: "code-reviewer", team_name: ..., name: "devils-advocate", prompt: ...)
+Task(subagent_type: "general-purpose", team_name: ..., name: "agent-cli-reviewer", prompt: ...)
 ```
 
 **agent-cli-reviewerの特別指示:**
 
 外部CLIをBash経由で実行。**cursorの`agent`を優先し、無い環境ではcodexにfallback**。詳細・CLI判定は @context/agent-cli-guide.md「使用するCLIの選択」参照。
+（注: 外部CLIコマンドのモデル指定はagent-cli-guide準拠の固定値。上記「Agentのspawn時はモデル指定なし」とは別系統）
 
 ```bash
 # cursor優先
@@ -342,5 +343,5 @@ AR修正後、ユーザーに以下の情報とともに収束状況を報告:
 - agent CLIの`--output-format stream-json`は使用禁止（ハングリスク）
 - agent CLIプロンプトに`$(cat ...)` / `$(git diff ...)`でファイル内容を埋め込むことは禁止
 - レビュー対象が未実装の設計の場合、「現在の実装との差分」を指摘対象として認識しないよう明示すること
-- モデルは特に指定がない限りOpus 4.6を使用
+- モデルは特に指定がない限りセッションのモデルを継承（spawn時に明示指定しない）
 - **CRITICAL: 影響範囲の網羅性チェックと修正副作用チェックはStep 4の共通指示に含まれるため、--prev有無にかかわらず常に実行される**
