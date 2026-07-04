@@ -1,6 +1,6 @@
 ---
 name: create-skill
-description: 既存設定と完全に整合したスキルを自動作成。~/.claude/CLAUDE.md、context/*.md、既存スキルを自動参照し、重複・競合を避けたスキルを生成。
+description: 既存設定と整合したスキルを新規作成。「スキルを作って」「この手順をスキル化して」等の依頼時、/create-skill実行時に使用。~/.claude/CLAUDE.md、context/*.md、既存スキルを自動参照し、重複・競合を避けたスキルを生成。境界: 既存スキル・指示ファイルの修正→update-inst、指示ファイル全体の監査→instructions-audit。
 ---
 
 # Create Skill
@@ -66,16 +66,17 @@ description: 既存設定と完全に整合したスキルを自動作成。~/.c
 ### Step 5: スキル設計
 
 **設計原則（@context/claude-customization-guide.md）:**
-- SKILL.mdは**500行以下**
-- descriptionに「**何をするか**」+「**いつ使うか**」
-- 詳細は別ファイルに分割（参照は**1階層のみ**）
+- SKILL.mdは**500行以下**（公式上限）
+- descriptionに「**何をするか**」+「**いつ使うか**」+「**使わない条件**（境界・類似skillとの棲み分け。誤発火と発火漏れの両方を防ぐ）」
+- descriptionに `<` `>` を含めない
+- 詳細は別ファイルに分割（参照は**1階層のみ**。100行超のreferenceには冒頭に目次）
 - 既存設定を`@context/xxx.md`形式で参照（重複記載しない）
 - 後述「スキル設計原則（予測可能性）」に従う
 
 **description例:**
 ```yaml
 # Good
-description: PRレビュー。PR番号・ブランチ名指定時またはレビュー依頼時に使用。
+description: PRレビュー。PR番号・ブランチ名指定時またはレビュー依頼時に使用。境界: ローカル未コミット変更→code-review、自ブランチの提出前確認→self-review。
 
 # Bad
 description: PRレビュー。
@@ -95,21 +96,26 @@ description: PRレビュー。
     └── detail.md
 ```
 
-### Step 7: 確認
+### Step 7: 確認・検証
 
 作成後、以下を報告:
 - 作成したファイル一覧
 - 既存設定との関係
 - 使い方の例
 
+**検証（evaluation-driven、公式推奨）:**
+- 可能なら代表的な実タスク（作り物でないもの）でスキルを発火させ、挙動を観察する
+- 詰まる箇所・読まれないファイル・予想外の探索順があれば本文に反映する（観察→改善の反復）
+
 ## SKILL.md テンプレート
 
 ```yaml
 ---
 name: <skill-name>
-description: <何をするか>。<いつ使うか>。使用タイミング: (1) xxx、(2) yyy。
+description: <何をするか>。<いつ使うか>。使用タイミング: (1) xxx、(2) yyy。境界: <使わない条件・棲み分け>。
 # オプション:
-# allowed-tools: Read, Grep, Glob          # 使用可能ツールの制限
+# allowed-tools: Read, Grep, Glob          # ツールの事前承認（permission prompt削減。制限ではない — 制限はdisallowed-tools）
+# disallowed-tools: Write, Edit            # ツールをプールから除去（実際の制限）
 # disable-model-invocation: true           # 手動起動のみ（副作用のある操作向け）
 ---
 
@@ -185,10 +191,13 @@ description: <何をするか>。<いつ使うか>。使用タイミング: (1) 
 - [ ] ~/.claude/context/claude-customization-guide.md を確認したか
 - [ ] 既存スキル一覧を確認したか
 - [ ] Skill/CLAUDE.md追記の判定をしたか
-- [ ] descriptionに「何を」「いつ」が含まれるか（model-invokedの場合）
+- [ ] descriptionに「何を」「いつ」「使わない条件（境界）」が含まれるか（model-invokedの場合）
+- [ ] descriptionに `<` `>` を含めていないか
 - [ ] descriptionの同義語トリガー重複を排したか
 - [ ] 各ステップにチェック可能な完了基準があるか
 - [ ] no-op行（デフォルト挙動を変えない行）がないか
 - [ ] SKILL.mdは500行以下か
 - [ ] @context/xxx.md 形式で参照を記載したか
-- [ ] 新フロントマター（allowed-tools, disable-model-invocation）を検討したか
+- [ ] read-onlyスキルならallowed-tools（事前承認）を付与したか
+- [ ] 新フロントマター（disallowed-tools, disable-model-invocation等）を検討したか
+- [ ] Gotchas（既知の落とし穴）・入出力例の追加を検討したか

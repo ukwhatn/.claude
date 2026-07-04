@@ -73,16 +73,9 @@ description: |
 | **Pure neutrals** | トゥルーグレー、黒/白 | ミニマル、大胆、技術的 |
 | **Tinted foundations** | 微妙なカラーキャスト | 独自性、ブランド |
 
-### 業界別推奨パレット
+### 業界別パレット
 
-```
-SaaS:           Primary #4F46E5 (Indigo), Accent #10B981 (Emerald)
-Fintech:        Primary #0F172A (Slate), Accent #22C55E (Green)
-Healthcare:     Primary #0EA5E9 (Sky), Accent #14B8A6 (Teal)
-E-commerce:     Primary #7C3AED (Violet), Accent #F59E0B (Amber)
-Creative:       Primary #EC4899 (Pink), Accent #8B5CF6 (Purple)
-Developer:      Primary #18181B (Zinc), Accent #3B82F6 (Blue)
-```
+業界（SaaS / Fintech / Healthcare / E-commerce / Creative / Developer）ごとの Primary / Accent の具体値は [references/css-patterns.md](references/css-patterns.md)「カラー > 業界別パレット」を参照する。
 
 ### ライト vs ダーク
 
@@ -100,95 +93,32 @@ Developer:      Primary #18181B (Zinc), Accent #3B82F6 (Blue)
 
 ## フェーズ3: コアクラフト原則
 
-デザイン方向性に関係なく適用される品質の床。
+デザイン方向性に関係なく適用される品質の床。変数定義・具体値は [references/css-patterns.md](references/css-patterns.md)「ファウンデーション」を参照する。
 
 ### 4pxグリッドシステム
 
-すべてのスペーシングは4pxベースグリッドを使用：
-
-```css
-/* スペーシングスケール */
---space-1: 4px;   /* マイクロ（アイコンギャップ） */
---space-2: 8px;   /* タイト（コンポーネント内） */
---space-3: 12px;  /* 標準（関連要素間） */
---space-4: 16px;  /* 快適（セクションパディング） */
---space-6: 24px;  /* 広め（セクション間） */
---space-8: 32px;  /* 大きな区切り */
---space-12: 48px; /* メジャーセパレーション */
-```
+すべてのスペーシングは4pxベースグリッド（4 / 8 / 12 / 16 / 24 / 32 / 48px）を使用する。
 
 ### 対称パディング
 
-**TLBRは一致させる。** トップパディングが16pxなら、左/下/右も16px。
-
-```css
-/* Good */
-padding: 16px;
-padding: 12px 16px; /* 水平にだけ余分なスペースが必要な場合のみ */
-
-/* Bad - 非対称パディング */
-padding: 24px 16px 12px 16px;
-```
+**TLBRは一致させる。** トップパディングが16pxなら、左/下/右も16px。水平にだけ余分なスペースが必要な場合のみ `padding: 12px 16px` のように2値にする。理由のない非対称パディングは避ける。
 
 ### ボーダーラジアス一貫性
 
-4pxグリッドに従う。シャープなコーナーは技術的、丸いコーナーはフレンドリー：
-
-```css
-/* Sharp System */
---radius-sm: 4px;
---radius-md: 6px;
---radius-lg: 8px;
-
-/* Soft System */
---radius-sm: 8px;
---radius-md: 12px;
---radius-lg: 16px;
-
-/* Minimal System */
---radius-sm: 2px;
---radius-md: 4px;
---radius-lg: 6px;
-```
-
-**システムを混在させない。一貫性が統一感を生む。**
+Sharp（技術的）/ Soft（フレンドリー）/ Minimal のいずれか1システムを選び、**混在させない。一貫性が統一感を生む。**
 
 ### 深度 & エレベーション戦略
 
 **1つのアプローチを選び、コミットする。**
 
-#### Option A: Borders-only（フラット）
-```css
---border: rgba(0, 0, 0, 0.08);
---border-subtle: rgba(0, 0, 0, 0.05);
-border: 0.5px solid var(--border);
-```
-→ クリーン、技術的、密度重視（Linear, Raycast）
+| Option | 手法 | 印象 / 代表例 |
+|--------|------|--------------|
+| **A** | Borders-only（フラット） | クリーン・技術的・密度重視（Linear, Raycast） |
+| **B** | Single Shadow | ソフトリフト・親しみやすい |
+| **C** | Layered Shadows | プレミアム・立体感（Stripe, Mercury） |
+| **D** | Surface Color Shifts | 背景の色相で階層を作り、影なしで立体感 |
 
-#### Option B: Single Shadow（シンプル）
-```css
---shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-```
-→ ソフトリフト、親しみやすい
-
-#### Option C: Layered Shadows（リッチ）
-```css
---shadow-layered:
-  0 0 0 0.5px rgba(0, 0, 0, 0.05),
-  0 1px 2px rgba(0, 0, 0, 0.04),
-  0 2px 4px rgba(0, 0, 0, 0.03),
-  0 4px 8px rgba(0, 0, 0, 0.02);
-```
-→ プレミアム、立体感（Stripe, Mercury）
-
-#### Option D: Surface Color Shifts
-背景の色相で階層を作り、影なしで立体感を出す。
-
-```css
---surface-0: #ffffff;
---surface-1: #f8fafc;
---surface-2: #f1f5f9;
-```
+各Optionの変数定義は references/css-patterns.md「ファウンデーション > 深度 & エレベーション」を参照する。
 
 ---
 
@@ -204,63 +134,13 @@ border: 0.5px solid var(--border);
 | **Mono Influence** | JetBrains Mono, Fira Code | 技術、開発者向け |
 | **Editorial** | Playfair Display, Fraunces | 出版物、ラグジュアリー |
 
-### 推奨フォントペアリング
+### 推奨フォントペアリング / タイポグラフィ階層
 
-```css
-/* Modern SaaS */
---font-display: 'Geist', sans-serif;
---font-body: 'Inter', sans-serif;
+Modern SaaS / Premium Product / Developer Tool / Editorial のフォントペアリング、タイポスケール（11〜48px）、ウェイト・letter-spacing・データ用モノスペース（`tabular-nums`）の定義は [references/css-patterns.md](references/css-patterns.md)「タイポグラフィ」を参照する。
 
-/* Premium Product */
---font-display: 'Fraunces', serif;
---font-body: 'Plus Jakarta Sans', sans-serif;
-
-/* Developer Tool */
---font-display: 'JetBrains Mono', monospace;
---font-body: 'Inter', sans-serif;
-
-/* Editorial */
---font-display: 'Playfair Display', serif;
---font-body: 'Source Serif Pro', serif;
-```
-
-### タイポグラフィ階層
-
-```css
-/* スケール */
---text-xs: 11px;
---text-sm: 12px;
---text-base: 14px;
---text-lg: 16px;
---text-xl: 18px;
---text-2xl: 24px;
---text-3xl: 32px;
---text-4xl: 48px;
-
-/* ウェイトと詳細 */
-.headline {
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.body {
-  font-weight: 400;
-  letter-spacing: 0;
-}
-
-.label {
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  font-size: var(--text-xs);
-}
-
-/* データ用モノスペース */
-.data-value {
-  font-family: 'JetBrains Mono', monospace;
-  font-variant-numeric: tabular-nums;
-}
-```
+判断の要点:
+- **データ・数値にはモノスペース + `tabular-nums`** を使い、桁を揃える
+- headline は詰め気味（`letter-spacing: -0.02em`）、label は開き気味（`0.02em` + uppercase）
 
 ---
 
@@ -284,45 +164,15 @@ border: 0.5px solid var(--border);
 
 ### 隔離されたコントロール
 
-日付ピッカー、フィルター、ドロップダウンは、ページ上の洗練されたオブジェクトとして感じられるべき。
-
-```css
-.control-container {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  white-space: nowrap; /* テキストとアイコンを同じ行に保持 */
-}
-```
-
-**重要:** ネイティブフォーム要素をスタイル付きUIに使用しない。カスタムコンポーネントを構築する。
+日付ピッカー、フィルター、ドロップダウンは、ページ上の洗練されたオブジェクトとして感じられるべき。**ネイティブフォーム要素をスタイル付きUIに使用しない。カスタムコンポーネントを構築する。** 実装（`.control-container`）は [references/css-patterns.md](references/css-patterns.md)「コンポーネント > 隔離コントロール」を参照する。
 
 ### コントラスト階層
 
-4レベルシステムを構築し、一貫して使用：
-
-```css
---text-primary: #0f172a;   /* フォアグラウンド */
---text-secondary: #475569; /* セカンダリ */
---text-muted: #94a3b8;     /* ミュート */
---text-faint: #cbd5e1;     /* フェイント */
-```
+4レベルシステム（primary / secondary / muted / faint）を構築し、一貫して使用する。変数定義は references/css-patterns.md「カラー > コントラスト階層」を参照する。
 
 ### 色は意味のためだけ
 
-グレーで構造を構築。色はステータス、アクション、エラー、成功を伝えるときのみ使用。装飾的な色はノイズ。
-
-```css
-/* 意味のある色のみ */
---color-success: #22c55e;
---color-warning: #f59e0b;
---color-error: #ef4444;
---color-info: #3b82f6;
-```
+グレーで構造を構築。色はステータス、アクション、エラー、成功を伝えるときのみ使用する。装飾的な色はノイズ。セマンティックカラー（success / warning / error / info）の定義は references/css-patterns.md「カラー > セマンティックカラー」を参照する。
 
 ---
 
@@ -344,15 +194,7 @@ border: 0.5px solid var(--border);
 
 ### サイドバー設計
 
-メインコンテンツと同じ背景を使用し、微妙なボーダーで分離（Supabase, Linear, Vercelスタイル）：
-
-```css
-.sidebar {
-  background: var(--surface-0);
-  border-right: 1px solid var(--border);
-  width: 240px;
-}
-```
+メインコンテンツと同じ背景を使用し、微妙なボーダーで分離する（Supabase, Linear, Vercelスタイル）。実装（`.sidebar`）は [references/css-patterns.md](references/css-patterns.md)「コンポーネント > サイドバー」を参照する。
 
 ---
 

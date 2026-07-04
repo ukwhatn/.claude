@@ -58,36 +58,14 @@ Subagent / Agent Teams の発動はuser-level設定（~/.claude/CLAUDE.md「Agen
 -->
 ```
 
-### 3. .claudeignoreの作成
+### 3. コンテキスト除外設定（必要な場合のみ）
 
-コンテキスト最適化のため、`.claudeignore`を作成する（**最大の単一改善**）:
+`.claudeignore`という公式機能は存在しない（@context/claude-customization-guide.md §6 参照）。除外が必要な場合は公式機構を使う:
 
-```bash
-# プロジェクトの技術スタックに応じて作成
-cat > .claudeignore << 'EOF'
-# Lock files (30K-80K tokens)
-package-lock.json
-pnpm-lock.yaml
-bun.lockb
-yarn.lock
+- **秘匿ファイル・読ませたくないパス**: `.claude/settings.json` の `permissions.deny` に `Read()` ルールを追加（例: `"Read(secrets/**)"`、`"Read(*.pem)"`）
+- **モノレポで他チームのCLAUDE.mdを除外**: `claudeMdExcludes` 設定
 
-# Build output
-dist/
-build/
-.next/
-out/
-
-# Dependencies
-node_modules/
-
-# Minified files
-*.min.js
-*.min.css
-
-# Generated
-*.generated.*
-EOF
-```
+lockファイル・ビルド成果物は通常Claudeが自発的に読まないため、実際に無駄読みが観測された場合のみ設定する。
 
 ### 4. gitignore設定
 
@@ -117,11 +95,11 @@ AskUserQuestionツールで以下を確認:
 2. 品質チェックコマンド
 3. ベースブランチ
 4. PJ固有のルール
-5. .claudeignoreに追加すべきパターン
+5. 読ませたくないパス（あれば permissions.deny の Read ルールに反映）
 
 ### 6. 設定の調整
 
-ユーザーの回答に基づいてCLAUDE.mdと.claudeignoreを調整。
+ユーザーの回答に基づいてCLAUDE.mdと.claude/settings.jsonを調整。
 
 ## モノレポの場合
 
