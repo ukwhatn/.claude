@@ -8,6 +8,8 @@
 !/commands/**
 !/context/
 !/context/**
+!/hooks/
+!/hooks/**
 !/skills/
 !/skills/**
 !/agents/
