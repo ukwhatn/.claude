@@ -257,11 +257,11 @@ fi
 
 ```bash
 # 初回
-agent -p "$PROMPT" --trust --model gpt-5.5-xhigh-fast --output-format json 2>/dev/null | jq -r '.session_id, .result'
+agent -p "$PROMPT" --trust --model gpt-5.5-extra-high-fast --output-format json 2>/dev/null | jq -r '.session_id, .result'
 
 # 2 回目以降（同一 session）
 agent -p "以下の改善を行いました: <差分>。再度レビューしてください。" \
-  --resume <session_id> --trust --model gpt-5.5-xhigh-fast --output-format json 2>/dev/null | jq -r '.result'
+  --resume <session_id> --trust --model gpt-5.5-extra-high-fast --output-format json 2>/dev/null | jq -r '.result'
 ```
 
 打ち切り:
