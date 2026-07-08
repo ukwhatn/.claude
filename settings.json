@@ -148,6 +148,7 @@
   "editorMode": "normal",
   "preferredNotifChannel": "auto",
   "autoCompactEnabled": false,
+  "autoMemoryEnabled": false,
   "switchModelsOnFlag": true,
   "teammateMode": "auto",
   "remoteControlAtStartup": false,
