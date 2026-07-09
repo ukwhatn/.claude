@@ -104,6 +104,19 @@ TaskID: {taskId} - {subject}
 7. leadにSendMessageで完了報告
 ```
 
+**Task tool の使用範囲（IMPORTANT）:**
+- implementer は **自分に割り当てられた既存タスク**の TaskUpdate（status 変更・metadata 追記）のみ許可
+- **TaskCreate（新規タスク作成）は禁止**。impl 側の内部進捗管理を task list に流用すると lead の view が汚れる（例: impl-sync-backend が #32-#41 を自作した実例あり）
+- impl の内部進捗は完了報告のサマリ or 05_log.md への追記で表現する
+
+**並列 spawn 時のファイル分担（IMPORTANT）:**
+- 「同一ファイルの編集をチームメイト間で分担しない」（本ファイル末尾の既存原則）の具体化
+- backend 共有ファイル（例: `routes/*.ts` 集約、`migrations/`、`packages/shared/schema/`、`_journal.json` 等）は分担境界が曖昧で並列衝突が起きやすい。lead は spawn 前に:
+  1. 各 impl の担当ファイルを明示リストアップ
+  2. 共有ファイル（複数領域が集約されている）は **backend / frontend で担当を分離**、または **順次実行**に切替
+  3. `git add <file>` レベルで staged file を選別する運用を prompt に明示（`git add -A` 禁止）
+- pre-commit hook の巻き添え（他 impl WIP で lint fail）は `--no-verify` 相当の環境変数（`HUSKY=0` 等）で回避する場合、その正当性（自分の変更範囲は事前に clean 確認済）と副作用（他 impl の WIP を巻き込みうる）を必ず 05_log.md に記録
+
 ## チームワークフロー
 
 ### 基本手順
@@ -266,6 +279,12 @@ Teammate/Subagentの完了を待つ際、以下のルールに従うこと:
 - idle通知は通常イベント。催促メッセージを送らない（チームメイトは自律的に進む）
 - SendMessageが必要なケース: チームメイトが**明示的に質問・ブロック報告を送ってきた場合**、または**idle通知が届いたのに期待する最終報告が未着の場合**（後者は作業の催促ではなく成果物の回収。報告フォーマットを再掲して送信を依頼する）
 - 進捗確認が必要なケース: **長時間（5分以上）idle状態が続き、かつTaskListでタスクが進んでいない場合のみ**
+- **idle 通知が連続で届いても、既に応答済み or 静かに待機で OK の状態なら追加応答不要**（idle は agent 側の自動送信で、SendMessage で「送るな」と指示しても止まらないことがある。ユーザー宛の説明も 1 回で十分）
+
+**interrupted（failure）通知への対応:**
+- interrupted は idle と区別する。異常事態のシグナルなので、初回の 1 回だけ状況確認 SendMessage を送るのは正当
+- 復帰後（available に戻る）に agent が自ら報告するのが正常フロー。復帰後に催促の SendMessage を追加送信しない
+- ユーザーが並行して介入している可能性がある（interrupted の原因が「ユーザーが agent を stop した」ケース）。安易に「復帰可否」を lead 判断で決めず、ユーザー説明を待つのが安全
 
 ## Context Compaction後の状態復元（CRITICAL）
 
