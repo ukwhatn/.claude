@@ -1,5 +1,7 @@
 # Taskツール活用ガイド
 
+> Claude Code 専用（TaskCreate/TaskUpdate/TaskList/TaskGet は Claude Code のツール）。Codex では組み込みの plan 機構で代替し、本ガイドは読まなくてよい。
+
 ## 概要
 
 TaskCreate/TaskList/TaskGet/TaskUpdateツールを使用して、タスクの進捗管理と可視化を行う。

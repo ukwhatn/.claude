@@ -1,6 +1,8 @@
 # Claude Code カスタマイズガイド（CLAUDE.md / Skills / Hooks 設計の真実源）
 
 user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md・skills・context の作成・編集・監査時に読む。
+
+> 本ガイドは Claude Code 固有の機構（@import・hooks・settings.json 等）を扱う。user-level の実体ファイルは `~/.claude/AGENTS.md`（`CLAUDE.md` は互換 symlink）であり、本ガイドの「CLAUDE.md」は user-level ではこの実体を指す（project-level は従来どおり CLAUDE.md 命名）。
 各主張の出典を【公式】（Anthropic docs / engineering）と【コミュニティ】（実務ガイドの実測・ヒューリスティック）で区別する。コミュニティ由来の数値は規範でなく目安として扱う。
 
 ## 1. 知識の置き場所判定

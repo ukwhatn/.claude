@@ -15,7 +15,7 @@ npm test
 
 ## 検証方針
 
-Opus 4.7 では検証機構の供給が最も効果が高い。PJで以下を整備:
+AIエージェントには検証機構の供給が最も効果が高い。PJで以下を整備:
 
 - **テストコード**: 主要ロジックのユニット/統合テスト（コマンド: `<test command>`）
 - **E2Eテスト**: <PJに応じてPlaywright/Cypress等。コマンド: `<e2e command>`>
@@ -28,5 +28,5 @@ Opus 4.7 では検証機構の供給が最も効果が高い。PJで以下を整
 
 <!--
 注意: PJ独自のサブエージェント呼び出し慣習（quality-checker / pr-reviewer 等を明示的に呼ぶ等）は記述しない。
-Subagent / Agent Teams の発動はuser-level設定（~/.claude/CLAUDE.md「Agent Teams 発動条件」）に従う。
+サブエージェント / Agent Teams の発動はuser-level設定（~/.claude/context/tool-claude-code.md「Agent Teams 発動条件」）に従う。
 -->
