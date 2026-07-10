@@ -1,6 +1,6 @@
-# Claude Code User Settings
+# Agent User Settings（Claude Code / Codex 共用）
 
-Claude Codeのuser-level設定ファイル集。プロジェクト横断で使用するワークフロー、スキル、コマンドを定義。
+user-level設定ファイル集。プロジェクト横断で使用するワークフロー、スキル、グローバル指示を定義し、**Claude Code と OpenAI Codex CLI の両方から利用する**。
 
 ## 使い方
 
@@ -15,17 +15,20 @@ git clone <this-repo> ~/.claude
 
 ```
 ~/.claude/
-├── CLAUDE.md              # グローバル設定（ワークフロー、変数、Agent Teams発動条件）
+├── AGENTS.md              # グローバル指示の実体（両ツール共通。ワークフロー、変数）
+├── CLAUDE.md              # AGENTS.md への互換 symlink（Claude Code はこちらを読む）
 ├── context/               # エージェント向けコンテキスト
+│   ├── tool-claude-code.md       # Claude Code 固有指示（Agent Teams発動条件・Opus BP。@importで常駐）
+│   ├── tool-codex.md             # Codex 固有指示（@参照解決規約・ツール対応表。Read when）
 │   ├── workflow-rules.md         # Phase 0-5 詳細
-│   ├── agent-teams-guide.md      # Agent Teams 発動条件と構成例
-│   ├── task-tool-guide.md        # TaskCreate/TaskUpdate
-│   ├── agent-cli-guide.md        # 外部CLI（cursor agent / codex）レビュー
-│   ├── claude-customization-guide.md  # CLAUDE.md設計原則, Opus 4.7 BP
+│   ├── agent-teams-guide.md      # Agent Teams 発動条件と構成例（Claude Code専用）
+│   ├── task-tool-guide.md        # TaskCreate/TaskUpdate（Claude Code専用）
+│   ├── agent-cli-guide.md        # 外部CLI（cursor agent / codex / claude）レビュー
+│   ├── claude-customization-guide.md  # 指示ファイル設計原則（Claude Code固有機構）
 │   ├── memory-file-formats.md
 │   ├── figma-verification.md
 │   └── cloudflare-development.md
-├── skills/                # 自動トリガースキル
+├── skills/                # 自動トリガースキル（Agent Skills 形式・両ツール共用）
 │   ├── codebase-review/
 │   ├── commit/
 │   ├── create-draft-pr/
@@ -85,23 +88,32 @@ git clone <this-repo> ~/.claude
 
 ## ワークフロー
 
-CLAUDE.mdで定義された 6 フェーズフレームワーク（**複雑タスク向け**。小規模はskip可）:
+AGENTS.mdで定義された 6 フェーズフレームワーク（**複雑タスク向け**。小規模はskip可）:
 
-1. **Phase 0: 準備** - メモリディレクトリ作成、過去タスク検索、TaskCreate（必要ならTeamCreate）
-2. **Phase 1: 調査** - context7/WebSearch必須、既存コード確認
+1. **Phase 0: 準備** - メモリディレクトリ作成、過去タスク検索、タスク管理機構でタスク作成（Claude Code: TaskCreate、Codex: plan）
+2. **Phase 1: 調査** - context7/Web検索必須、既存コード確認
 3. **Phase 2: 計画** - agent reviewで検証（Action Required ゼロまで）
-4. **Phase 3: 実装** - モデル判断で直接実装 or Agent Teams（発動条件参照）
+4. **Phase 3: 実装** - モデル判断で直接実装 or 並列エージェント（Claude Code: Agent Teams。発動条件参照）
 5. **Phase 4: 品質確認** - lint/format/typecheck/test + 必要に応じて agent review
 6. **Phase 5: 完了報告**
 
-## Agent Teams 発動条件
+## Agent Teams 発動条件（Claude Code）
 
 Opus 4.7 ベストプラクティスに従い、Agent Teams は**限定発動**:
 - (a) 5+ファイル並列変更が見込まれる
 - (b) 独立タスク3つ以上
 - (c) ユーザーが明示的に「チームで」指示
 
-それ以外はモデル判断（直接実装または単発Subagent）。詳細: `context/agent-teams-guide.md`
+それ以外はモデル判断（直接実装または単発Subagent）。詳細: `context/tool-claude-code.md`「Agent Teams 発動条件」、`context/agent-teams-guide.md`
+
+## Codex CLI との共有
+
+このrepoは OpenAI Codex CLI からも同じ資産を使えるよう構成している:
+
+- **グローバル指示**: `~/.codex/AGENTS.md` → `~/.claude/AGENTS.md` の symlink。Codex 固有の読み替え（`@`参照の解決・ツール対応表）は `context/tool-codex.md` に集約
+- **skills**: `~/.codex/skills/<name>` → `~/.claude/skills/<name>` のスキル単位 symlink（Codex はスキル走査時に symlink を辿る）。Claude Code 固有機構に依存するスキル（doc-review 等）は本文の「環境要件」節に代替手順を記載
+- **PJ CLAUDE.md の直読み**: `~/.codex/config.toml` に `project_doc_fallback_filenames = ["CLAUDE.md"]` を設定（AGENTS.md が無いプロジェクトで CLAUDE.md を読む）
+- 記述規約: スキル・context 本文はツール中立の語彙で書き、ツール固有機能は「（Claude Code: X、Codex: Y）」の括弧書きで併記する
 
 ## メモリディレクトリ
 

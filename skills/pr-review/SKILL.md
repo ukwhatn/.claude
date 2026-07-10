@@ -56,7 +56,7 @@ CLAUDE.mdを読み、以下を把握:
 ### 4. Claude Codeによるレビュー
 
 変更された各ファイルについて:
-1. Readツールでファイル全体を読む（diffだけでなく）
+1. ファイル全体を読む（diffだけでなく）
 2. 既存パターンとの整合性を確認
 3. 問題点を特定
 4. **削除・リネームの残存確認（必須）**: diffで削除・リネームされた識別子（メソッド名・クラス名・定数・env key・docker service名・キュー名・設定キー等）を `git grep` / `rg` で**PR headのツリー全体**から検索する（checkout済みならそのツリー、未checkoutなら Step 2 の `git grep <pattern> FETCH_HEAD` 方式）。検索対象にはコードだけでなく config / docker-compose / .env / CI定義 / docs を含める。残存があればCriticalに昇格（過去実績: diffのみの確認でdocker-compose 2ファイルのキュー定義残存を見落とし）

@@ -34,7 +34,7 @@ ${MEMORY_DIR}/
 
 **セッション1で実行**: 包括調査 → 全体計画 + 個別タスクファイル作成
 
-1. 要件の明確化（AskUserQuestionで確認）
+1. 要件の明確化（ユーザーに選択肢を提示して確認。Claude Code: AskUserQuestion）
 2. 包括調査
    - 既存コードベース調査
    - context7/WebSearchで外部情報参照
@@ -54,7 +54,7 @@ ${MEMORY_DIR}/
    - `<task_num>_` で始まるファイルを特定
 2. 00_plan.md と 特定したタスクファイルを読込
 3. Phase 0-5を適用して実装
-   - reference: user-level CLAUDE.md, @context/workflow-rules.md
+   - reference: user-level AGENTS.md, @context/workflow-rules.md
    - Phase 0: memory/YYMMDD_<task>/ にメモリディレクトリ作成
    - Phase 1-4: タスクファイルに従って実装
    - Phase 5: 完了報告
@@ -110,7 +110,7 @@ ${MEMORY_DIR}/
 
 ## agent review
 
-Agent Teams内でreviewerチームメイトが自動実行する。
+Agent Teams 使用時（Claude Code）はreviewerチームメイトが自動実行する。単独作業時や Agent Teams が無い環境では、自分で外部CLIを実行する（@context/agent-cli-guide.md）。
 
 詳細: @context/agent-cli-guide.md「Agent Teams内での実行パターン」
 
@@ -119,9 +119,9 @@ Agent Teams内でreviewerチームメイトが自動実行する。
 - Recommended/Minor → 必要性に基づいて判断
 - 打ち切り: Action Required = 0 / 同一指摘2R連続 / 安全上限5R
 
-## Taskツールとの統合（オプション）
+## タスク管理機構との統合（オプション）
 
-タスク分割後、TaskCreate/TaskUpdate/TaskListを使用して進捗管理を強化できる。
+タスク分割後、タスク管理機構で進捗管理を強化できる（Claude Code: TaskCreate/TaskUpdate/TaskList、Codex: plan 機構。以下のコード例は Claude Code のもの）。
 詳細: @context/task-tool-guide.md
 
 ### /large-task plan での使用

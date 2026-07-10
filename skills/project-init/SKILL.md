@@ -41,7 +41,7 @@ npm test
 
 ## 検証方針
 
-Opus 4.7 では検証機構の供給が最も効果が高い。PJで以下を整備:
+AIエージェントには検証機構の供給が最も効果が高い。PJで以下を整備:
 
 - **テストコード**: 主要ロジックのユニット/統合テスト
 - **E2Eテスト**: PJに応じてPlaywright/Cypress等
@@ -54,7 +54,7 @@ Opus 4.7 では検証機構の供給が最も効果が高い。PJで以下を整
 
 <!--
 注意: PJ独自のサブエージェント呼び出し慣習（quality-checker / pr-reviewer 等を明示的に呼ぶ等）は記述しない。
-Subagent / Agent Teams の発動はuser-level設定（~/.claude/CLAUDE.md「Agent Teams 発動条件」）に従う。
+サブエージェント / Agent Teams の発動はuser-level設定（~/.claude/context/tool-claude-code.md「Agent Teams 発動条件」）に従う。
 -->
 ```
 
@@ -88,9 +88,9 @@ if git config --global core.excludesfile &>/dev/null; then
 fi
 ```
 
-### 5. ユーザーへの確認（AskUserQuestion使用）
+### 5. ユーザーへの確認
 
-AskUserQuestionツールで以下を確認:
+ユーザーに選択肢を提示して以下を確認（Claude Code: AskUserQuestion ツール）:
 1. メモリディレクトリの場所（モノレポの場合は調整が必要）
 2. 品質チェックコマンド
 3. ベースブランチ

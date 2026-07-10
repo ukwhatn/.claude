@@ -67,9 +67,9 @@ find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.md" 
 
 ### Phase 1: 並列サブエージェント実行
 
-6つのサブエージェントを**同時に**起動する（Taskツールを1つのメッセージで6回呼び出す）。順次実行しない。
+6つのサブエージェントを**同時に**起動する（Claude Code: Task ツールを1つのメッセージで6回呼び出す）。順次実行しない。並列サブエージェント機構が無い環境（Codex 等）では、6観点を同一テンプレートで**逐次実行**して代替する。
 
-- `subagent_type=general-purpose` を使用する（`Explore`はWriteツールを持たずissueファイルを作成できないため）
+- Claude Code では `subagent_type=general-purpose` を使用する（`Explore`はファイル書き込み不可でissueファイルを作成できないため）
 - 各サブエージェントに渡す情報: メモリディレクトリのフルパス / PJ CLAUDE.mdの内容 / 対象リポジトリのパス / 担当観点とレビュー基準 / Phase 0で取得したコードベース構造
 
 **プロンプトの組み立て:**
@@ -171,9 +171,9 @@ ${MEMORY_DIR}/
 --skip-multimodel   agent cli並行レビューをスキップ（Claude Codeのみ）
 ```
 
-## Taskツールによる進捗表示（オプション）
+## タスク管理機構による進捗表示（オプション・Claude Code）
 
-6観点のタスクをTaskCreateで作成すると、TaskListで各観点の進捗をリアルタイムに可視化できる（完了・未完了が一目で分かる）。サブエージェント完了後に `TaskUpdate(taskId, status: "completed", metadata: {issues_found: N})` で更新する。詳細: @context/task-tool-guide.md
+6観点のタスクをTaskCreateで作成すると、TaskListで各観点の進捗をリアルタイムに可視化できる（完了・未完了が一目で分かる）。サブエージェント完了後に `TaskUpdate(taskId, status: "completed", metadata: {issues_found: N})` で更新する。詳細: @context/task-tool-guide.md（Codex では plan 機構で代替）
 
 ## 注意事項
 
