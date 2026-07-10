@@ -9,6 +9,18 @@ Agent Teams内ではreviewerチームメイト（general-purpose）がBash経由
 
 **重要**: レビューはSeverity分類に基づく収束条件付きループで実施する（詳細は「レビューループの流れ」参照）。
 
+## Agent（Claude subagent）使用後の codex 裏取り（CRITICAL）
+
+Agent ツール（Claude subagent）を review 目的で使用したら、続けて **codex（または cursor）でも同じ対象を必ずレビューする**。credit 切れ・network 遮断で codex が実行不能な場合は、05_log.md に理由付きで skip を記録し、**codex 復旧後に裏取りを実施する**（当該 PR がマージされる前に間に合えばよく、その phase 内で完結させる必要はない。後回し可）。
+
+理由:
+
+- Claude 単独 review の主な弱点は同一モデル系列内の bias（見落としパターンが同型）
+- 別ベンダー LLM の指摘は「使えるときに一度回せば十分」ではなく、review の各 phase で bias 独立性の担保が必要
+- Agent review Phase 2 / Phase 4、実装レビュー、PR 前レビューのいずれでも適用する
+
+「Claude 単独 fallback（§3）」は codex/cursor が完全に使えないときの緊急退避策であり、**Claude 単独で review を完結させない**。fallback で走らせた場合は上記手順で復旧後の裏取りを踏む。
+
 ## 使用するCLIの選択（cursor優先 / codex fallback）
 
 環境によって利用可能なCLIが異なる。**実行前に必ず以下の判定でCLIを選択すること。**
@@ -30,6 +42,8 @@ fi
 ### 3. Claude 単独 fallback（両 CLI 使えない・credit 切れ・network 遮断時）
 
 外部 CLI が使えない場合の retreat plan。**codex/cursor が使える環境なら常にそちらを優先**（別ベンダー LLM の bias 独立性が review の価値の中核）。ここは「レビューを止めないため」の緊急退避策。
+
+**重要**: 「Agent 使用後の codex 裏取り原則（上記）」に従い、可能な限り Claude 単独 fallback で完結させない。fallback で走らせた場合は codex/cursor 復旧後に裏取りを実施する（credit 復旧・PR マージ前でよい。後回し可）。
 
 **発火条件（いずれか）:**
 - `command -v cursor-agent && command -v codex` が両方失敗
