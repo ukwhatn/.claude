@@ -1,6 +1,6 @@
 ---
 name: instructions-audit
-description: CLAUDE.md・skills・context・rules等の指示ファイル監査。指示ファイルの「レビューして」「監査して」「整理・スリム化して」等の依頼時、/instructions-audit実行時に使用。ベストプラクティスrubricで4分類（削除候補/hook・deny移管/skill化・Read-when化/description・構造強化）の指摘を修正案付きで出す。user-level（~/.claude）とproject-level両対応。境界: 指摘の適用・個別知見の追記→update-inst、セッション内容からの知見反映→session-retro、新規スキル作成→create-skill、コード自体の監査→codebase-review。
+description: CLAUDE.md/AGENTS.md・skills・context・rules等の指示ファイル監査。指示ファイルの「レビューして」「監査して」「整理・スリム化して」等の依頼時、/instructions-audit実行時に使用。ベストプラクティスrubricで4分類（削除候補/hook・deny移管/skill化・Read-when化/description・構造強化）の指摘を修正案付きで出す。user-level（~/.claude）とproject-level両対応。境界: 指摘の適用・個別知見の追記→update-inst、セッション内容からの知見反映→session-retro、新規スキル作成→create-skill、コード自体の監査→codebase-review。
 allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep:*)
 ---
 
@@ -27,7 +27,7 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 ### Step 1: 対象決定
 
 引数から監査スコープを確定する。
-- 完了基準: 監査対象のルートパスと、監査対象ファイル群（CLAUDE.md / context/ / skills/ / rules/ / settings.json）のリストが確定している
+- 完了基準: 監査対象のルートパスと、監査対象ファイル群（CLAUDE.md / context/ / skills/ / rules/ / settings.json）のリストが確定している。user-level の実体は `~/.claude/AGENTS.md`（`CLAUDE.md` は互換symlink。修正提案の編集対象は実体側にする）
 
 ### Step 2: インベントリ作成
 

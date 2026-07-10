@@ -18,7 +18,7 @@ disable-model-invocation: true
 1. 現在のタスクのメモリディレクトリが既にあれば（Phase 0 実施済み等）、そこに書く
 2. なければ @context/memory-file-formats.md の規約に従い、MEMORY_DIR（PJ CLAUDE.md 参照、未定義時 `.local/`）配下にコンテキストディレクトリを作成してから書く
 3. 既に 50_handoff.md がある場合は上書き更新する（最新の現在地が正。過去の経緯は 05_log.md が持つ）
-4. worktree 内で作業中の場合も、書き込みは元repoのメモリディレクトリ絶対パスに対して行う（@CLAUDE.md「worktree 運用ルール」）
+4. worktree 内で作業中の場合も、書き込みは元repoのメモリディレクトリ絶対パスに対して行う（@AGENTS.md「worktree 運用ルール」）
 
 ## 文書の内容
 
