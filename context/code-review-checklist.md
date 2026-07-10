@@ -387,7 +387,7 @@
 ### ✅ 既存パターンの踏襲
 
 - 同類の実装を grep で見つけ、そのパターン（構造・命名・エラー処理・queryKey）を踏襲
-- 逸脱するなら AskUserQuestion で確認、理由を記録
+- 逸脱するならユーザーに確認（Claude Code: AskUserQuestion）、理由を記録
 
 ### ❌ Anti-pattern
 

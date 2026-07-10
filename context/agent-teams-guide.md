@@ -1,5 +1,7 @@
 # Agent Teams 活用ガイド
 
+> Claude Code 専用機能（TeamCreate/SendMessage/TeamDelete）。他環境（Codex 等）に対応物はなく、各スキルの「環境要件」節の代替手順（観点逐次実行等）に従う。
+
 ## 概要
 
 Agent Teams（TeamCreate/SendMessage/TeamDelete）は複数のClaudeインスタンスを並列協調させるマルチエージェント機能。各チームメイトは独立したコンテキストウィンドウを持ち、共有タスクリストとメッセージングで自己調整する。

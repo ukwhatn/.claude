@@ -1,7 +1,9 @@
 # worktree 運用ガイド（詳細手順）
 
-Read when: EnterWorktreeの実行前、worktreeの片付け（ExitWorktree・ブランチ削除）前、並列bg sessionの設計時。
-発動条件・例外はCLAUDE.md「worktree 運用ルール」を参照（本ファイルは手順の詳細のみ）。
+Read when: worktree作成（Claude Code: EnterWorktree）の実行前、worktreeの片付け（ExitWorktree・ブランチ削除）前、並列bg sessionの設計時。
+発動条件・例外はAGENTS.md「worktree 運用ルール」を参照（本ファイルは手順の詳細のみ）。
+
+> ツール対応: EnterWorktree / ExitWorktree は Claude Code のツール。Codex 等では `git worktree add <path> -b feature/<issue_num>-<title-kebab>` / `git worktree remove <path>` を直接実行し、本ガイドのブランチ命名・コミット保全・競合回避の原則に従う（この場合、下記の sanitize・改名フローは不要でブランチ名を直接指定できる）。
 
 ## 前提（settings.json設定済み）
 
@@ -38,7 +40,7 @@ baseRef は `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.md の `BASE
 
 `ExitWorktree(action: 'remove')` は **EnterWorktree が作った元のブランチ名**（`worktree-<sanitized>`）を削除しようとする。上記フローで `feature/...` に改名している場合、改名後のブランチは消えない。
 - **基本方針**: 改名後ブランチは残す（PR 作成・マージのため）
-- 不要ブランチを削除する場合は CLAUDE.md「コミット・ブランチ・PR」の「ブランチ作り直し時」ルールに従う:
+- 不要ブランチを削除する場合は AGENTS.md「コミット・ブランチ・PR」の「ブランチ作り直し時」ルールに従う:
   - **`-D`（強制削除）は使用前にユーザー確認必須**（破壊的操作。merge されていないコミットを失う。permissions.deny にも登録済）
   - 未 push のコミットがあれば、rebase/cherry-pick で別ブランチに保全してから削除
   - merge 済み・コミットなしの場合は `git branch -d <name>` （安全削除）を優先
