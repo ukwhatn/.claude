@@ -108,7 +108,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "claude-opus-4-7",
+  "model": "fable",
   "hooks": {
     "SessionStart": [
       {
@@ -142,13 +142,13 @@
   "promptSuggestionEnabled": false,
   "askUserQuestionTimeout": "never",
   "tui": "fullscreen",
+  "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
   "theme": "auto",
   "editorMode": "normal",
   "preferredNotifChannel": "auto",
   "autoCompactEnabled": false,
-  "autoMemoryEnabled": false,
   "switchModelsOnFlag": true,
   "teammateMode": "auto",
   "remoteControlAtStartup": false,
