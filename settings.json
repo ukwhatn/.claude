@@ -219,7 +219,7 @@
   },
   "outputStyle": "ukwhatn-style",
   "language": "日本語",
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
   "promptSuggestionEnabled": false,
   "askUserQuestionTimeout": "never",
   "tui": "fullscreen",
@@ -232,8 +232,8 @@
   "autoCompactEnabled": false,
   "switchModelsOnFlag": true,
   "teammateMode": "auto",
-  "remoteControlAtStartup": false,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "remoteControlAtStartup": true
 }
