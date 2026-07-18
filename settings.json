@@ -87,7 +87,7 @@
       "Bash(nc:*)",
       "Bash(sudo:*)",
       "Bash(wget:*)",
-      "Write(.env*)"
+      "Edit(.env*)"
     ],
     "ask": [
       "mcp__atlassian__add*",
