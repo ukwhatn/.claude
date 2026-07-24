@@ -55,7 +55,7 @@ IDの推測・組み立ては禁止。必ずJSON応答から読む。
 
 ```bash
 herdr pane run <pane_id> 'fish -c "cc"'
-herdr wait agent-status <pane_id> --status idle --timeout 60000
+herdr agent wait <pane_id> --until idle --timeout 60000
 ```
 
 waitがタイムアウト（exit 1）したら、`herdr pane get <pane_id>` と `herdr pane read <pane_id> --source visible --lines 40` で実際の画面を確認してから判断する（`blocked` は入力待ち、`unknown` は未検出）。
@@ -71,7 +71,7 @@ remote controlはデフォルト有効（有効時はステータスバー右端
 
 ```bash
 herdr pane run <pane_id> "/rc"
-herdr wait output <pane_id> --match "claude.ai/code/session_" --timeout 15000
+herdr pane wait-output <pane_id> --match "claude.ai/code/session_" --timeout 15000
 ```
 
 3. waitの応答の `matched_line` からセッションURL（`https://claude.ai/code/session_...`）を控える
@@ -93,3 +93,4 @@ workspace（label + ID）・新pane_id・remote controlのセッションURLを�
 - remote controlの有効/無効はステータスバー右端の `/rc` インジケータで判定する。デフォルト有効なので、通常 `/rc` 送信は「有効化」ではなくURL表示のステータスモーダルを開く操作になる
 - `/rc` の応答は2形式ある: 未有効→有効化して「is active」の1行表示、有効化済み→URL・QRコード・Continue選択肢のモーダル。待つ文字列は必ず `claude.ai/code/session_`（両形式にマッチ）にする
 - モーダルをContinueで閉じた後に「remote-control is active」の行は表示されない。確認はURL取得＋プロンプト復帰で行う（is active行を待つとタイムアウトする）
+- トップレベルの `herdr wait ...` は存在しない（`unknown command: wait` になる）。agentの状態待ちは `herdr agent wait <target> --until <status> [--timeout <ms>]`、pane出力の待ちは `herdr pane wait-output <pane_id> --match <pattern> [--timeout <ms>]` を使う
