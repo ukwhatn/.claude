@@ -130,9 +130,9 @@ lead は原則としてオーケストレーションに専念:
 
 ただし、leadが直接実装した方が明らかに効率的なファイル（方針判断を伴う中核ファイル等）は自身で編集してよい（`context/agent-teams-guide.md`「Lead Orchestration パターン」参照）。
 
-### モデル判断による直接実装時
+### Agent Teams非発動時（単発Subagent委譲 or lead直接実装）
 
-lead自身（あるいは必要に応じて単発Subagent）が実装。各タスクを「調査→計画→実行→レビュー」で進める。
+`context/tool-claude-code.md`「委譲判断」に従う: 「小規模タスク」を除き実装は単発Subagent（Agent tool、model: sonnet既定）へ委譲し、leadはオーケストレーション・レビューに専念する。各タスクを「調査→計画→実行→レビュー」で進める。
 
 ### 共通の実装品質ルール
 
