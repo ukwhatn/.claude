@@ -1,6 +1,6 @@
 ---
 name: writing-code
-description: コードを書く時の実装原則（deep module設計・seam・テスタビリティ・シーム限定TDD・リーダブルコード）。非自明なプロダクションコードの新規実装・機能追加・リファクタの開始時に使用。TypeScript/Python/Goの言語別ガイドをreferencesに同梱。境界: バグ・エラーの原因調査はsystematic-debuggingが先（原因特定後の修正実装は本スキル）、提出前のdiff確認はself-review、要件定義はdesign-feature。UIの意匠はui-ux-design、DBスキーマ変更はdatabase-migrationと併用する。
+description: コードを書く時の実装原則（deep module設計・seam・テスタビリティ・シーム限定TDD・コメント規約・リーダブルコード）。プロダクションコードの新規実装・修正・機能追加・リファクタの開始時に常に使用（トリビアルな1行修正・設定ファイルのみの変更を除く）。TypeScript/Python/Goの言語別ガイドをreferencesに同梱。境界: バグ・エラーの原因調査はsystematic-debuggingが先（原因特定後の修正実装は本スキル）、提出前のdiff確認はself-review、要件定義はdesign-feature。UIの意匠はui-ux-design、DBスキーマ変更はdatabase-migrationと併用する。
 ---
 
 # Writing Code
@@ -43,9 +43,9 @@ description: コードを書く時の実装原則（deep module設計・seam・�
 - **命名**: 名前だけで役割が分かること。プロジェクトの用語集（CONTEXT.md等があれば）と一致させ、同じ概念には全体で同じ語を使う
 - **docstring**: 既存形式（JSDoc / docstring）を踏襲。本スキルで書き方を重複定義しない
 
-### コメントは **Why のみ**（What / How は書かない）
+### コメント配分の四象限: How=コード / What=テスト / Why=コミットログ / Why not=コードコメント
 
-コードを読めば分かる What / How をコメントに書くのは、二重メンテナンスの負債・コード変更時の陳腐化リスク・レビュー時のノイズを増やすだけ。**削除するとレビュアーが混乱するか**を自問し、混乱しないなら書かない。
+役割を混同しない。**コードコメントはWhy not専用**（自明な代替案をなぜ採らなかったか）。Why（変更した理由・背景）はコミットログの仕事、What（振る舞いの仕様）はテストコードの仕事、How（処理の流れ）はコード自体が語る。コードを読めば分かる What / How をコメントに書くのは、二重メンテナンスの負債・コード変更時の陳腐化リスク・レビュー時のノイズを増やすだけ。**削除するとレビュアーが混乱するか**を自問し、混乱しないなら書かない。
 
 **書かない例（Anti-pattern）:**
 
@@ -75,7 +75,7 @@ function getUser(id: string): User { ... }
 // used by X
 ```
 
-**書く例（Why）:**
+**書く例（Why not）:**
 
 ```typescript
 // ✅ workaround の理由（外部要因）
@@ -101,9 +101,9 @@ useEffect(() => setVotesPage(1), [pageId]);
 **判断規則:**
 
 1. コメントを消してもコードだけで意図が分かる → **消す**
-2. 「削除された機能を今後も明示的に残したい」→ commit message / PR 説明 / ADR に書く（コード内に書くと腐る）
+2. 「なぜこの変更をしたか」を残したい → commit message / PR 説明 / ADR に書く（コード内に書くと腐る。Whyの置き場所はコミットログ）
 3. コメントが 3 行以上 → 「関数抽出 + 命名で表現できないか」を先に検討
-4. コメントが「なぜ」を説明していない → **書き換える or 消す**
+4. コメントが「なぜ**この**自明でない選択をしたか（Why not）」を説明していない → **書き換える or 消す**
 
 ## テスト規律（シーム限定TDD）
 
