@@ -112,7 +112,7 @@ worktree の作成は Claude Code では EnterWorktree ツール、他環境（C
 ## Compact Instructions
 
 compaction（コンテキスト要約）時は以下を保持する（Claude Code の Compact Instructions。Codex 等の要約時も準用）:
-Active Agent Teams (name, members, task assignments, status), Task list state (in_progress/completed/pending + owners), Current phase (0-5) and progress, メモリディレクトリ絶対パスと計画ファイル（30_plan.md等）のパス.
+Active Agent Teams (name, members, task assignments, status), Task list state (in_progress/completed/pending + owners), Current phase (0-5) and progress, メモリディレクトリ絶対パスと計画ファイル（30_plan.md等）のパス, 現在worktree内にいるか（path・ブランチ名）.
 
 **compaction後の復帰手順**: (1) Active Teamがあればまずteam config再確認とTaskList（`context/agent-teams-guide.md`「Context Compaction後の状態復元」をRead） → (2) 05_log.mdと計画ファイルを再読して文脈を復元する。ユーザーに文脈の再説明を求めない。
 

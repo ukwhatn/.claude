@@ -45,6 +45,15 @@ baseRef は `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.md の `BASE
   - 未 push のコミットがあれば、rebase/cherry-pick で別ブランチに保全してから削除
   - merge 済み・コミットなしの場合は `git branch -d <name>` （安全削除）を優先
 
+## EnterWorktree/ExitWorktree の状態管理（実測トラブルシュート）
+
+セッションログ分析（2026-07）で以下のエラーパターンが頻出していた。いずれも「今どのworktree状態にいるか」の見失いが原因。
+
+- **`Already in a worktree session`**: 既にEnterWorktree済みのセッションで再度EnterWorktreeしようとした。新規worktreeが必要なら先にExitWorktree（またはpathを渡して切替）する
+- **`No-op: there is no active EnterWorktree session to exit`**: ExitWorktreeが対応するセッションを見失っている（compaction後に多い）。実行前に`git worktree list`で実際の状態を確認してから判断する
+- **`Worktree has N commits. Removing will discard this work permanently`**: ExitWorktreeはコミット済み作業の破棄に安全装置がかかる。`git log`でコミット有無を確認し、残す場合は`action: "keep"`相当、破棄してよいとユーザーに確認済みの場合のみ`discard_changes: true`を明示する
+- **compaction対策**: 現在worktree内にいるか・そのpath/ブランチ名はcompactionで失われやすい状態情報。長時間タスクではcompaction前に05_log.mdへ明記する（AGENTS.mdのCompact Instructions参照）
+
 ## 並列 bg session の指針
 
 - 各 bg session が自分で EnterWorktree を呼べば、**作業ディレクトリ上での同時編集競合**は回避できる（注: 別ブランチで同じファイルを編集すれば、後続の merge/rebase/PR 統合時には別途競合し得る）
