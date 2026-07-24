@@ -118,6 +118,26 @@ Active Agent Teams (name, members, task assignments, status), Task list state (i
 ## GitHub CLI
 gh cli利用時は`gh auth status`でアカウント確認。原則 username = ukwhatn。詳細はPJ CLAUDE.md参照。
 
+## Claude in Chrome（browser 識別）
+
+Chrome 拡張は複数 profile 同時接続をサポートするが、Connected browser の name を永続変更する UI/API は現時点で存在しない（2026-07 時点、Anthropic 側 feature request 未実装: [claude-code#14536](https://github.com/anthropics/claude-code/issues/14536) / [#14981](https://github.com/anthropics/claude-code/issues/14981) / [#25551](https://github.com/anthropics/claude-code/issues/25551)）。
+
+**運用ルール**:
+- `list_connected_browsers` の `name` field は connectedAt 順に「Browser 1/2/3」で**動的採番**。`switch_browser` の Connect 時に入力した name が反映されることがあるが、他 browser の再接続で reset されることがあるため信用しない
+- **deviceId のみが stable な識別子**。マシンごとに固有 (Chrome プロファイルの user data から生成)
+- **特定手順** (mapping を確定させたい場合): 該当 Chrome の Chrome を再起動 → `list_connected_browsers` で connectedAt が更新された deviceId がその browser
+- 環境変数 (`CLAUDE_CHROME_BROWSER` 等) / `settings.json` での事前指定も未サポート
+- 通常運用は `switch_browser` で対象 Chrome の Connect ボタンを user が click する
+- `computer` ツール等が「Multiple Chrome browsers are connected」エラーになったら、`list_connected_browsers` → 下記 mapping 参照 → `select_browser({deviceId})` で選ぶか、`switch_browser` に切り替える
+
+**このマシンの deviceId ↔ 実 Chrome mapping** (マシン固有、他環境では無効):
+
+| deviceId | 実 Chrome |
+|---|---|
+| `c67ae761-66e9-4e41-92c6-f6e02463c000` | Studio |
+| `d026b759-1948-4eaf-82b2-135ce7b71e3f` | DMM Mac |
+| `d564083f-8b82-42e8-89e3-4645f0d79ca5` | <org> Mac |
+
 ## Cloudflare
 詳細: @context/cloudflare-development.md
 
