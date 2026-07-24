@@ -86,8 +86,7 @@
       "Bash(git reset:*)",
       "Bash(nc:*)",
       "Bash(sudo:*)",
-      "Bash(wget:*)",
-      "Edit(.env*)"
+      "Bash(wget:*)"
     ],
     "ask": [
       "mcp__atlassian__add*",
@@ -108,7 +107,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "fable",
+  "model": "sonnet",
   "hooks": {
     "SessionStart": [
       {
@@ -232,8 +231,8 @@
   "autoCompactEnabled": false,
   "switchModelsOnFlag": true,
   "teammateMode": "auto",
+  "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true,
-  "remoteControlAtStartup": true
+  "skipAutoPermissionPrompt": true
 }
