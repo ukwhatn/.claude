@@ -3,7 +3,7 @@
 user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md・skills・context の作成・編集・監査時に読む。
 
 > 本ガイドは Claude Code 固有の機構（@import・hooks・settings.json 等）を扱う。user-level の実体ファイルは `~/.claude/AGENTS.md`（`CLAUDE.md` は互換 symlink）であり、本ガイドの「CLAUDE.md」は user-level ではこの実体を指す（project-level は従来どおり CLAUDE.md 命名）。
-各主張の出典を【公式】（Anthropic docs / engineering）と【コミュニティ】（実務ガイドの実測・ヒューリスティック）で区別する。コミュニティ由来の数値は規範でなく目安として扱う。
+仕様の記述は公式ドキュメント（code.claude.com/docs）が根拠。実測・ヒューリスティック由来の数値は目安として扱う。
 
 ## 1. 知識の置き場所判定
 
@@ -18,25 +18,26 @@ user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md�
 | **Subagent** | 多数ファイル読み・探索・独立レビュー | 別文脈で走り結論だけ持ち帰る |
 | **linter / formatter** | フォーマット・import順・インデント | LLMより速く安く100%一貫 |
 
-判断原則【公式】: 「この行を消したらClaudeが実際に間違えるか？間違えないなら削る」。Claudeが指示なしでできること・言語/FWの常識は書かない。
+判断原則: 「この行を消したらClaudeが実際に間違えるか？間違えないなら削る」。Claudeが指示なしでできること・言語/FWの常識は書かない。
 
 ## 2. ロード機構の事実（設計の前提。誤解が多い）
 
-- **`@path` importは参照元の読み込み時に即時・再帰的に全ロードされる**（再帰importは最大4 hops）。CLAUDE.mdからの@importは**毎セッション常駐**を意味する。「必要時にのみロードされる」は誤り【公式】。バッククォートで囲んだパス（`` `@path` ``）はimportされずリテラル扱い【公式】
+- **`@path` importは参照元の読み込み時に即時・再帰的に全ロードされる**（再帰importは最大4 hops）。CLAUDE.mdからの@importは**毎セッション常駐**を意味する。「必要時にのみロードされる」は誤り。バッククォートで囲んだパス（`` `@path` ``）はimportされずリテラル扱い
   - 常駐させたくない参照は`@`を付けず、プレーンパス+「Read when: ○○の時に必ずRead」形式で誘導する
-- **Skills**: 常駐するのはname/description（+when_to_use）のみ（約100トークン/skill）【公式】
-  - skill一覧のdescription予算は**モデル文脈窓の約1%**。溢れると使用頻度の低いskillのdescriptionから切り詰められる。`/doctor`で確認可【未確認】（公式ドキュメント（skills.md / memory.md / costs.md / context-window.md）に該当記述が見つからない。数値の出典が不明なため運用の前提にしない）
-  - description+when_to_use合算は約1,536字で切断される【公式】
-- **SKILL.md本文はinvoke時にロードされる**【部分確認】。裏付けが取れた範囲: context-window.md に `"Unlike the rest of the startup content, this listing is not re-injected after /compact. Only skills you actually invoked get preserved."` とあり、**skill descriptionの一覧は/compact後に再注入されず、invokeしたものだけが保持される**ことは確認できる。「本文が以後セッション終盤まで再読されない」「auto-compaction時は先頭約5,000トークンのみ再添付（合計予算約25,000トークン）」の部分は公式ドキュメント（skills.md / memory.md / costs.md / context-window.md）に該当記述が見つからず**未確認**。数値の出典が不明なため運用の前提にしない
-  - → タスク全体を通して効かせたい指示は、skill本文でなくCLAUDE.md等のstanding instructionに置く（この方針自体は上記の確認済み事実からも支持される: compact後に確実に残るのはinvoke済みskillのみで、本文の残存期間は保証されない）
-- references/等の同梱ファイルは必要時のみロード。**スクリプトは実行され出力だけが文脈に入る**（コード本体は入らない）【公式】
-- `.claude/rules/`: 各.mdが自動ロード。`paths`フロントマターでファイルパターン条件付きロード可【公式】
+- **Skills**: 常駐するのはname/description（+when_to_use）のみ（約100トークン/skill）
+  - skill一覧のdescription予算は**モデル文脈窓の1%**（`skillListingBudgetFraction`で調整可）。溢れると呼び出し頻度の低いskillから順にdescriptionが切り詰められる。`/doctor`で実際のコストと上位の寄与skillを確認できる
+  - description+when_to_use合算は1,536字で切断される（`skillListingMaxDescChars`で変更可）
+- **SKILL.md本文はinvoke時にロードされる**。auto-compaction時は各skillの最新invoke分を要約の後に再添付するが、**各skill先頭5,000トークンまで・全skill合計25,000トークンの予算**を共有する。予算は最後にinvokeしたskillから充填されるため、1セッションで多数invokeすると古いskillは完全に落ちる
+  - skill descriptionの一覧そのものも`/compact`後は再注入されず、invokeしたskillのみが保持される
+  - → タスク全体を通して効かせたい指示は、skill本文でなくCLAUDE.md等のstanding instructionに置く
+- references/等の同梱ファイルは必要時のみロード。**スクリプトは実行され出力だけが文脈に入る**（コード本体は入らない）
+- `.claude/rules/`: 各.mdが自動ロード。`paths`フロントマターでファイルパターン条件付きロード可
 
 | 仕組み | ロードタイミング |
 |--------|-----------------|
 | `@path` import | 参照元読み込み時（CLAUDE.md起点なら毎セッション） |
 | プレーンパス + Read-when | Claudeが条件に該当してReadした時のみ |
-| skills本文 | invoke時（残存期間は未確認、上記参照） |
+| skills本文 | invoke時（compact後は上記の予算内で再添付） |
 | `rules/`（pathsあり） | マッチするファイルを扱う時のみ |
 
 ### 層の位置関係（公式で確認済み）
@@ -57,9 +58,9 @@ user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md�
 ## 3. CLAUDE.md 設計原則
 
 ### サイズと内容
-- 公式は「**1ファイルあたり200行未満を目標**（target under 200 lines per CLAUDE.md file）。長いほどcontextを消費し遵守率が下がる」と明記【公式】。コミュニティ実測は60〜300行の範囲に分布【コミュニティ】。「肥大したCLAUDE.mdは指示自体を無視させる」【公式】
-- 「ルールがあるのに破られ続ける」のはファイルが長すぎてルールが埋もれているサイン【公式】
-- 入れるもの / 入れないもの【公式】:
+- 公式は「**1ファイルあたり200行未満を目標**（target under 200 lines per CLAUDE.md file）。長いほどcontextを消費し遵守率が下がる」と明記。コミュニティ実測は60〜300行の範囲に分布。「肥大したCLAUDE.mdは指示自体を無視させる」
+- 「ルールがあるのに破られ続ける」のはファイルが長すぎてルールが埋もれているサイン
+- 入れるもの / 入れないもの:
 
 | ✅ 入れる | ❌ 入れない |
 |---|---|
@@ -71,16 +72,16 @@ user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md�
 
 ### 書き方
 - **命令形で書く**（「TypeScript strictモードを使用する」）。ポインタ（`file:line`）優先、スニペットは陳腐化する
-- **検証可能な具体ルール**にする（「適切に処理する」→「エラーはResult型で返し、throwは使わない」）【コミュニティ】
-- **否定形より肯定形**: 「Xを使うな」はXの概念を活性化する。「Yのみを使う」+代替の提示に書き換える【コミュニティ】
+- **検証可能な具体ルール**にする（「適切に処理する」→「エラーはResult型で返し、throwは使わない」）
+- **否定形より肯定形**: 「Xを使うな」はXの概念を活性化する。「Yのみを使う」+代替の提示に書き換える
 - **理由を添えて汎化させる**: 裸の禁止より「○○禁止。△△だから」。理由は明示していないエッジケースへの判断基準になる
-- **強制ルールと推奨を分離**: MUST-follow（違反=バグ）とSHOULD-follow（ベストエフォート）をセクションで分ける【コミュニティ】
-- **強調（IMPORTANT / YOU MUST）は公式も推奨する手段**【公式】。ただし全部を強調すると何も強調されない。乱用しない
+- **強制ルールと推奨を分離**: MUST-follow（違反=バグ）とSHOULD-follow（ベストエフォート）をセクションで分ける
+- **強調（IMPORTANT / YOU MUST）は公式も推奨する手段**。ただし全部を強調すると何も強調されない。乱用しない
 - システムプロンプト既定と競合するルールは散文では負けやすい。hookでの強制と併記する（意図はCLAUDE.md、強制はhook）
 
 ### 保守
 - 1行追加してよいのは「Claudeが実際に犯した間違いをその行が防げた」時だけ。仮想のルールを足さない
-- **3回言っても直らないルールはhook / permissions.denyへ格上げする**【コミュニティ】
+- **3回言っても直らないルールはhook / permissions.denyへ格上げする**
 - 定期的にClaude自身に見直しを依頼し、矛盾・重複・no-op行（デフォルト挙動を変えない行）を削除する
 
 ### スコープ配置
@@ -105,7 +106,7 @@ user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md�
 - タスク限定の手続き知識・社内固有ワークフロー・大量の参照資料・決定論的スクリプト。「毎回は要らないが、あるタスクでは深く要る」もの
 - 3アーキタイプ: A=Markdownのみ / B=+scripts / C=+外部連携。**Aから始め、必要な場合にのみ複雑さを追加する**
 
-### frontmatter仕様（Claude Code。全フィールド任意、descriptionのみ推奨）【公式】
+### frontmatter仕様（Claude Code。全フィールド任意、descriptionのみ推奨）
 
 ```yaml
 ---
@@ -121,45 +122,45 @@ description: 何をするか。いつ使うか。使わない条件。
 ---
 ```
 
-- **`allowed-tools`は事前承認であって制限ではない**（全ツールは引き続き呼び出せる）。ツールを実際に外すには`disallowed-tools`かpermission denyを使う【公式】
+- **`allowed-tools`は事前承認であって制限ではない**（全ツールは引き続き呼び出せる）。ツールを実際に外すには`disallowed-tools`かpermission denyを使う
 - read-only系skill（検索・レビュー・監査）には`allowed-tools`でread系を事前承認するとprompt削減になる
-- 命名: 小文字英数字とハイフンのみ・64字以内・動名詞（gerund）推奨・予約語`claude`/`anthropic`不可【公式】
+- 命名: 小文字英数字とハイフンのみ・64字以内・動名詞（gerund）推奨・予約語`claude`/`anthropic`不可
 
 ### description（発火しない原因はほぼ常にここ。instructionsではない）
-- 「**何をするか**」+「**いつ使うか**（具体的トリガー語・文脈）」+「**使わない条件**（境界・類似skillとの棲み分け）」を三人称で書く。exclusion clauseが誤発火と発火漏れの両方を防ぐ【コミュニティ】
+- 「**何をするか**」+「**いつ使うか**（具体的トリガー語・文脈）」+「**使わない条件**（境界・類似skillとの棲み分け）」を三人称で書く。exclusion clauseが誤発火と発火漏れの両方を防ぐ
 - 曖昧語（「〜を支援」等）は選択失敗を招く。skillを象徴する語を先頭に。同義語の言い換え列挙は重複、本当に異なる使用分岐だけ列挙する
-- `<` `>` を含めない（インジェクション対策・パース事故防止）【コミュニティ】
+- `<` `>` を含めない（インジェクション対策・パース事故防止）
 
 ### 本文（SKILL.md）
-- **500行未満に保つ**【公式】。本文は「オンボーディング資料の目次」。詳細手順・テンプレ・稀にしか使わない内容はreferences/に分割
-- 参照は**1階層まで**（references/内からさらに参照しない）。**100行を超えるreferenceファイルには冒頭に目次**を付ける【公式】
+- **500行未満に保つ**。本文は「オンボーディング資料の目次」。詳細手順・テンプレ・稀にしか使わない内容はreferences/に分割
+- 参照は**1階層まで**（references/内からさらに参照しない）。**100行を超えるreferenceファイルには冒頭に目次**を付ける
 - 各情報に「Claudeが既に知らないことか？」を問う。知っていることは書かない
-- **Gotchas**（既知の落とし穴と対処）と**入出力例2〜3対**は成熟skillの最良の資産【コミュニティ】
-- 時限的な情報（バージョン番号・日付依存）を避け、用語は全体で一貫させる【公式】
-- **degrees of freedom**: 自由度をタスクの脆さに合わせる。High=テキスト指示（判断が要る）/ Medium=パラメータ付きscript / Low=固定コマンド列（壊れやすい・決定論が要る）【公式】
-- スクリプトは「実行するのか、読んでコンテキストに入れるのか」を明示する。必要パッケージを列挙し、パスはforward slash【公式】
+- **Gotchas**（既知の落とし穴と対処）と**入出力例2〜3対**は成熟skillの最良の資産
+- 時限的な情報（バージョン番号・日付依存）を避け、用語は全体で一貫させる
+- **degrees of freedom**: 自由度をタスクの脆さに合わせる。High=テキスト指示（判断が要る）/ Medium=パラメータ付きscript / Low=固定コマンド列（壊れやすい・決定論が要る）
+- スクリプトは「実行するのか、読んでコンテキストに入れるのか」を明示する。必要パッケージを列挙し、パスはforward slash
 - 他skillへの依存は「`/xxx` スキルを実行する」というプロース形式で書く（ディレクトリ内ファイルの直接パス参照はしない）
 
-### 検証・改善ループ【公式】
+### 検証・改善ループ
 - **evaluation-driven**: 先にevalを作る（skill無しで実タスクを実行→失敗を記録→3シナリオ→baseline→最小の指示を足して反復）
 - 作成後は**実タスク**（作り物でない）で挙動観察: 詰まる箇所・予想外の探索順・読まれないファイル・繰り返し読むファイルを見つけ、本文に反映
 - 可能なら複数モデル（Haiku/Sonnet/Opus）で動作確認
 
 ## 5. Hooks・検証機構
 
-- 検証のゲート強度【公式】: (a) 同一プロンプト内でcheck実行 → (b) `/goal`条件で毎ターン再評価 → (c) Stop hook（scriptで判定、通らない限りターン終了をブロック。8連続ブロックで強制終了） → (d) verification subagent
-- **証拠を出させる**: 成功を主張させず、test出力・実行コマンド・スクリーンショットを提示させる【公式】
-- adversarial reviewer（gapを探せと指示されたレビュアー）は健全な実装でもgapを報告しがち【公式】。レビュアー側で観点を絞ると報告自体が減るため、絞り込みは受け取った側（lead）のフィルタで行う（運用: `context/agent-cli-guide.md`「Severity別のlead判断基準」）
+- 検証のゲート強度: (a) 同一プロンプト内でcheck実行 → (b) `/goal`条件で毎ターン再評価 → (c) Stop hook（scriptで判定、通らない限りターン終了をブロック。8連続ブロックで強制終了） → (d) verification subagent
+- **証拠を出させる**: 成功を主張させず、test出力・実行コマンド・スクリーンショットを提示させる
+- adversarial reviewer（gapを探せと指示されたレビュアー）は健全な実装でもgapを報告しがち。レビュアー側で観点を絞ると報告自体が減るため、絞り込みは受け取った側（lead）のフィルタで行う（運用: `context/agent-cli-guide.md`「Severity別のlead判断基準」）
 - 繰り返し破られるCLAUDE.mdルールはhookに格上げする（CLAUDE.mdに意図、hookで強制の二重化）
 
 ## 6. コンテキスト最適化
 
-- コンテキスト除外: `.claudeignore`という**公式機能は存在しない**（コミュニティ記事由来の誤情報）。秘匿・不要パスは`permissions.deny`の`Read()`ルール、モノレポの他チームCLAUDE.md除外は`claudeMdExcludes`を使う【公式】
-- 無関係なタスク間で`/clear`。探索・大量ファイル読みはsubagentへ（結論のみ持ち帰る。要約は1,000〜2,000トークン目安【公式】）
+- コンテキスト除外: `.claudeignore`という**公式機能は存在しない**（コミュニティ記事由来の誤情報）。秘匿・不要パスは`permissions.deny`の`Read()`ルール、モノレポの他チームCLAUDE.md除外は`claudeMdExcludes`を使う
+- 無関係なタスク間で`/clear`。探索・大量ファイル読みはsubagentへ（結論のみ持ち帰る。要約は1,000〜2,000トークン目安）
 - 未使用MCPサーバーを無効化（ツール定義がサイレントに文脈を消費）
-- **minimal ≠ short**【公式】: 「right altitude」= 脆いハードコードと曖昧な高レベル指示の中間。必要情報を削るのでなく、常駐から外して必要時に十分供給する再配置が正解
-- エッジケースの羅列より、多様で正準的なfew-shot例を少数【公式】
-- 知見: 長時間タスクの機械可読な状態ファイル（機能リスト・pass/fail）はMarkdownよりJSONの方がmodelに勝手に上書きされにくい【公式】（本環境のメモリ形式は現状維持。99_history.md参照）
+- **minimal ≠ short**: 「right altitude」= 脆いハードコードと曖昧な高レベル指示の中間。必要情報を削るのでなく、常駐から外して必要時に十分供給する再配置が正解
+- エッジケースの羅列より、多様で正準的なfew-shot例を少数
+- 知見: 長時間タスクの機械可読な状態ファイル（機能リスト・pass/fail）はMarkdownよりJSONの方がmodelに勝手に上書きされにくい（本環境のメモリ形式は現状維持。99_history.md参照）
 
 ## 7. 監査rubric（CLAUDE.md / skills / context の定期監査用）
 
@@ -192,7 +193,7 @@ description: 何をするか。いつ使うか。使わない条件。
 
 ## 8. マルチエージェント品質パターン
 
-- **Writer/Reviewer分離**: 実装バイアス排除のため、生成と評価を別コンテキストに分ける【公式】。leadをreviewer/オーケストレーター、実装をwriter（subagent）に分離するのが本環境の既定運用（詳細・使い分け基準は@context/tool-claude-code.md「委譲判断」）
+- **Writer/Reviewer分離**: 実装バイアス排除のため、生成と評価を別コンテキストに分ける。leadをreviewer/オーケストレーター、実装をwriter（subagent）に分離するのが本環境の既定運用（詳細・使い分け基準は@context/tool-claude-code.md「委譲判断」）
 - 旧記述「Subagentの毎回明示呼び出しは性能低下要因」は実運用の知見（lead/impl分業のトークン効率・品質実測、2026-07）と矛盾したため撤回。委譲要否はタスク規模で機械的に判定する（同上「委譲判断」参照）
 
 ## 9. 継続的改善
