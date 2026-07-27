@@ -159,7 +159,7 @@ TaskUpdate(taskId, status: "completed", metadata: {total_loops: 3})
 
 ```
 # ビルド/テストをバックグラウンドで実行
-Bash(command: "npm test", run_in_background: true) → task_id
+Bash(command: "npm test", run_in_background: true) → 出力ファイルパスを返す
 
 # 現在のタスクを完了
 TaskUpdate(currentTaskId, status: "completed")
@@ -171,9 +171,13 @@ TaskUpdate(nextTaskId, status: "in_progress")
 # 次のタスクの調査を開始
 # ...
 
-# バックグラウンド処理の結果を適宜確認
-TaskOutput(task_id, block: false)
+# バックグラウンド処理の完了は、開始時に返された出力ファイルパスを含む通知で届く
 ```
+
+**結果取得の注意（IMPORTANT）:**
+- `TaskOutput`ツールは現行環境に存在するが、**ツール定義自体にDEPRECATEDと明記**されている。bash タスクは開始時に出力ファイルパスが返り、完了時に同じパスを含む通知が来るので、**そのファイルパスをReadで読むのが推奨**（TaskOutputではない）
+- **local_agent タスク（Agent toolのサブエージェント）は、Agentの結果を直接使う。`.output`をReadしてはならない**（サブエージェントの全会話transcriptへのsymlinkであり、コンテキストを溢れさせる）
+- ログのパターンマッチ等、特定条件の発生を監視したい場合は`Monitor`ツールを使う（stdoutの各行が通知イベントになる）
 
 **活用シーン:**
 - `npm install` / `pip install`（依存関係インストール）
@@ -210,32 +214,11 @@ IDは`~/.claude/tasks/`ディレクトリ内のUUIDディレクトリ名。
 
 ## Agent Teamsとの連携
 
-Agent Teams使用時、TaskCreate/TaskUpdateはチーム共有タスクリストに自動的に紐づく。
-
-### 基本パターン
-
-```
-# チーム作成（タスクリストも自動作成される）
-TeamCreate(team_name: "feature-x", description: "Feature Xの実装")
-
-# タスク作成（チームのタスクリストに登録される）
-TaskCreate(subject: "API調査", activeForm: "API調査中")
-TaskCreate(subject: "フロントエンド実装", activeForm: "フロントエンド実装中")
-TaskCreate(subject: "テスト作成", activeForm: "テスト作成中")
-
-# 依存関係設定
-TaskUpdate(taskId: "2", addBlockedBy: ["1"])
-
-# チームメイトをspawn
-Task(prompt: "...", subagent_type: "general-purpose", team_name: "feature-x", name: "researcher")
-
-# チームメイトがTaskUpdateで状態を更新
-# TaskUpdate(taskId: "1", status: "completed") → Task 2がunblock
-```
+Agent Teams使用時、TaskCreate/TaskUpdateはチーム共有タスクリストに自動的に紐づく。TaskCreate→チームメイトspawnの基本フローは @context/agent-teams-guide.md 参照（チームメイトのspawnはAgent toolを使う。`team_name`パラメータはDeprecated/ignored — セッションには単一の暗黙チームがある）。
 
 ### Subagentsとの違い
 
-| 項目 | Subagents (Task tool) | Agent Teams |
+| 項目 | Subagents (Agent tool) | Agent Teams |
 |------|----------------------|-------------|
 | タスクリスト | セッション内 | チーム共有 |
 | 通信 | 結果返却のみ | SendMessage |

@@ -10,11 +10,11 @@ Agent Teamsを活用し、6つの独立したAgentが異なる観点からドキ
 
 ## 環境要件と代替実行
 
-本スキルの並列実行は Claude Code の Agent Teams（TeamCreate/SendMessage）を前提とする。Agent Teams が使えない環境（Codex 等）では、Step 2 の観点セットをそのまま用いて**観点ごとの逐次レビュー**（利用可能ならサブエージェント、なければ独立した検討パスとして順に実行）で代替し、Step 6 以降の統合・レポート手順に合流する。agent-cli-reviewer 相当の外部CLIレビューはどの環境でも実行する（実行主体に応じた CLI 選択は @context/agent-cli-guide.md 冒頭の注記に従う）。
+本スキルの並列実行は Claude Code の Agent Teams（Agent tool による並列 spawn + SendMessage）を前提とする。Agent Teams が使えない環境（Codex 等）では、Step 2 の観点セットをそのまま用いて**観点ごとの逐次レビュー**（利用可能ならサブエージェント、なければ独立した検討パスとして順に実行）で代替し、Step 6 以降の統合・レポート手順に合流する。agent-cli-reviewer 相当の外部CLIレビューはどの環境でも実行する（実行主体に応じた CLI 選択は @context/agent-cli-guide.md 冒頭の注記に従う）。
 
 ## 既存設定との関係
 
-- **Agent Teams（@context/agent-teams-guide.md）**: TeamCreate/SendMessage/TeamDeleteで構成
+- **Agent Teams（@context/agent-teams-guide.md）**: Agent tool による並列 spawn + SendMessage + 共有タスクリストで構成
 - **agent CLI（@context/agent-cli-guide.md）**: 外部CLI（cursor agent / codex）による第三者レビュー
 - **Phase 0-5（@context/workflow-rules.md）**: Phase 2（計画レビュー）やPhase 4（品質確認）で使用可能
 - **codebase-reviewスキル**: コードベース対象（本スキルはドキュメント対象で競合しない）
@@ -83,10 +83,9 @@ Agent Teamsを活用し、6つの独立したAgentが異なる観点からドキ
 | devils-advocate | 根本的な前提への挑戦、見落とされたリスク、代替案 |
 | agent-cli-reviewer | 外部CLI（cursor agent / codex）による第三者レビュー |
 
-### Step 3: チーム作成
+### Step 3: タスク作成
 
 ```
-TeamCreate(team_name: "doc-review-<YYMMDD>", description: "ドキュメントレビュー: <対象ファイル名>")
 TaskCreate × 6（各Agentのタスク）
 ```
 
@@ -181,12 +180,12 @@ leadにSendMessageで以下を報告:
 全6 Agentを並列でspawnする。モデルは指定しない（セッションのモデルを継承）。
 
 ```
-Task(subagent_type: "code-reviewer", team_name: ..., name: "reviewer-1", prompt: ...)
-Task(subagent_type: "code-reviewer", team_name: ..., name: "reviewer-2", prompt: ...)
-Task(subagent_type: "code-reviewer", team_name: ..., name: "reviewer-3", prompt: ...)
-Task(subagent_type: "code-reviewer", team_name: ..., name: "reviewer-4", prompt: ...)
-Task(subagent_type: "code-reviewer", team_name: ..., name: "devils-advocate", prompt: ...)
-Task(subagent_type: "general-purpose", team_name: ..., name: "agent-cli-reviewer", prompt: ...)
+Agent(subagent_type: "code-reviewer", name: "reviewer-1", prompt: ...)
+Agent(subagent_type: "code-reviewer", name: "reviewer-2", prompt: ...)
+Agent(subagent_type: "code-reviewer", name: "reviewer-3", prompt: ...)
+Agent(subagent_type: "code-reviewer", name: "reviewer-4", prompt: ...)
+Agent(subagent_type: "code-reviewer", name: "devils-advocate", prompt: ...)
+Agent(subagent_type: "general-purpose", name: "agent-cli-reviewer", prompt: ...)
 ```
 
 **agent-cli-reviewerの特別指示:**
@@ -220,7 +219,7 @@ Task(subagent_type: "general-purpose", team_name: ..., name: "agent-cli-reviewer
 
 ### Step 8: クリーンアップ
 
-全Agentにshutdown_request → TeamDelete
+全Agentにshutdown_request
 
 ### Step 9: 収束判定（継続レビューの場合）
 
@@ -236,11 +235,10 @@ AR修正後、収束状況をユーザーに報告する。報告形式（収束
 4. **Phase分割のリスク** - 中途半端な状態が本番に出ないか
 5. **修正の連鎖リスク** - 「この修正が別の問題を引き起こさないか？」（継続レビュー時に特に重視）
 
-ただし指摘は correctness / security / data integrity / 明示要件に影響するgapに限定する（健全な設計へのgap捏造・over-engineering指摘を抑制するため）。
+観点は絞らずすべて報告させる。over-engineering懸念や健全な設計への疑義も含めて報告対象とし、Severity付与と採否判断はStep 6のlead統合で行う。
 
 ## 注意事項
 
-- 全Agentの完了を待つ際、sleepやポーリングループは使用禁止（ターンを終了して待機）
 - agent CLIの`--output-format stream-json`は使用禁止（ハングリスク）
 - agent CLIプロンプトに`$(cat ...)` / `$(git diff ...)`でファイル内容を埋め込むことは禁止
 - レビュー対象が未実装の設計の場合、「現在の実装との差分」を指摘対象として認識しないよう明示すること

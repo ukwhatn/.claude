@@ -1,30 +1,30 @@
 # Agent Teams 活用ガイド
 
-> Claude Code 専用機能（TeamCreate/SendMessage/TeamDelete）。他環境（Codex 等）に対応物はなく、各スキルの「環境要件」節の代替手順（観点逐次実行等）に従う。
+> Claude Code 専用機能（Agent tool による並列 spawn + SendMessage + 共有タスクリスト）。他環境（Codex 等）に対応物はなく、各スキルの「環境要件」節の代替手順（観点逐次実行等）に従う。
 
 ## 概要
 
-Agent Teams（TeamCreate/SendMessage/TeamDelete）は複数のClaudeインスタンスを並列協調させるマルチエージェント機能。各チームメイトは独立したコンテキストウィンドウを持ち、共有タスクリストとメッセージングで自己調整する。
+Agent Teams は、`Agent` で名前付きサブエージェントを並列に spawn し、`SendMessage` で相互通信し、`TaskCreate`/`TaskUpdate` の共有タスクリストで自己調整するマルチエージェント運用パターン。各チームメイトは独立したコンテキストウィンドウを持つ。
 
 **状態**: 実験的機能（`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` で有効化済み）
 
 ## 発動条件（限定発動）
 
-Opus 4.7 ベストプラクティスに従い、Agent Teams は**限定発動**。
+Agent Teams は**限定発動**。
 以下のいずれかを満たす場合のみ使用する。それ以外は**モデル判断**（直接実装または単発Subagent）に委ねる。
 
 - (a) **複数ファイル並列**: 5+ファイルの変更が見込まれ、独立に編集できる
 - (b) **独立タスク3つ以上**: 互いに依存しないタスクが3つ以上ある
 - (c) **ユーザー明示指示**: ユーザーが「チームで」「Agent Teamsで」等と明示
 
-過度な明示的呼び出しは性能低下の原因になるため、(a)(b)(c) のいずれにも該当しないタスクでは Agent Teams を発動しない。
+(a)(b)(c) のいずれにも該当しないタスクでは、チーム編成・タスク依存関係管理のオーバーヘッドが見合わないため Agent Teams を発動しない。
 
-## Agent Teams vs Subagents（Task tool）vs 直接実装の使い分け
+## Agent Teams vs Subagents（Agent tool）vs 直接実装の使い分け
 
 | ケース | 推奨手法 |
 |-------|---------|
 | 上記 (a)(b)(c) に該当 | Agent Teams |
-| 独立した調査・コンテキスト分離が必要 | 単発Subagent（Task tool） |
+| 独立した調査・コンテキスト分離が必要 | 単発Subagent（Agent tool） |
 | 上記いずれでもない通常の実装 | 直接実装（モデル判断） |
 | codebase-reviewの6観点並列レビュー | 並列Subagent（独立、議論不要） |
 | 複数ファイルの独立した調査 | 並列Subagent（結果をメインに返すだけ） |
@@ -38,7 +38,7 @@ Opus 4.7 ベストプラクティスに従い、Agent Teams は**限定発動**�
 
 これらは Agent Teams を起動せず、自分で直接実装する。
 
-### Subagents（Task tool）が適切な場面
+### Subagents（Agent tool）が適切な場面
 
 - 独立した調査タスクを並列に走らせたい
 - メインコンテキストを汚さず大量のファイルを読みたい
@@ -64,12 +64,12 @@ Agent Teams 発動条件を満たす場合、leadは原則として以下に専�
 ### ワークフロー
 
 ```
-Phase 0: TeamCreate → TaskCreate（依存関係付き）
+Phase 0: TaskCreate（依存関係付き）
 Phase 1: 調査（researcher or 自身）
 Phase 2: 計画作成 → agent review
 Phase 3: implementerチームメイトをspawn → タスクアサイン → 完了待ち → 次タスク
 Phase 4: 品質チェック + agent review
-Phase 5: 全チームメイトshutdown → TeamDelete → 完了報告
+Phase 5: 全チームメイトshutdown → 完了報告
 ```
 
 ### Phase 3の詳細手順
@@ -85,7 +85,7 @@ Phase 5: 全チームメイトshutdown → TeamDelete → 完了報告
 ### implementerチームメイトへの指示テンプレート
 
 ```
-あなたは「{team_name}」チームのimplementerです。
+あなたはこのチームのimplementerです。
 
 ## 担当タスク
 TaskID: {taskId} - {subject}
@@ -106,7 +106,7 @@ TaskID: {taskId} - {subject}
 7. leadにSendMessageで完了報告
 ```
 
-**Task tool の使用範囲（IMPORTANT）:**
+**タスク管理（TaskCreate/TaskUpdate）の使用範囲（IMPORTANT）:**
 - implementer は **自分に割り当てられた既存タスク**の TaskUpdate（status 変更・metadata 追記）のみ許可
 - **TaskCreate（新規タスク作成）は禁止**。impl 側の内部進捗管理を task list に流用すると lead の view が汚れる（例: impl-sync-backend が #32-#41 を自作した実例あり）
 - impl の内部進捗は完了報告のサマリ or 05_log.md への追記で表現する
@@ -124,22 +124,21 @@ TaskID: {taskId} - {subject}
 ### 基本手順
 
 ```
-1. TeamCreate(team_name: "<name>", description: "<purpose>")
-2. TaskCreate で共有タスクを作成
-3. Task tool でチームメイトをspawn（subagent_type指定）
-4. SendMessage(type: "message") で指示・情報共有
-5. チームメイトがTaskUpdateでタスク完了
-6. SendMessage(type: "shutdown_request") で各チームメイトをシャットダウン
-7. 全員シャットダウン後、TeamDelete でクリーンアップ
+1. TaskCreate で共有タスクを作成
+2. Agent tool でチームメイトをspawn（subagent_type指定、name指定）
+3. SendMessage(type: "message") で指示・情報共有
+4. チームメイトがTaskUpdateでタスク完了
+5. SendMessage(type: "shutdown_request") で各チームメイトをシャットダウン
 ```
 
 ### チームメイトのspawn
 
+セッションには単一の暗黙チームがある。Agentツールの `team_name` パラメータは **Deprecated; ignored**（複数チームを区別する用途では使わない）。
+
 ```
-Task(
+Agent(
   prompt: "タスクの説明",
   subagent_type: "general-purpose",
-  team_name: "<team_name>",
   name: "<teammate_name>"
 )
 ```
@@ -260,7 +259,7 @@ spawn/shutdownのオーバーヘッドも削減される。
 - 各チームメイトは独立したClaudeインスタンス（コンテキスト×チームメイト数）
 - **実用的な上限: 3-5人**
 - 役割が完了したチームメイトにshutdown_requestを送信
-- 単純なタスクにはSubagents（Task tool）または直接実装でコストを抑える
+- 単純なタスクにはSubagents（Agent tool）または直接実装でコストを抑える
 
 ## 待機パターン（CRITICAL）
 
@@ -312,4 +311,3 @@ Context compaction発生時、team-leadの会話履歴が要約に置き換わ�
 - agent reviewはreviewerチームメイトがBash経由で自動実行する（@context/agent-cli-guide.md参照）
 - チームメイトの名前（name）で参照する（agentIdは使用しない）
 - broadcastはコスト高（N人 = N回のAPI呼び出し）、必要な場合のみ使用
-- TeamDeleteは全チームメイトのシャットダウン完了後のみ実行可能
