@@ -1,5 +1,22 @@
 # agent cli 使用ガイド
 
+> **モデルslugについての注記**: 本ファイルに記載の外部CLIモデルslug（`gpt-5.6-sol` 等）は 2026-07 時点のもの。使用前に `--help` や `--list-models` 等で実在を再確認する。
+
+## 目次
+
+- [概要](#概要)
+- [Agent（Claude subagent）使用後の codex 裏取り（CRITICAL）](#agentclaude-subagent使用後の-codex-裏取りcritical)
+- [使用するCLIの選択（cursor優先 / codex fallback）](#使用するcliの選択cursor優先--codex-fallback)
+- [基本コマンド](#基本コマンド)
+- [CRITICAL: diff/ファイル内容の埋め込み禁止](#critical-diffファイル内容の埋め込み禁止)
+- [レビュー用コマンド例](#レビュー用コマンド例)
+- [出力形式（cursor: `agent`）](#出力形式cursor-agent)
+- [レビューループの流れ](#レビューループの流れ)
+- [Severity別のlead判断基準](#severity別のlead判断基準)
+- [Agent Teams内での実行パターン（Claude Code）](#agent-teams内での実行パターンclaude-code)
+- [モデル選択ガイド](#モデル選択ガイド)
+- [注意事項](#注意事項)
+
 ## 概要
 
 外部CLI（既定は cursor の `agent` CLI、無い環境では codex CLI にfallback）のnon-interactive modeを使用して、別モデルによるレビューを実施する。
@@ -21,7 +38,7 @@ Agent ツール（Claude subagent）を review 目的で使用したら、続け
 - 別ベンダー LLM の指摘は「使えるときに一度回せば十分」ではなく、review の各 phase で bias 独立性の担保が必要
 - Agent review Phase 2 / Phase 4、実装レビュー、PR 前レビューのいずれでも適用する
 
-「Claude 単独 fallback（§3）」は codex/cursor が完全に使えないときの緊急退避策であり、**Claude 単独で review を完結させない**。fallback で走らせた場合は上記手順で復旧後の裏取りを踏む。
+「外部CLIが使えない場合の方針（§3）」に従い外部レビューを省略した場合も、**Claude 単独で review を完結させたとみなさない**。省略した旨は完了報告に明記し、codex/cursor 復旧後に上記手順で裏取りを実施する。
 
 ## 使用するCLIの選択（cursor優先 / codex fallback）
 
@@ -41,55 +58,16 @@ fi
 
 > 以降の例では cursor 側を `agent` と表記するが、これは `"$CURSOR_CLI"`（= `cursor-agent` または `agent`）の短縮表記。`cursor-agent` しか無い環境では `agent` を `cursor-agent` に読み替える（または上記 `$CURSOR_CLI` を使う）。
 
-### 3. Claude 単独 fallback（両 CLI 使えない・credit 切れ・network 遮断時）
+### 3. 外部CLIが使えない場合の方針（両 CLI 使えない・credit 切れ・network 遮断時）
 
-外部 CLI が使えない場合の retreat plan。**codex/cursor が使える環境なら常にそちらを優先**（別ベンダー LLM の bias 独立性が review の価値の中核）。ここは「レビューを止めないため」の緊急退避策。
-
-**重要**: 「Agent 使用後の codex 裏取り原則（上記）」に従い、可能な限り Claude 単独 fallback で完結させない。fallback で走らせた場合は codex/cursor 復旧後に裏取りを実施する（credit 復旧・PR マージ前でよい。後回し可）。
+外部CLIが使えない環境（両方不在・credit切れ・network遮断）では、外部レビューを省略し、その旨を完了報告に明記する。**Claude 自身を reviewer role で spawn する自己検証で代替しない**（同一モデルによる自己検証は指示がなくても行われており、reviewer role での spawn は bias 独立性を持たないままコストを倍増させるだけのため）。
 
 **発火条件（いずれか）:**
 - `command -v cursor-agent && command -v codex` が両方失敗
 - codex 実行時に `Your workspace is out of credits` エラー
 - ネットワーク遮断・API 障害でどちらも実行不能
 
-**方針**: Claude Opus 4.7 [1m] を敵対的 reviewer role で spawn。**単発 subagent ではなく 3-5 の観点別 subagent + 統合パターン**を採る（bias 独立性を人工的に生む）。
-
-**プロンプト骨子（各 subagent 共通ヘッダ）:**
-
-```
-あなたはこの PR の敵対的コードレビュアーです。実装者は間違っていると仮定して refute せよ。
-以下の順で作業:
-
-1. `.claude/context/code-review-checklist.md` を Read（プロジェクト外の user context にあるので `~/.claude/context/code-review-checklist.md` も併読）
-2. `git diff <base-branch>...HEAD` で対象を取得
-3. あなたの担当観点で全ファイル review（一部だけ見ない）
-4. code-review-checklist の各セクションで該当項目を明示的にチェック
-5. 加えて checklist に無いが担当観点で気付いた問題を追加
-
-指摘は Severity 分類（Action Required / Recommended / Minor）で出せ。
-correctness / security / data integrity / 明示要件への影響のみを AR とする。
-指摘なしなら「指摘なし」とだけ返せ。
-```
-
-**観点分割**（`## あなたの担当観点` に挿入。5 個並列 spawn）:
-
-- **Correctness**: state / mutation invalidation / useEffect deps / falsy check / race condition / transaction / boundary values
-- **Security**: BOLA / BOPLA / CSRF / rate limit / secret handling / injection / prompt injection / logging
-- **Performance & Cost**: N+1 / unbounded query / queryKey cache 汚染 / recharts+chart.js 両積み等の bundle / polling 発生条件
-- **Consistency & Contract**: 既存パターン踏襲 / API schema / URL 永続化 / queryKey 命名 / import path 一貫性
-- **Accessibility & Mobile**: keyboard nav / aria-expanded 対称性 / mobile viewport / touch target / CB-safe palette / 100dvh
-
-**統合**: 5 subagent の findings を lead が dedup（同一 file + 同一原因は 1 件に集約）→ Severity 再判定 → implementer に修正依頼。
-
-**ラウンド継続**: R1 → R2 で「修正の副作用検出」を狙う。lead が「R1 で指摘・修正した内容」を伝えて **同じ 5 subagent set を再 spawn**（前ラウンドを resume するのではなく、独立した context で再判定させる）。
-
-**打ち切り条件**: 外部 CLI と同じ（Action Required = 0 / 同一指摘 2R 連続 / 安全上限 5R）。
-
-**Claude 単独運用の trade-off（明示）:**
-
-- ✅ CLI に依存せず動く / コスト予測しやすい / 既存 harness で完結
-- ❌ 同一モデル系列内の bias が残る（Anthropic 内部の見落としパターンを完全には除去できない）
-- **結論**: routine review（consistency / naming / URL / a11y）はこれで足りる。critical review（auth / secret / migration / LLM）は可能なら外部 CLI を残す（コスト vs 独立性の trade-off として明示）。
+**省略時の手順**: 05_log.md に理由付きで skip を記録し、外部CLI復旧後に「Agent 使用後の codex 裏取り原則」に従って裏取りを実施する（PR マージ前に間に合えばよく、後回し可）。
 
 **レビュー実施前は必ず Read:**
 - `~/.claude/context/code-review-checklist.md`（汎用 anti-pattern チェックリスト）
@@ -109,6 +87,8 @@ correctness / security / data integrity / 明示要件への影響のみを AR �
 - codex は **既定で read-only sandbox かつ承認プロンプトなしで完走**するため、レビュー（git diff・ファイル読取のみ）にそのまま使える。
 
 ## 基本コマンド
+
+以下がcursor/codex共通の呼び出しテンプレート（初回・2回目以降）。**計画レビュー・実装レビュー・PRレビュー・Agent Teams内reviewerを含む全レビュー種別がこれを共用する**。各レビュー種別で変わるのは`<プロンプト>`の中身のみ（「レビュー用コマンド例」参照）。
 
 ### cursor（`agent` / `cursor-agent`）— 優先
 
@@ -193,7 +173,7 @@ agent -p "/path/to/plan.md を読んで計画をレビューしてください�
 
 ## レビュー用コマンド例
 
-以下の例は **cursor（`agent`）** 表記。**codex環境では「基本コマンド > codex」の形に読み替える**（`agent -p "<P>" ... | jq -r '.result'` → `codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" --json "<P>" | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'`、再レビューは `codex exec resume --last --json "<P>"`）。プロンプト本文（レビュー観点・Severity分類の指示）は両CLI共通。
+以降は各レビュー種別の**プロンプト本文のみ**を示す。CLIコマンドへの組み込み方（`--trust --model ... --output-format json` 等）は「基本コマンド」節の共通テンプレートを参照し、`<プロンプト>` の部分に以下の本文を差し込む。cursor/codexどちらを使うかは「使用するCLIの選択」の判定に従う（コマンド形の対応は「基本コマンド」参照）。
 
 **レビュープロンプトには必ず「`~/.claude/context/code-review-checklist.md` を Read して各セクションをチェックせよ」を含める**（cursor/codex どちらも Bash / Read を持つので自ら参照可能）。checklist を明示させることで、抽象観点（「セキュリティを見て」）だけでは検出できない具体的 anti-pattern（BOLA、CSRF 登録漏れ、Drizzle encoder、falsy check 等）の見落としを減らす。
 
@@ -201,9 +181,9 @@ agent -p "/path/to/plan.md を読んで計画をレビューしてください�
 
 ### 1. 計画レビュー（Phase 2）
 
-**初回:**
-```bash
-agent -p "このリポジトリの ${MEMORY_DIR}/memory/<task>/30_plan.md を読んで、計画をレビューしてください。
+**初回プロンプト:**
+```
+このリポジトリの ${MEMORY_DIR}/memory/<task>/30_plan.md を読んで、計画をレビューしてください。
 - 抜け漏れがないか
 - リスクや懸念点
 - より良いアプローチの提案
@@ -213,29 +193,26 @@ agent -p "このリポジトリの ${MEMORY_DIR}/memory/<task>/30_plan.md を読
 - **Recommended**: 改善推奨だが動作には直接影響しない
 - **Minor**: スタイル・命名等の軽微な指摘
 
-指摘がなければ「指摘なし」とだけ回答してください。" \
-  --trust --model gpt-5.6-sol-medium \
-  --output-format json 2>/dev/null | jq -r '.session_id, .result'
+指摘がなければ「指摘なし」とだけ回答してください。
 ```
+コマンド組み込みは「基本コマンド」の初回パターン（cursorは`--output-format json`からsession_id取得、codexは`--json`からthread_id取得）。
 
-**2回目以降:**
-```bash
-agent -p "以下の改善を行いました:
+**2回目以降のプロンプト:**
+```
+以下の改善を行いました:
 - [改善内容1]
 - [改善内容2]
 
-再度レビューしてください。同じSeverity分類形式で回答してください。指摘がなければ「指摘なし」とだけ回答してください。" \
-  --resume <session_id> --trust \
-  --model gpt-5.6-sol-medium \
-  --output-format json 2>/dev/null | jq -r '.result'
+再度レビューしてください。同じSeverity分類形式で回答してください。指摘がなければ「指摘なし」とだけ回答してください。
 ```
+コマンド組み込みは「基本コマンド」の2回目以降パターン（`--resume <session_id>` / `resume --last`でセッション継続）。
 
 ### 2. 実装レビュー（Phase 4）
 
-**初回:**
-```bash
+**初回プロンプト:**
+```
 # BASE_BRANCHはPJ CLAUDE.mdで定義された値を使用
-agent -p "このリポジトリで git diff $BASE_BRANCH を実行して、コード変更をレビューしてください。
+このリポジトリで git diff $BASE_BRANCH を実行して、コード変更をレビューしてください。
 - バグや論理エラー
 - セキュリティ上の問題
 - パフォーマンス改善点
@@ -246,35 +223,24 @@ agent -p "このリポジトリで git diff $BASE_BRANCH を実行して、コ�
 - **Recommended**: 改善推奨だが動作には直接影響しない
 - **Minor**: スタイル・命名等の軽微な指摘
 
-指摘がなければ「指摘なし」とだけ回答してください。" \
-  --trust --model gpt-5.6-sol-medium \
-  --output-format json 2>/dev/null | jq -r '.session_id, .result'
+指摘がなければ「指摘なし」とだけ回答してください。
 ```
+コマンド組み込みは「基本コマンド」の初回パターン。
 
-**2回目以降:**
-```bash
-agent -p "以下の改善を行いました:
-- [改善内容1]
-- [改善内容2]
-
-再度レビューしてください。同じSeverity分類形式で回答してください。指摘がなければ「指摘なし」とだけ回答してください。" \
-  --resume <session_id> --trust \
-  --model gpt-5.6-sol-medium \
-  --output-format json 2>/dev/null | jq -r '.result'
-```
+**2回目以降のプロンプト:** 計画レビューと同一（「以下の改善を行いました」形式）。コマンド組み込みも「基本コマンド」の2回目以降パターンを使う。
 
 ### 3. PRレビュー
 
-```bash
-agent -p "gh pr diff <番号> を実行して、PRの変更内容をレビューしてください。
+**プロンプト:**
+```
+gh pr diff <番号> を実行して、PRの変更内容をレビューしてください。
 - 変更の妥当性
 - テストの十分性
 - ドキュメントの更新必要性
 
-指摘がなければ「指摘なし」とだけ回答してください。" \
-  --trust --model gpt-5.6-sol-medium \
-  --output-format json 2>/dev/null | jq -r '.session_id, .result'
+指摘がなければ「指摘なし」とだけ回答してください。
 ```
+コマンド組み込みは「基本コマンド」の初回パターン。
 
 ## 出力形式（cursor: `agent`）
 
@@ -343,11 +309,15 @@ session_id=$(... | jq -r '.session_id')
 | Recommended | 必要性で判断（将来のバグ温床/保守性低下→修正、好みの問題/実害なし→スキップ） |
 | Minor | 必要性で判断（一貫性/生産性に影響→修正、純粋なスタイル差→スキップ） |
 
-Action Required判定は correctness / security / data integrity / 明示要件に影響するgapのみとする（adversarial reviewerは健全な実装にもgapを報告しがちなため。既存のAction Required定義=バグ・セキュリティ・データ損失リスクを格下げするものではない）。
+**レビュープロンプトに「重大な問題のみ報告せよ」「保守的に判定せよ」等の絞り込みを書かない**（モデルが文字通り受け取り報告自体を減らす）。レビュアーには気付いた問題を全て報告させ、絞り込みはlead側で行う: Action Requiredとして採用するのはcorrectness / security / data integrity / 明示要件に影響するgapのみとし、それ以外はRecommended/Minorへ再分類する。
 
 **AR定義の境界（機構拡大の抑制）**: 新機構の導入（新規テーブル・状態/enum・インフラ・運用プロセス）を伴う指摘は、テールリスクを「データ損失」と表現していてもARとして自動修正しない。Recommended扱いとし、採否はユーザー確認に回す（AGENTS.md「機構拡大のユーザー確認」）。**事実として正しい指摘と採用すべき指摘は別物** — 採否は費用対効果（発生確率×発生時の損失 vs 実装・保守コスト）で判断し、棄却理由は05_log.mdに記録する。
 
 **レビュー指摘自体も検証対象とする**: Action Requiredを適用する前に、指摘の根拠を実挙動・一次情報で確認する（レビュアーは誤ることがあり、誤指摘をそのまま適用すると正常な設定・コードを壊すため）。反証できた指摘はスキップし、反証根拠とともに05_log.mdに記録する。
+
+**指摘が具体的な機構を名指ししている場合、勝手に別機構へ置き換えない**: 指摘の「意図」だけを汲んで自分の判断で別の実装手段を選ぶと、**その手段は誰にも検証されていない状態で入る**（レビュアーは自分が書いていない機構を後続ラウンドで疑わず、指摘元の検証も効かない）。置き換えるなら、その機構が実機で動くことを自分で確認してから適用する（実例: 2026-07 <PJ>。レビューは`redirect: "manual"`を名指ししたが「リダイレクトを拒否する」という意図を汲んで`redirect: "error"`に置換→ Workersランタイム未実装で全fetchが即例外、以後4ラウンドのレビューでも検出されず本番障害）。
+
+**同一Recommendedが複数ラウンド繰り返されるのはシグナル**: 打ち切り条件（同一指摘2R連続）は「ループを止める」判断であり、「指摘の中身を棄却してよい」という意味ではない。同じRecommendedを2ラウンド連続でスキップするなら、スキップ理由（多くは「既存precedentに合わせる」）を再検証するか、ユーザーに判断を仰ぐ（実例: 2026-07 <PJ> RSSで「watcher/resumeの状態遷移テストを追加せよ」が5ラウンド全てで出続けたが既存precedentを理由に毎回スキップ→ 実際に検出されたバグ・本番障害はすべてその未テストの結合層だった）。
 
 スキップ理由は05_log.mdに記録すること。
 
@@ -358,29 +328,17 @@ Agent Teams使用時、agent reviewはreviewerチームメイトがBash経由で
 ### reviewerチームメイトのspawn指示テンプレート
 
 ```
-あなたは「{team_name}」チームのreviewerです。
+あなたはこのセッションのreviewerです。
 
 ## 役割
 外部CLI（cursorの`agent`、無ければcodex）をBash経由で実行し、レビュー結果をleadに報告する。
 
 ## 実行手順
 0. CLI判定（`command -v cursor-agent || command -v agent` で無ければ `codex`）
-1. Bashで外部CLIコマンドを実行（初回: session_id/thread_id取得）
+1. `~/.claude/context/agent-cli-guide.md`の「基本コマンド」節のテンプレートで、Bashから外部CLIコマンドを実行（初回: session_id/thread_id取得）
 2. 結果をleadにSendMessageで報告（Severity分類付き）
-3. leadからの修正完了報告を受け、セッション継続で再レビュー
+3. leadからの修正完了報告を受け、同節の「2回目以降」パターン（`--resume` / `resume --last`）でセッション継続して再レビュー
 4. 打ち切り条件を満たすまでループ
-
-## 初回コマンド（Phase 2: 計画レビュー）
-# cursor優先
-agent -p "<プロンプト>" --trust --model gpt-5.6-sol-medium --output-format json 2>/dev/null | jq -r '.session_id, .result'
-# codex fallback
-codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" --json "<プロンプト>" 2>/dev/null | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'
-
-## 再レビューコマンド
-# cursor優先
-agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-medium --output-format json 2>/dev/null | jq -r '.result'
-# codex fallback
-codex exec resume --last --json "<プロンプト>" 2>/dev/null | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'
 
 ## 打ち切り条件
 - Action Required = 0
