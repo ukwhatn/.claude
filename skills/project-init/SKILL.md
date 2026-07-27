@@ -1,6 +1,6 @@
 ---
 name: project-init
-description: プロジェクト初期化。CLAUDE.mdや.claude/がない場合にテンプレートを適用し、PJ固有設定を促す。
+description: プロジェクト初期化。CLAUDE.mdや.claude/がない場合にテンプレートを適用し、PJ固有設定を促す。境界: 既存PJのドキュメント更新・同期は project-sync。
 ---
 
 # プロジェクト初期化

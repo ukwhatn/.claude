@@ -1,6 +1,6 @@
 ---
 name: project-sync
-description: PJドキュメント同期。PJ CLAUDE.mdの更新依頼時、ドキュメント整理依頼時、およびコード変更後のドキュメント同期（npm script/環境変数/API追加のCLAUDE.md・README・API仕様への反映）依頼時に使用。user-level設定との整合性確認、ドキュメント分離原則の適用、不要ファイル削除を実施。
+description: PJドキュメント同期。PJ CLAUDE.mdの更新依頼時、ドキュメント整理依頼時、およびコード変更後のドキュメント同期（npm script/環境変数/API追加のCLAUDE.md・README・API仕様への反映）依頼時に使用。user-level設定との整合性確認、ドキュメント分離原則の適用、不要ファイル削除を実施。境界: CLAUDE.md/.claude/ が未整備の新規PJは project-init。
 ---
 
 # PJドキュメント同期
@@ -73,7 +73,7 @@ ls ~/.claude/context/
 | コンテキスト除外 | 秘匿・不要パスがpermissions.denyのReadルールで除外されているか（.claudeignoreは公式機能に存在しない。残存していれば削除提案） |
 | .claude/rules/ | パス固有ルールが活用されているか |
 | **user-level設定との重複** | 「サブエージェント呼び出し時の追加情報」「Agent Teams必須」等、user-level AGENTS.md/context/に既にある内容が重複していないか |
-| **過度な指示** | 「こまめに」「必ず」「逐次」等の過度な強制表現がないか（Opus 4.7 自律実行ベストプラクティス参照） |
+| **過度な指示** | 「こまめに」「必ず」「逐次」等の過度な強制表現がないか（自律実行ベストプラクティス参照） |
 
 ### 3. 更新提案の作成
 
@@ -193,7 +193,7 @@ BASE_BRANCH=<branch>
 ### 記載してはいけない内容
 - **サブエージェント呼び出しの強制** (`quality-checker / pr-reviewer 等を必ず呼び出せ` 等): user-level の `~/.claude/context/tool-claude-code.md` 「Agent Teams 発動条件」と重複・矛盾するため
 - **Phase 0-5 の重複定義**: user-level の workflow-rules.md に委譲
-- **過度な強制表現** (`こまめに`、`必ず`、`絶対に` 等の多用): Opus 4.7 の自律実行前提に反する
+- **過度な強制表現** (`こまめに`、`必ず`、`絶対に` 等の多用): 自律実行前提に反する
 
 ## 不要ファイルの判断基準
 

@@ -2,6 +2,15 @@
 
 `design-feature` スキルの Phase 別具体手順。SKILL.md と併用。
 
+## 目次
+
+- Phase 0: 準備
+- Phase 1: 要求深掘り
+- Phase 2: 既存実装調査（コードベース SSoT）
+- Phase 3: 01 ドラフト作成
+- Phase 4: agent review ループ
+- Phase 5: 02 抽出 + 完了報告
+
 ## Phase 0: 準備
 
 ### 0.1 メモリディレクトリ確定
@@ -175,8 +184,8 @@ grep -nE '^\s+"[a-z-]+":' src/server/domain/cloud_task.ts
 #### 単独（通常）
 小〜中規模なら、章順に Write で書き進める。
 
-#### Ultracode 並列化
-大規模なら Workflow で章別並列ドラフト → 統合:
+#### 並列化（ユーザー指示時のみ）
+ユーザーが `ultracode` の語を使った、または並列化を明示的に指示した場合のみ Workflow で章別並列ドラフト → 統合する。自己判断（「大規模だから」等）では起動しない:
 
 ```
 Phase: Draft (parallel)
@@ -287,8 +296,8 @@ agent の Action Required を反映する前に、Read で実コードを直接�
 #### 単独
 01 を章順に走査し、What だけ抽出して 02 に書く。
 
-#### Ultracode 並列化
-Workflow で章別並列抽出 → 統合:
+#### 並列化（ユーザー指示時のみ）
+ユーザーが `ultracode` の語を使った、または並列化を明示的に指示した場合のみ Workflow で章別並列抽出 → 統合する。自己判断では起動しない:
 
 ```
 Phase: Draft chapters (parallel)

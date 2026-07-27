@@ -1,6 +1,6 @@
 ---
 name: design-feature
-description: 抽象的な要件・Biz 要求から要求を深掘りし、コードベース SSoT で既存実装整合性を確認した上で「実装マスタ（01_requirements_skeleton.md）」と「システム要件書（02_system_requirements.md）」を作成する。使用タイミング (1)「○○って機能を作りたい」「このBiz要求を満たす機能を設計して」等の抽象要件提示時、(2) 既存機能の拡張・Phase 分割等の要件定義開始時、(3) `/design-feature ...` 実行時。
+description: 抽象的な要件・Biz 要求から要求を深掘りし、コードベース SSoT で既存実装整合性を確認した上で「実装マスタ（01_requirements_skeleton.md）」と「システム要件書（02_system_requirements.md）」を作成する。使用タイミング (1)「○○って機能を作りたい」「このBiz要求を満たす機能を設計して」等の抽象要件提示時、(2) 既存機能の拡張・Phase 分割等の要件定義開始時、(3) `/design-feature ...` 実行時。境界: 実装の分割・進捗管理は large-task、既存文書のレビューは doc-review。本スキルは新規要件の深掘りと文書化が目的。
 ---
 
 # Design Feature
@@ -110,6 +110,8 @@ AskUserQuestion で以下を **必ず確定** してから次に進む:
 6. **成果物の保存先**: デフォルトは `${MEMORY_DIR}/memory/YYMMDD_<context_name>/`、指定があれば従う
 7. **Phase 1 既知バグの取り込み有無**: 機能追加と同時に既知バグを修正するか
 
+依頼文から一意に読み取れる項目は、推定した内容を明示した上で進めてよい。実際に解釈が分岐しうる項目（スコープ境界・対外影響・スケジュール・金額）のみ AskUserQuestion で確定する。
+
 質問の粒度・テンプレート: @references/workflow-detail.md §「Phase 1 質問テンプレート」
 
 ### Phase 2: 既存実装調査（SSoT 確認）
@@ -151,9 +153,9 @@ AskUserQuestion で以下を **必ず確定** してから次に進む:
 
 詳細テンプレート: @references/doc-templates.md §「01 実装マスタ」
 
-#### Ultracode mode 時の並列化
+#### 並列化（ユーザー指示時のみ）
 
-Workflow で章別並列ドラフト → 統合。並列パターン: @references/workflow-detail.md §「Ultracode 並列化」
+ユーザーが `ultracode` の語を使った、または並列化を明示的に指示した場合のみ Workflow で章別並列ドラフト → 統合する。自己判断（「大規模だから」等）では起動しない。並列パターン: @references/workflow-detail.md §「並列化」
 
 ### Phase 4: agent review ループ
 

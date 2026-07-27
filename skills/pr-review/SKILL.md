@@ -1,6 +1,7 @@
 ---
 name: pr-review
 description: PRレビュー。PR番号・URL・ブランチ名・Slackリンク等を添えてPRの「レビュー」を依頼された時に使用（PRのレビュー依頼ではビルトインの/reviewでなく本スキルを使う。ローカル未コミット変更のレビュー→/code-review、自ブランチの提出前チェック→self-review、特定レビューコメントへの対応→pr-comment、PRの状態確認・PR作成相談では使わない）。Claude Codeと外部CLI（cursor agent / codex）のマルチモデルレビューでCritical/High/Medium分類の指摘を報告。
+allowed-tools: Read, Grep, Bash(gh:*), Bash(git:*)
 ---
 
 # PRレビュー

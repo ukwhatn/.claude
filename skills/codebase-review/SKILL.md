@@ -1,6 +1,7 @@
 ---
 name: codebase-review
-description: コードベース包括的レビュー。6観点（perf/sec/test/arch/cq/docs）を並列サブエージェントで実行し、優先度付きissueファイルをメモリディレクトリに生成。使用タイミング: コードベース全体の監査・定期レビュー・リリース前品質確認の依頼時、/codebase-review実行時。境界: PR単位のレビュー→pr-review、自ブランチの提出前確認→self-review、ローカル未コミット変更→/code-review、ドキュメントのレビュー→doc-review。
+description: コードベース包括的レビュー。6観点（perf/sec/test/arch/cq/docs）を並列サブエージェントで実行し、優先度付きissueファイルをメモリディレクトリに生成。使用タイミング: コードベース全体の監査・定期レビュー・リリース前品質確認の依頼時、/codebase-review実行時。境界: PR単位のレビュー→pr-review、自ブランチの提出前確認→self-review、ローカル未コミット変更→/code-review、ドキュメントのレビュー→doc-review、実行時のパフォーマンス計測が必要な場合はweb-perf。
+allowed-tools: Read, Write, Grep, Glob, Bash(mkdir:*), Bash(find:*), Bash(ls:*)
 ---
 
 # コードベース包括的レビュー
@@ -8,6 +9,8 @@ description: コードベース包括的レビュー。6観点（perf/sec/test/a
 ## 概要
 
 コードベース全体を6つの観点から並列でレビューし、発見した問題点を優先度付きのissueファイルとして記録する。
+
+本スキルの起動は、それ自体が「6観点の並列サブエージェントによるレビュー」の実行依頼である。
 
 ## トリガー条件
 
