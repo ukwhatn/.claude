@@ -9,6 +9,24 @@
 - **使うタイミング**: PR 提出前、コード review 中、AR 相当の問題を疑った時、実装完了ゲート
 - **境界**: 抽象観点（perf/sec/test/arch/cq/docs）別のレビュー方針は `codebase-review` の `references/review-aspects.md`。本ファイルはその下層（具体パターン集）
 
+## 目次
+
+1. [Authentication / Authorization](#1-authentication--authorization)
+2. [Secrets / Credentials](#2-secrets--credentials)
+3. [Injection & Input Validation](#3-injection--input-validation)
+4. [Data Integrity（CSRF / Race / Transaction）](#4-data-integritycsrf--race--transaction)
+5. [Storage & Query（DB / ORM）](#5-storage--querydb--orm)
+6. [API Contract & Schema](#6-api-contract--schema)
+7. [Frontend State & Rendering](#7-frontend-state--rendering)
+8. [URL / Navigation](#8-url--navigation)
+9. [LLM / AI Integration（OWASP LLM01:2025）](#9-llm--ai-integrationowasp-llm012025)
+10. [Logging & PII](#10-logging--pii)
+11. [Testing（回帰・境界値・property-based）](#11-testing回帰境界値property-based)
+12. [Deploy / Migration / Config](#12-deploy--migration--config)
+13. [Accessibility & Mobile](#13-accessibility--mobile)
+14. [コメント・ドキュメント（Why only、What/How 禁止）](#14-コメントドキュメントwhy-onlywhathow-禁止)
+15. [Cross-cutting（設計規律）](#15-cross-cutting設計規律)
+
 ## 出典と根拠
 
 - OWASP Top 10:2025（A01 Broken Access Control が首位維持、A10 Mishandling of Exceptional Conditions 新設）
@@ -118,6 +136,7 @@
 - `z.string().optional()` で長さ無制限（DoS: `Number.MAX_SAFE_INTEGER` を渡すと `toISOString()` で crash）
 - 未使用フィールドを schema で受理して cap しない（サーバは使わないが char cap も無し = 攻撃面）
 - server 側 schema と client 側 URL validation で制約が非対称（URL 直打ちで server validation error）
+- 外部サービスの URL / ID 形式を**サンプル 1 件から正規表現に一般化**（実在パターンの大半を弾く。実サービスで複数パターンを確認する。実例: <service> の `/forum/t-<id>/<page>` から数字限定と誤認し、同位置に来る slug 形式を全拒否）
 
 ---
 
@@ -309,6 +328,12 @@
 - Invariant を明示できるロジック（順序保存、可換性、逆演算成立）は `fast-check` 等を優先
 - 例: `mapToDsl(dslToMap(dsl)) === dsl`（round-trip）、`sort(sort(arr)) === sort(arr)`（idempotency）
 
+### ✅ 純粋関数の「呼び出し側との契約」も検証
+
+- 引数の前提（ソート順・単位・正規化済みか）を**引数名でしか表現していない**場合、単体テストは正しい前提でしか渡さないため契約違反を検出できない（実例: `computeBoundary(itemsAscending)` に呼び出し側が降順配列を渡し、最古の投稿を境界にしていた。単体テストは全通過）
+- 呼び出し側を含む結合テストを 1 本置くか、型（branded type）で守る
+- **純粋関数の単体テストだけが厚く、外部 I/O・状態遷移の結合部が未テストの構成**は、テスト件数が多くても本番障害を止められない（設定値の誤り・契約違反はすべてこの層で出る）
+
 ### ✅ 境界値
 
 - `0` / 空文字 / 空配列 / `null` / `undefined` / `MAX_SAFE_INTEGER` / 極端に長い文字列
@@ -345,6 +370,8 @@
 ---
 
 ## 14. コメント・ドキュメント（Why only、What/How 禁止）
+
+> **適用範囲**: 本節は新規コード、および確立したコメント規約を持たないコードへのデフォルト方針。既存ファイルに確立されたコメント密度・慣習がある場合はそちらを優先する。
 
 ### ✅ Why を書く
 
