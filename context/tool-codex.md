@@ -42,5 +42,5 @@ Claude Code では @import で常駐する以下のファイルを、Codex で�
 
 ## Claude Code 専用ガイドの扱い
 
-- **Codex では読まない**: `context/tool-claude-code.md` / `context/agent-teams-guide.md` / `context/task-tool-guide.md`（Claude Code 専用機構のガイドで、対応する代替は本ファイルのツール対応表に記載済み）
+- **Codex では読まない**: `context/tool-claude-code.md` / `context/task-tool-guide.md`（Claude Code 専用機構のガイドで、対応する代替は本ファイルのツール対応表に記載済み）
 - **参照された場合のみ読む**: `context/claude-customization-guide.md` は Claude Code 固有機構の解説を含むが、スキル（create-skill / instructions-audit / session-retro 等）が設計原則・rubric の真実源として参照する。**該当スキルの実行時は Codex でも参照セクションを読む**（常駐は不要）

@@ -11,7 +11,7 @@ AGENTS.md から @import され、Claude Code では毎セッション常駐す�
 - effort は既定の `high` から始め、評価に基づいて調整する。品質が保てる範囲では `low`/`medium` をコストとレイテンシの制御手段として使い、要求の厳しいコーディング・エージェント作業では `xhigh` に上げる。旧世代から引き継いだ既定値はそのまま使わず再評価する
 - Agent Teamsは限定発動（後述「委譲判断」参照）
 
-## 委譲判断（Agent Teams / 単発Subagent / lead直接実装の使い分け、2026-07更新）
+## 委譲判断（Agent Teams / 単発Subagent / lead直接実装の使い分け）
 
 leadは常にオーケストレーション（計画・タスク分解・レビュー）を担う。以下の優先順位で機械的に判定する。
 
@@ -24,15 +24,21 @@ leadは常にオーケストレーション（計画・タスク分解・レビ�
 **委譲しないケース**:
 - 自分が数回のツール呼び出しで終えられる作業
 - 自分の作業の検証・ダブルチェック
-- 1体で足りる作業に複数体を使うこと。spawn 数は低く保つ
+- 1体で足りる作業に複数体を使うこと（必要な体数は制限しない）
 
-**判定1（Agent Teams）**: 真に並列で進められる独立作業がある時のみ。チーム編成・TaskCreate/TaskUpdateでの依存関係管理のオーバーヘッドがペイする規模でのみ使う。
+**判定1（Agent Teams）**: 真に並列で進められる独立作業がある時のみ。TaskCreate/TaskUpdate での依存関係管理と、報告の統合にかかるオーバーヘッドがペイする規模でのみ使う。チームを作る/消す操作は存在しない（セッションに単一の暗黙チームがあり、`Agent` の `team_name` は Deprecated/ignored）。
 
 **判定2（単発Subagent）**: 目的は並列性ではなく、lead（会話・計画・統合）と実装のモデル階層分離とコンテキスト保護（実測: 委譲セッションはトークン消費約半分・compaction 1/6）。leadは結論のみを受け取り、**報告は一次情報と突き合わせて検証してから採用する**（Writer/Reviewer分離、@context/claude-customization-guide.md §8）。
 
+## 並列 spawn の実務
+
+- spawn 後は何もせずターンを終了する。完了報告はシステムが次のターンとして配信する
+- idle 通知は通常イベントなので催促しない。**idle 通知が届いたのに期待する最終報告が未着の場合のみ**、報告フォーマットを再掲して送信を依頼する（作業の催促ではなく成果物の回収）
+- interrupted（failure）通知は idle と区別する。初回1回だけ状況確認を送り、復帰後は agent 自身の報告を待つ。ユーザーが stop した可能性があるため、復帰可否を lead 判断で決めない
+- 並列 spawn 中のコミットは `git add <file>` で対象を選別する（`git add -A` は他 agent が編集中のファイルを巻き込む）
+
 ## Claude Code 固有の Read when
 
-- Agent Teams発動時（spawn前）: `context/agent-teams-guide.md`
 - TaskCreate/TaskUpdate使用時（複雑タスクの初回）: `context/task-tool-guide.md`
 - CLAUDE.md（AGENTS.md）・skills・hooks の設計・監査時: `context/claude-customization-guide.md`
 

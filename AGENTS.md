@@ -136,7 +136,7 @@ worktree の作成は Claude Code では EnterWorktree ツール、他環境（C
 compaction（コンテキスト要約）時は以下を保持する（Claude Code の Compact Instructions。Codex 等の要約時も準用）:
 Active Agent Teams (name, members, task assignments, status), Task list state (in_progress/completed/pending + owners), Current phase (0-5) and progress, メモリディレクトリ絶対パスと計画ファイル（30_plan.md等）のパス, 現在worktree内にいるか（path・ブランチ名）.
 
-**compaction後の復帰手順**: (1) Active Teamがあればまずteam config再確認とTaskList（`context/agent-teams-guide.md`「Context Compaction後の状態復元」をRead） → (2) 05_log.mdと計画ファイルを再読して文脈を復元する。ユーザーに文脈の再説明を求めない。
+**compaction後の復帰手順**: (1) 稼働中のサブエージェントがあれば TaskList で状態を確認する（in_progress のタスクを持つ agent は作業中。再spawnしない） → (2) 05_log.mdと計画ファイルを再読して文脈を復元する。ユーザーに文脈の再説明を求めない。
 
 ## GitHub CLI
 gh cli利用時は`gh auth status`でアカウント確認。原則 username = ukwhatn。詳細はPJ CLAUDE.md参照。

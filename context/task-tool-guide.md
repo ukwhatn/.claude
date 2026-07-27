@@ -214,7 +214,7 @@ IDは`~/.claude/tasks/`ディレクトリ内のUUIDディレクトリ名。
 
 ## Agent Teamsとの連携
 
-Agent Teams使用時、TaskCreate/TaskUpdateはチーム共有タスクリストに自動的に紐づく。TaskCreate→チームメイトspawnの基本フローは @context/agent-teams-guide.md 参照（チームメイトのspawnはAgent toolを使う。`team_name`パラメータはDeprecated/ignored — セッションには単一の暗黙チームがある）。
+Agent Teams使用時、TaskCreate/TaskUpdateはチーム共有タスクリストに自動的に紐づく。基本フローは TaskCreate（依存関係付き）→ `Agent` でチームメイトを spawn（`name` 指定）→ `SendMessage` で指示・情報共有 → チームメイトが TaskUpdate で完了 → 全員に `shutdown_request`。`team_name` パラメータは Deprecated/ignored（セッションには単一の暗黙チームがある）。
 
 ### Subagentsとの違い
 
@@ -225,7 +225,7 @@ Agent Teams使用時、TaskCreate/TaskUpdateはチーム共有タスクリスト
 | 自己調整 | 不可 | TaskListで自律的にタスク取得 |
 | コスト | 低い | 高い（独立インスタンス） |
 
-詳細: @context/agent-teams-guide.md
+使い分けの基準: @context/tool-claude-code.md「委譲判断」
 
 ## 注意事項
 

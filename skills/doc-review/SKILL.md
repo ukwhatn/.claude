@@ -14,7 +14,7 @@ Agent Teamsを活用し、6つの独立したAgentが異なる観点からドキ
 
 ## 既存設定との関係
 
-- **Agent Teams（@context/agent-teams-guide.md）**: Agent tool による並列 spawn + SendMessage + 共有タスクリストで構成
+- **Agent Teams（@context/tool-claude-code.md「委譲判断」「並列 spawn の実務」）**: Agent tool による並列 spawn + SendMessage + 共有タスクリストで構成
 - **agent CLI（@context/agent-cli-guide.md）**: 外部CLI（cursor agent / codex）による第三者レビュー
 - **Phase 0-5（@context/workflow-rules.md）**: Phase 2（計画レビュー）やPhase 4（品質確認）で使用可能
 - **codebase-reviewスキル**: コードベース対象（本スキルはドキュメント対象で競合しない）

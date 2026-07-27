@@ -23,7 +23,7 @@
 5. **05_log.mdを初期化し、ユーザーからの最初の指示を記録**
 6. **関連する過去タスク・issueを検索**（詳細は1.0参照）
 7. **タスク管理機構でタスクを作成し、依存関係を設定**（Claude Code: TaskCreate、Codex: plan）
-8. （Claude Code）Agent Teams 発動条件（context/tool-claude-code.md「Agent Teams 発動条件」参照）に該当する場合は、spawn前に `context/agent-teams-guide.md` を Read する
+8. （Claude Code）委譲する場合は `context/tool-claude-code.md`「委譲判断」で手法を確定する
 
 ## Phase 1: 調査（最重要）
 
@@ -127,7 +127,9 @@ lead は原則としてオーケストレーションに専念:
 - 並列実行可能なタスクは同時にspawn
 - 05_log.mdへの進捗記録
 
-ただし、leadが直接実装した方が明らかに効率的なファイル（方針判断を伴う中核ファイル等）は自身で編集してよい（`context/agent-teams-guide.md`「Lead Orchestration パターン」参照）。
+ただし、leadが直接実装した方が明らかに効率的なファイル（方針判断を伴う中核ファイル等）は自身で編集してよい。「leadは絶対にコードを書かない」という強制ルールではない。
+
+並列で spawn する場合、各 agent の担当ファイルを spawn 前にリストアップする。複数領域が集約された共有ファイル（`routes/*.ts` の集約・`migrations/`・スキーマ定義等）は分担境界が曖昧になるため、担当を分離するか順次実行に切り替える。
 
 ### Agent Teams非発動時（単発Subagent委譲 or lead直接実装）
 
@@ -236,8 +238,6 @@ Phase完了・ユーザー承認待ち・compaction接近などの区切りで�
 タスク管理機構（Claude Code: TaskCreate/TaskUpdate/TaskList、Codex: plan）は複雑タスクで使用。単純タスク（3ステップ以下）では省略可。
 詳細（Claude Code で複雑タスクに初めて使う時にRead）: `context/task-tool-guide.md`
 
-## Agent Teams + Leadオーケストレーション（Claude Code）
+## 委譲（Claude Code）
 
-Agent Teams は **限定発動**。発動条件は context/tool-claude-code.md「Agent Teams 発動条件」を参照。
-それ以外のタスクではモデル判断（直接実装または単発Subagent）で進める。
-詳細（Team発動時、spawn前に必ずRead）: `context/agent-teams-guide.md`
+Agent Teams は **限定発動**。発動条件・単発Subagentとの使い分け・並列 spawn の実務は @context/tool-claude-code.md「委譲判断」「並列 spawn の実務」を参照する。
