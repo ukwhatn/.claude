@@ -25,10 +25,10 @@ user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md�
 - **`@path` importは参照元の読み込み時に即時・再帰的に全ロードされる**（再帰importは最大4 hops）。CLAUDE.mdからの@importは**毎セッション常駐**を意味する。「必要時にのみロードされる」は誤り【公式】。バッククォートで囲んだパス（`` `@path` ``）はimportされずリテラル扱い【公式】
   - 常駐させたくない参照は`@`を付けず、プレーンパス+「Read when: ○○の時に必ずRead」形式で誘導する
 - **Skills**: 常駐するのはname/description（+when_to_use）のみ（約100トークン/skill）【公式】
-  - skill一覧のdescription予算は**モデル文脈窓の約1%**。溢れると使用頻度の低いskillのdescriptionから切り詰められる。`/doctor`で確認可【公式】
+  - skill一覧のdescription予算は**モデル文脈窓の約1%**。溢れると使用頻度の低いskillのdescriptionから切り詰められる。`/doctor`で確認可【未確認】（公式ドキュメント（skills.md / memory.md / costs.md / context-window.md）に該当記述が見つからない。数値の出典が不明なため運用の前提にしない）
   - description+when_to_use合算は約1,536字で切断される【公式】
-- **SKILL.md本文はinvoke時にロードされ、以後セッション終盤まで文脈に残り再読されない**。auto-compaction時は各skillの最新invoke分の先頭約5,000トークンのみ再添付（合計予算約25,000トークン）【公式】
-  - → タスク全体を通して効かせたい指示は、skill本文でなくCLAUDE.md等のstanding instructionに置く
+- **SKILL.md本文はinvoke時にロードされる**【部分確認】。裏付けが取れた範囲: context-window.md に `"Unlike the rest of the startup content, this listing is not re-injected after /compact. Only skills you actually invoked get preserved."` とあり、**skill descriptionの一覧は/compact後に再注入されず、invokeしたものだけが保持される**ことは確認できる。「本文が以後セッション終盤まで再読されない」「auto-compaction時は先頭約5,000トークンのみ再添付（合計予算約25,000トークン）」の部分は公式ドキュメント（skills.md / memory.md / costs.md / context-window.md）に該当記述が見つからず**未確認**。数値の出典が不明なため運用の前提にしない
+  - → タスク全体を通して効かせたい指示は、skill本文でなくCLAUDE.md等のstanding instructionに置く（この方針自体は上記の確認済み事実からも支持される: compact後に確実に残るのはinvoke済みskillのみで、本文の残存期間は保証されない）
 - references/等の同梱ファイルは必要時のみロード。**スクリプトは実行され出力だけが文脈に入る**（コード本体は入らない）【公式】
 - `.claude/rules/`: 各.mdが自動ロード。`paths`フロントマターでファイルパターン条件付きロード可【公式】
 
@@ -36,8 +36,23 @@ user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md�
 |--------|-----------------|
 | `@path` import | 参照元読み込み時（CLAUDE.md起点なら毎セッション） |
 | プレーンパス + Read-when | Claudeが条件に該当してReadした時のみ |
-| skills本文 | invoke時（以後残存） |
+| skills本文 | invoke時（残存期間は未確認、上記参照） |
 | `rules/`（pathsあり） | マッチするファイルを扱う時のみ |
+
+### 層の位置関係（公式で確認済み）
+
+指示が実際に注入される順序・層は次の通り:
+
+1. **system prompt**（公式記載: 約4,200トークン。出典 context-window.md）
+2. その**末尾に output style が追記される**（`"All output styles have their own custom instructions added to the end of the system prompt."` output-styles.md）
+3. **user message として CLAUDE.md が注入される**（`"CLAUDE.md content is delivered as a user message after the system prompt, not as part of the system prompt itself. Claude reads it and tries to follow it, but there's no guarantee of strict compliance, especially for vague or conflicting instructions."` memory.md）
+4. 会話（ユーザー発話・ツール結果等）
+
+**帰結**: 応答形式の規定は **output style に置くのが最も効く**（system prompt の一部になり、かつ system prompt 前文が応答形式の参照先として output style を名指ししている）。CLAUDE.mdは公式に**遵守保証なし**と明記された層である。
+
+**関連する公式仕様**:
+- `keep-coding-instructions`: `true`でClaude Code組み込みのソフトウェアエンジニアリング指示を保持、デフォルトの`false`では**削除**される
+- UserPromptSubmit hook: stdoutがClaudeに見える3イベントの1つ（他はSessionStart / UserPromptExpansion）。複数hookは並列実行され同一ハンドラは自動重複排除される。`hookSpecificOutput.additionalContext`で注入、上限10,000文字。ブロックはexit **2**（Unix慣例の1ではない）。出典 hooks.md
 
 ## 3. CLAUDE.md 設計原則
 
@@ -134,7 +149,7 @@ description: 何をするか。いつ使うか。使わない条件。
 
 - 検証のゲート強度【公式】: (a) 同一プロンプト内でcheck実行 → (b) `/goal`条件で毎ターン再評価 → (c) Stop hook（scriptで判定、通らない限りターン終了をブロック。8連続ブロックで強制終了） → (d) verification subagent
 - **証拠を出させる**: 成功を主張させず、test出力・実行コマンド・スクリーンショットを提示させる【公式】
-- adversarial reviewer（gapを探せと指示されたレビュアー）は健全な実装でもgapを報告しがち。「correctness / security / data integrity / 明示要件に影響するgapのみ指摘」と絞る【公式】
+- adversarial reviewer（gapを探せと指示されたレビュアー）は健全な実装でもgapを報告しがち【公式】。レビュアー側で観点を絞ると報告自体が減るため、絞り込みは受け取った側（lead）のフィルタで行う（運用: `context/agent-cli-guide.md`「Severity別のlead判断基準」）
 - 繰り返し破られるCLAUDE.mdルールはhookに格上げする（CLAUDE.mdに意図、hookで強制の二重化）
 
 ## 6. コンテキスト最適化
@@ -170,6 +185,11 @@ description: 何をするか。いつ使うか。使わない条件。
 - 理由なしの強調乱用（CRITICAL/MUST/絶対の数を数え、理由付き形式に）
 - 実挙動の観察: 読まれないファイル / 繰り返し読まれる内容（本文へ昇格） / リンク未追従（参照を目立たせる）
 
+**(e) system prompt との衝突・重複**
+- 本体system promptと**逆**を言う指示は、原文を引用して名指しで優先を宣言しないと一般論では負ける（引用なしの「〜を優先する」だけでは弱い）
+- 本体system promptと**同方向**の指示は重複であり削除候補（system promptが既に強制している内容をCLAUDE.md/skillで繰り返さない）
+- 発火条件は、モデルの自己分類（「複雑な」「重要な」「必要に応じて」等）ではなく、**着手前に確認できる事実**（ファイル数・拡張子・キーワードの有無等）で書く
+
 ## 8. マルチエージェント品質パターン
 
 - **Writer/Reviewer分離**: 実装バイアス排除のため、生成と評価を別コンテキストに分ける【公式】。leadをreviewer/オーケストレーター、実装をwriter（subagent）に分離するのが本環境の既定運用（詳細・使い分け基準は@context/tool-claude-code.md「委譲判断」）
@@ -180,15 +200,6 @@ description: 何をするか。いつ使うか。使わない条件。
 - CLAUDE.mdは生きた文書。望ましくない動作の修正指示を追記し、古い指示を削除
 - コードレビューは新ルールの最良の供給源（PRで見つかった未文書化規約をCLAUDE.mdへ）
 - モデル更新時はハーネス（ルール・ワークフロー）を再検証し、不要になった制約を除去
+- モデル更新時は、ハーネス側に残った旧世代前提の記述（世代名を含む見出し・引き継いだeffort既定値・旧仕様のツール名/パラメータ）を洗い出して更新する
 
-## 10. Opus 4.7 ベストプラクティス
-
-### 自律実行を信頼する
-- 初回プロンプトに **Goal / Constraints / Acceptance criteria** を整理して渡せば自律実行可能
-- ペアプログラミング型の細かい指示・「こまめに」「逐一」等の過度な強制は避ける
-
-### 検証機構の供給（最も効果の高い施策）
-- テストコード・E2E・スクリーンショット・期待出力fixture・Stop Hookを**PJ側で整備**する（セクション5参照）
-
-### Effort Level
-- デフォルトは **xhigh**（maxはoverthinking傾向）。最難関タスクのみmax
+自律実行の指針は `context/tool-claude-code.md`「自律実行の前提」を真実源とする。
