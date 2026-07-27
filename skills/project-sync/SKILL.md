@@ -191,7 +191,7 @@ BASE_BRANCH=<branch>
 - 禁止事項
 
 ### 記載してはいけない内容
-- **サブエージェント呼び出しの強制** (`quality-checker / pr-reviewer 等を必ず呼び出せ` 等): user-level の `~/.claude/context/tool-claude-code.md` 「Agent Teams 発動条件」と重複・矛盾するため
+- **サブエージェント呼び出しの強制** (`quality-checker / pr-reviewer 等を必ず呼び出せ` 等): user-level の `~/.claude/context/tool-claude-code.md` 「委譲判断」と重複・矛盾するため
 - **Phase 0-5 の重複定義**: user-level の workflow-rules.md に委譲
 - **過度な強制表現** (`こまめに`、`必ず`、`絶対に` 等の多用): 自律実行前提に反する
 

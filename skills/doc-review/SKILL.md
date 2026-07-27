@@ -1,6 +1,6 @@
 ---
 name: doc-review
-description: Agent Teamsによる多角的ドキュメントレビュー。設計書・仕様書・計画書等のドキュメントを6 Agent（通常4 + Devil's Advocate + agent CLI）で並列レビュー。使用タイミング: (1) /doc-review 明示実行時、(2) 「チームでレビューして」「多角的にレビューして」等の明示依頼時（Agent Teams発動条件(c)相当）。通常の「レビューして」だけの依頼では発火しない（単独レビューまたはagent CLIで対応し、必要なら本スキルを提案する）。
+description: Agent Teamsによる多角的ドキュメントレビュー。設計書・仕様書・計画書等のドキュメントを6 Agent（通常4 + Devil's Advocate + agent CLI）で並列レビュー。使用タイミング: (1) /doc-review 明示実行時、(2) 「チームでレビューして」「多角的にレビューして」等の明示依頼時。通常の「レビューして」だけの依頼では発火しない（単独レビューまたはagent CLIで対応し、必要なら本スキルを提案する）。
 ---
 
 # doc-review - Agent Teams ドキュメントレビュー
@@ -180,11 +180,11 @@ leadにSendMessageで以下を報告:
 全6 Agentを並列でspawnする。モデルは指定しない（セッションのモデルを継承）。
 
 ```
-Agent(subagent_type: "code-reviewer", name: "reviewer-1", prompt: ...)
-Agent(subagent_type: "code-reviewer", name: "reviewer-2", prompt: ...)
-Agent(subagent_type: "code-reviewer", name: "reviewer-3", prompt: ...)
-Agent(subagent_type: "code-reviewer", name: "reviewer-4", prompt: ...)
-Agent(subagent_type: "code-reviewer", name: "devils-advocate", prompt: ...)
+Agent(subagent_type: "general-purpose", name: "reviewer-1", prompt: ...)
+Agent(subagent_type: "general-purpose", name: "reviewer-2", prompt: ...)
+Agent(subagent_type: "general-purpose", name: "reviewer-3", prompt: ...)
+Agent(subagent_type: "general-purpose", name: "reviewer-4", prompt: ...)
+Agent(subagent_type: "general-purpose", name: "devils-advocate", prompt: ...)
 Agent(subagent_type: "general-purpose", name: "agent-cli-reviewer", prompt: ...)
 ```
 
