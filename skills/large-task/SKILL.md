@@ -121,41 +121,7 @@ Agent Teams 使用時（Claude Code）はreviewerチームメイトが自動実�
 
 ## タスク管理機構との統合（オプション）
 
-タスク分割後、タスク管理機構で進捗管理を強化できる（Claude Code: TaskCreate/TaskUpdate/TaskList、Codex: plan 機構。以下のコード例は Claude Code のもの）。
-詳細: @context/task-tool-guide.md
-
-### /large-task plan での使用
-
-タスク分割後、各サブタスクをTaskCreateで登録:
-
-```
-# 各サブタスクを作成
-TaskCreate(
-  subject: "Task 01: <タスク名>",
-  description: "<タスクファイルの内容サマリー>",
-  activeForm: "<タスク名>を実装中"
-)
-
-# 依存関係を設定
-TaskUpdate(taskId: "2", addBlockedBy: ["1"])
-```
-
-**メリット:**
-- TaskListで全タスクの状態を即座に確認
-- 依存関係（blockedBy）で実行可能なタスクを判定
-- セッション間でタスク状態が保持される
-
-### /large-task implement での使用
-
-```
-# タスク開始時
-TaskUpdate(taskId, status: "in_progress")
-
-# タスク完了時
-TaskUpdate(taskId, status: "completed")
-```
-
-**注意:** 00_plan.mdの状態更新と併用すること（置き換えではない）
+タスク分割後、タスク管理機構で進捗管理を強化できる（Claude Code: TaskCreate/TaskUpdate/TaskList、Codex: plan 機構）。plan / implement それぞれの使用例は @context/task-tool-guide.md「使用場面」§2「large-task」を参照。00_plan.mdの状態更新と併用すること（置き換えではない）。
 
 ## 既存設定への参照
 

@@ -16,99 +16,34 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(grep:*)
 ## 引数
 
 ```
-/findmem <keyword>           # キーワードで検索
-/findmem <keyword1> <keyword2>  # 複数キーワード（AND検索）
+/findmem <keyword>              # キーワードで検索（複数指定でAND検索）
 ```
 
-## ワークフロー
+## 検索範囲
 
-### Step 1: MEMORY_DIRの特定
+MEMORY_DIRはPJ CLAUDE.md参照（未定義時`.local/`）。キーワードは大文字小文字を区別しない。
 
-PJ CLAUDE.mdから`MEMORY_DIR`を読み取る。未定義の場合は`.local/`をデフォルトとする。
+1. `${MEMORY_DIR}/memory/` のディレクトリ名
+2. `${MEMORY_DIR}/issues/` のファイル名
+3. 1・2でマッチしなかった場合、各メモリディレクトリの `05_log.md` / `00_spec.md` を内容検索
 
-### Step 2: ディレクトリ名検索
+## 出力
 
-`${MEMORY_DIR}/memory/` 配下のディレクトリ名をキーワードでフィルタリング:
-
-```bash
-ls ${MEMORY_DIR}/memory/ | grep -i "<keyword>"
-```
-
-### Step 3: issueファイル検索
-
-`${MEMORY_DIR}/issues/` 配下のファイル名をキーワードでフィルタリング:
-
-```bash
-ls ${MEMORY_DIR}/issues/ | grep -i "<keyword>"
-```
-
-### Step 4: ファイル内容検索（ディレクトリ名にマッチしなかった場合）
-
-ディレクトリ名でマッチしなかった場合、各メモリディレクトリ内の`05_log.md`と`00_spec.md`の内容をGrepでキーワード検索:
-
-```bash
-# 05_log.mdの内容検索
-grep -ril "<keyword>" ${MEMORY_DIR}/memory/*/05_log.md
-
-# 00_spec.mdの内容検索
-grep -ril "<keyword>" ${MEMORY_DIR}/memory/*/00_spec.md
-```
-
-### Step 5: 結果表示
-
-マッチした各ディレクトリについて以下を表示:
-
-```
-## 関連する過去タスク
-
-### YYMMDD_<task_name>/
-**ファイル構成:**
-- 05_log.md (XX KB) - 最終更新: YYYY-MM-DD
-- 00_spec.md (XX KB)
-- 30_plan.md (XX KB)
-- ...
-
-**05_log.mdサマリー（冒頭のユーザー指示）:**
-> [05_log.mdの最初のユーザー指示を抽出して表示]
-
----
-
-## 関連するissue
-
-### <issue-filename>.md
-> [issueファイルの冒頭3行を表示]
-```
-
-### Step 6: 参照提案
-
-「このディレクトリの詳細を確認しますか？」と提案し、ユーザーが選んだファイルを読み込む。
-
-## 出力例
+マッチした各タスク/issueについて、ディレクトリ名（またはファイル名）・ファイル構成・最終更新日・要約（05_log.mdの冒頭ユーザー指示、issueの冒頭数行）を一覧表示し、詳細を読むか確認する。
 
 ```
 ## 関連する過去タスク（2件）
 
 ### 260122_<context-name>/
-ファイル: 00_spec.md, 05_log.md, 10_confluence_prd.md, ... (14ファイル)
-最終更新: 2026-02-25
-
+ファイル: 00_spec.md, 05_log.md, ... (14ファイル) / 最終更新: 2026-02-25
 > **ユーザー指示:** <feature>の要件定義をConfluenceから取得してまとめてほしい
-
-### 260204_mobile-idp-integration/
-ファイル: 05_log.md, 20_survey.md (2ファイル)
-最終更新: 2026-02-04
-
-> **ユーザー指示:** モバイルアプリからのIdP連携について調査してほしい
 
 ---
 
 ## 関連するissue（0件）
-
 該当なし
 ```
 
 ## 注意事項
 
-- MEMORY_DIRが存在しない場合はエラーメッセージを表示
-- キーワードは大文字小文字を区別しない（case-insensitive）
-- 05_log.mdのサマリーは最初の「ユーザー指示:」ブロックのみ抽出（全文は読まない）
+MEMORY_DIRが存在しない場合はその旨を報告する。

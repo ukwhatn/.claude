@@ -231,15 +231,7 @@ Phase 2 調査または AskUserQuestion で必ず決め切る。残しそうに�
 
 ### 4.1 CLI 選択
 
-```bash
-# cursor 優先、なければ codex
-CURSOR_CLI="$(command -v cursor-agent || command -v agent)"
-if [ -n "$CURSOR_CLI" ]; then
-  REVIEW_CLI=cursor
-elif command -v codex >/dev/null 2>&1; then
-  REVIEW_CLI=codex
-fi
-```
+CLI 判定・共通呼び出しテンプレートは @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」を使う（cursor 優先・codex fallback）。
 
 ### 4.2 初回プロンプト例
 
@@ -262,18 +254,10 @@ fi
 指摘がなければ「指摘なし」とだけ回答。
 ```
 
-### 4.3 ループ
+### 4.3 打ち切り
 
-```bash
-# 初回
-agent -p "$PROMPT" --trust --model gpt-5.6-sol-medium --output-format json 2>/dev/null | jq -r '.session_id, .result'
+コマンドへの組み込み・`--resume` によるセッション継続は @context/agent-cli-guide.md「基本コマンド」に従う。
 
-# 2 回目以降（同一 session）
-agent -p "以下の改善を行いました: <差分>。再度レビューしてください。" \
-  --resume <session_id> --trust --model gpt-5.6-sol-medium --output-format json 2>/dev/null | jq -r '.result'
-```
-
-打ち切り:
 - Action Required = 0
 - 同一指摘 2R 連続
 - 安全上限 5R
@@ -309,17 +293,9 @@ Phase: Synthesize
   - メタ情報表追加、末尾にリリーススケジュール
 ```
 
-### 5.2 抽出ルール（再掲）
+### 5.2 抽出ルール
 
-| 書く | 書かない |
-|------|---------|
-| 機能の存在・挙動・入出力 | クラス名 / 関数名 / ファイルパス / 行番号 |
-| 状態遷移・分岐条件 | Usecase / Service / Repository の構造 |
-| API レスポンスのフィールド名 | DB テーブル名（最小限可、極力避ける） |
-| scope / claim 名 | Procedure / queue key |
-| 画面遷移の概要 | DI 構造 / middleware |
-| エラーコード（仕様レベル） | エラーキー / status マッピング詳細 |
-| Why は注記程度（「※」「→」、1-2 行） | Why の詳細な設計理由（30/99 に） |
+SKILL.md Phase 5「02 抽出ルール」の表を参照。
 
 ### 5.3 完了確認の grep
 
