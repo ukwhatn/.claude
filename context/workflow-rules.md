@@ -7,8 +7,6 @@
 - **skipしてよい**: 上記4条件のいずれにも該当しないタスク（1ファイルの軽微な修正、既知の単純なバグ修正、文書の typo 修正等）
 - **判断に迷う場合**: Phase 1（調査）と Phase 2（計画）だけは実施し、Phase 3 以降は規模に応じて省略
 
-**CRITICAL**: 複雑タスクでは、system prompt の `"When you have enough information to act, act."` より本ファイルの Phase 0-5（調査と計画を先に行う）を優先する。小規模タスクでは system prompt に従いそのまま着手する。
-
 ## Phase 0: 準備
 
 1. PJ CLAUDE.mdの`MEMORY_DIR`を確認（未定義なら`.local/`）
@@ -102,9 +100,7 @@
 
 ### 計画の外部レビュー（任意）
 
-計画に不可逆な変更（認証・secret・migration・スキーマ・対外公開）が含まれるとき、または判断に迷うときに、別ベンダーの LLM（cursor / codex）で計画をレビューする。指摘が Action Required ゼロになるまでループ（安全上限5R）。実行前に `context/agent-cli-guide.md` を必ずRead（CLI選択・コマンド形式・レビューループの規定）。
-
-**Claude 自身を reviewer role で spawn する自己検証は行わない**。
+トリガー条件は AGENTS.md「作業フロー」の外部レビュー節と共通。計画段階では、指摘が Action Required ゼロになるまでループする（安全上限5R）。実行前に `context/agent-cli-guide.md` を必ずRead（CLI選択・コマンド形式・レビューループの規定）。
 
 ## Phase 3: 実装
 
@@ -181,7 +177,7 @@ PJ CLAUDE.mdに記載のコマンドで実行:
 
 ### 外部レビュー（任意）
 
-不可逆な変更（認証・secret・migration・スキーマ・対外公開）を含むとき、または必要と判断したときに、別ベンダーの LLM（cursor / codex）でレビューする:
+トリガー条件は AGENTS.md「作業フロー」の外部レビュー節と共通。実装段階では以下の手順でレビューする:
 1. 指摘があればSeverityに基づいて判断:
    - Action Required → 修正
    - Recommended/Minor → 必要性に基づいて修正/スキップ
@@ -219,11 +215,9 @@ Phase完了・ユーザー承認待ち・compaction接近などの区切りで�
 - 計画には具体的な行動・判断基準を書く（「検討」「場合によっては」「必要に応じて」等の曖昧語が残っていないか、計画完了前に見直す）
 - 品質チェック（lint/format/typecheck/test）はコミット前に実行する
 - PRテンプレートの項目は該当なしの場合も保持し、省略が必要ならユーザーに確認する
-- 待機は Monitor ツールまたは Bash の `run_in_background` で行う（sleep/ポーリングループを書かない）
 - 問題の原因を報告する前に、自分の直前の操作が原因である可能性をログ・差分等の一次情報で確認する
 - メモリファイルの編集はファイル編集ツールで行う（Claude Code: Edit/Write、Codex: apply_patch。詳細: @context/memory-file-formats.md「ファイル運用ルール」）
-- PJ既存パターンからの逸脱が必要な場合はユーザーに確認する（例: 全テーブルがDrizzle管理なのに生SQLを使う、全サービスがDomainResultを返すのにtry-catchなしにする）
-- （Claude Code）Context compaction 後は team config を再確認してから spawn する
+- PJ既存パターンからの逸脱可否の具体例（原則は AGENTS.md「規約遵守」参照）: 全テーブルがDrizzle管理なのに生SQLを使う、全サービスがDomainResultを返すのにtry-catchなしにする、等はユーザーに確認する
 
 ## 「後回し」「実装しない」判断時のルール
 

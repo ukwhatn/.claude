@@ -228,9 +228,7 @@
 
 ### ✅ React Hooks
 
-- Hook は component / custom hook のトップレベルでのみ呼ぶ（loop / condition 内禁止）
 - `useReducer` は複雑 state に、reducer は pure
-- `useRef` を UI 更新の trigger に使わない（`useState`）
 - `useMemo` / `useCallback` は測定してから
 
 ### ✅ Derived state / Data Flow

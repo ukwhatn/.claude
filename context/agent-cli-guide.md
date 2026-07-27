@@ -58,7 +58,7 @@ fi
 
 > 以降の例では cursor 側を `agent` と表記するが、これは `"$CURSOR_CLI"`（= `cursor-agent` または `agent`）の短縮表記。`cursor-agent` しか無い環境では `agent` を `cursor-agent` に読み替える（または上記 `$CURSOR_CLI` を使う）。
 
-### 3. 外部CLIが使えない場合の方針（両 CLI 使えない・credit 切れ・network 遮断時）
+### 外部CLIが使えない場合の方針（両 CLI 使えない・credit 切れ・network 遮断時）
 
 外部CLIが使えない環境（両方不在・credit切れ・network遮断）では、外部レビューを省略し、その旨を完了報告に明記する。**Claude 自身を reviewer role で spawn する自己検証で代替しない**（同一モデルによる自己検証は指示がなくても行われており、reviewer role での spawn は bias 独立性を持たないままコストを倍増させるだけのため）。
 
@@ -266,19 +266,6 @@ gh pr diff <番号> を実行して、PRの変更内容をレビューしてく�
 }
 ```
 
-### jqでの抽出例
-
-```bash
-# session_idとresultを取得
-... | jq -r '.session_id, .result'
-
-# resultのみ取得
-... | jq -r '.result'
-
-# session_idのみ取得（変数に保存用）
-session_id=$(... | jq -r '.session_id')
-```
-
 ## レビューループの流れ
 
 1. **初回レビュー実行**
@@ -364,11 +351,6 @@ reviewerはPhase 2（計画レビュー）からPhase 4（実装レビュー）�
 agent CLIのセッションはPhaseごとに新規作成するが、reviewerチームメイト自体は跨いで再利用する。
 これにより、コードベースへの理解を保持した状態でレビューの質を維持できる。
 
-### --resume によるセッション継続
-
-同一Phase内の修正→再レビューループでは `--resume <session_id>` を使用してagent CLIセッションを継続する。
-前回のレビュー文脈が保持されるため、差分のみに集中した効率的なレビューが可能。
-
 ## モデル選択ガイド
 
 | CLI | 指定 | 特徴 | 推奨用途 |
@@ -386,19 +368,7 @@ codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" ...
 
 ## 注意事項
 
-### cursor（`agent`）
-- `-p`モード（非対話モード）ではスキル（`/commit`等）は使用不可
-- セッション継続は必ず`--resume <session_id>`を使用する
-- **`--trust`は必須**（省略するとWorkspace Trust確認が発生し、non-interactiveモードで失敗する）
-- **`--output-format stream-json`は使用禁止**（ハング問題のため）
-
-### codex（`codex exec`）
-- 既定で **read-only sandbox・承認なしで完走** するため、レビュー用途では追加フラグ不要（編集が必要な用途でない限り `--sandbox` は変更しない）
-- セッション継続は `codex exec resume --last`（CWDの直近）または `resume <SESSION_ID>`。プロンプトは位置引数
-- 認証は保存済みCLIログインを既定で再利用。CI等のみ `CODEX_API_KEY` を当該コマンド限定で付与
-
-### 共通
-- **プロンプトにdiff/ファイル内容を`$()`で埋め込むことは禁止**（トークン超過のため）
+- cursor（`agent`）の `-p`モード（非対話モード）ではスキル（`/commit`等）は使用不可。他のオプション・制約は「主要オプション」「基本コマンド」節を参照
 
 ### CRITICAL: パイプ実行時のエラーハンドリング
 

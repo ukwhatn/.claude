@@ -6,61 +6,11 @@
 
 TaskCreate/TaskList/TaskGet/TaskUpdateツールを使用して、タスクの進捗管理と可視化を行う。
 
-## ツール一覧
+> 各ツールの引数・状態遷移・依存関係の指定方法はツール自体の説明を参照（TaskCreate/TaskUpdate/TaskList/TaskGetの説明に記載済み）。以下はこのPJでの活用パターンのみを扱う。
 
-| ツール | 用途 |
-|--------|------|
-| TaskCreate | 新しいタスクを作成 |
-| TaskList | 全タスクの一覧を表示 |
-| TaskGet | 特定タスクの詳細を取得 |
-| TaskUpdate | タスクのステータス・内容を更新 |
+## metadataのキー命名例
 
-## 基本パターン
-
-### タスク作成
-
-```
-TaskCreate(
-  subject: "タスク名",           # 簡潔なタイトル（命令形）
-  description: "詳細説明",       # 実行内容の詳細
-  activeForm: "〜中"            # スピナーに表示される進行形
-)
-```
-
-**例:**
-```
-TaskCreate(
-  subject: "Phase 1: 調査",
-  description: "既存コードベースとベストプラクティスを調査",
-  activeForm: "調査中"
-)
-```
-
-### 状態更新
-
-```
-TaskUpdate(taskId: "1", status: "in_progress")  # 開始
-TaskUpdate(taskId: "1", status: "completed")    # 完了
-```
-
-**状態遷移:** `pending` → `in_progress` → `completed`
-
-### 依存関係
-
-```
-TaskUpdate(taskId: "2", addBlockedBy: ["1"])    # Task 2はTask 1の完了を待つ
-```
-
-- blockedByが空でないタスクは実行不可
-- 依存タスクが完了すると自動的に実行可能になる
-
-### メタデータ
-
-```
-TaskUpdate(taskId: "1", metadata: {key: "value"})  # 追加情報を記録
-```
-
-**活用例:**
+汎用の使い方はツール説明に記載済み。このPJでの命名慣習の例:
 - レビュー結果: `{issues_found: 3, critical: 1}`
 - ループ回数: `{loop: 2, session_id: "xxx"}`
 
@@ -175,9 +125,9 @@ TaskUpdate(nextTaskId, status: "in_progress")
 ```
 
 **結果取得の注意（IMPORTANT）:**
-- `TaskOutput`ツールは現行環境に存在するが、**ツール定義自体にDEPRECATEDと明記**されている。bash タスクは開始時に出力ファイルパスが返り、完了時に同じパスを含む通知が来るので、**そのファイルパスをReadで読むのが推奨**（TaskOutputではない）
+- bash タスクは開始時に出力ファイルパスが返り、完了時に同じパスを含む通知が来るので、**そのファイルパスをReadで読む**
 - **local_agent タスク（Agent toolのサブエージェント）は、Agentの結果を直接使う。`.output`をReadしてはならない**（サブエージェントの全会話transcriptへのsymlinkであり、コンテキストを溢れさせる）
-- ログのパターンマッチ等、特定条件の発生を監視したい場合は`Monitor`ツールを使う（stdoutの各行が通知イベントになる）
+- ログのパターンマッチ等、特定条件の発生を監視したい場合は`Monitor`ツールを使う（stdoutの各行が通知イベントになる）。実行中のバックグラウンドタスク・Monitor・チームメイトを早期停止したい場合は`TaskStop`（task_idにタスクID/エージェント名/`name@team`のいずれかを渡す）
 
 **活用シーン:**
 - `npm install` / `pip install`（依存関係インストール）
@@ -214,7 +164,7 @@ IDは`~/.claude/tasks/`ディレクトリ内のUUIDディレクトリ名。
 
 ## Agent Teamsとの連携
 
-Agent Teams使用時、TaskCreate/TaskUpdateはチーム共有タスクリストに自動的に紐づく。基本フローは TaskCreate（依存関係付き）→ `Agent` でチームメイトを spawn（`name` 指定）→ `SendMessage` で指示・情報共有 → チームメイトが TaskUpdate で完了 → 全員に `shutdown_request`。`team_name` パラメータは Deprecated/ignored（セッションには単一の暗黙チームがある）。
+Agent Teams使用時、TaskCreate/TaskUpdateはチーム共有タスクリストに自動的に紐づく。基本フローは TaskCreate（依存関係付き）→ `Agent` でチームメイトを spawn（`name` 指定）→ `SendMessage` で指示・情報共有 → チームメイトが TaskUpdate で完了 → 全員に `shutdown_request`。
 
 ### Subagentsとの違い
 
@@ -230,6 +180,4 @@ Agent Teams使用時、TaskCreate/TaskUpdateはチーム共有タスクリスト
 ## 注意事項
 
 - Agent Teams 発動時: TaskCreate/TaskUpdateは必須（チーム共有タスクリストとして機能）
-- 単独作業時: 複雑タスクで使用（3ステップ以下なら省略可）
-- 依存関係はタスク作成後にTaskUpdateで設定
-- metadataは任意のキー・値を格納可能
+- 単独作業時の使用要否は `context/workflow-rules.md`「適用範囲」の基準に従う
