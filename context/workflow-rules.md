@@ -112,24 +112,13 @@
 2. **品質チェック・破壊的操作・副作用の大きいコマンド**はPJ規定（PJ CLAUDE.mdの規定コマンド）に従い、規定と異なるコマンドを独断で使わない（例: `tsc`直叩きでなく`npm run tsc`）。調査用の読み取り系コマンドは対象外
 3. 計画からの方針変更・スコープ変更は着手前にユーザーに確認する（Claude Code: AskUserQuestion）
 
-実装方針はAgent Teams発動条件に応じて選択:
+委譲の要否と構成は `context/tool-claude-code.md`（Claude Code）／`context/tool-codex.md`（Codex）の基準で決める。各タスクを「調査→計画→実行→レビュー」で進める。
 
-### Agent Teams 発動時（Lead Orchestration・Claude Code）
+### 委譲する場合
 
-lead は原則としてオーケストレーションに専念:
-- タスクの依存関係に基づいて実行順序を管理
-- implementerチームメイトをspawnしてタスクを割り当て
-- チームメイトの完了報告を受けて次のタスクをアサイン
-- 並列実行可能なタスクは同時にspawn
-- 05_log.mdへの進捗記録
-
-ただし、leadが直接実装した方が明らかに効率的なファイル（方針判断を伴う中核ファイル等）は自身で編集してよい。「leadは絶対にコードを書かない」という強制ルールではない。
+lead は依存関係に基づく実行順序の管理、spawn とタスク割り当て、完了報告の統合、05_log.md への進捗記録を担う。ただし方針判断を伴う中核ファイルなど、lead が直接実装した方が明らかに効率的なものは自身で編集してよい（「leadは絶対にコードを書かない」という強制ルールではない）。
 
 並列で spawn する場合、各 agent の担当ファイルを spawn 前にリストアップする。複数領域が集約された共有ファイル（`routes/*.ts` の集約・`migrations/`・スキーマ定義等）は分担境界が曖昧になるため、担当を分離するか順次実行に切り替える。
-
-### Agent Teams非発動時（単発Subagent委譲 or lead直接実装）
-
-`context/tool-claude-code.md`「委譲判断」に従う: 「小規模タスク」を除き実装は単発Subagent（Agent tool、model: sonnet既定）へ委譲し、leadはオーケストレーション・レビューに専念する。各タスクを「調査→計画→実行→レビュー」で進める。
 
 ### 共通の実装品質ルール
 
@@ -234,4 +223,4 @@ Phase完了・ユーザー承認待ち・compaction接近などの区切りで�
 
 ## 委譲（Claude Code）
 
-Agent Teams は **限定発動**。発動条件・単発Subagentとの使い分け・並列 spawn の実務は @context/tool-claude-code.md「委譲判断」「並列 spawn の実務」を参照する。
+委譲の要否・構成（体数・相互通信・共有タスクリスト）・並列 spawn の実務は @context/tool-claude-code.md「委譲判断」「並列 spawn の実務」を参照する。

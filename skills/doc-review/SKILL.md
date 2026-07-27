@@ -3,18 +3,17 @@ name: doc-review
 description: Agent Teamsによる多角的ドキュメントレビュー。設計書・仕様書・計画書等のドキュメントを6 Agent（通常4 + Devil's Advocate + agent CLI）で並列レビュー。使用タイミング: (1) /doc-review 明示実行時、(2) 「チームでレビューして」「多角的にレビューして」等の明示依頼時。通常の「レビューして」だけの依頼では発火しない（単独レビューまたはagent CLIで対応し、必要なら本スキルを提案する）。
 ---
 
-# doc-review - Agent Teams ドキュメントレビュー
+# doc-review - 多角的ドキュメントレビュー
 
-Agent Teamsを活用し、6つの独立したAgentが異なる観点からドキュメントをレビューする。
-複数のAIインスタンスが独立して分析することで、単一視点では見落としがちな問題を検出する。
+6体を並列に spawn し、それぞれ異なる観点からドキュメントをレビューする。独立したコンテキストで分析することで、単一視点では見落としがちな問題を検出する。
 
 ## 環境要件と代替実行
 
-本スキルの並列実行は Claude Code の Agent Teams（Agent tool による並列 spawn + SendMessage）を前提とする。Agent Teams が使えない環境（Codex 等）では、Step 2 の観点セットをそのまま用いて**観点ごとの逐次レビュー**（利用可能ならサブエージェント、なければ独立した検討パスとして順に実行）で代替し、Step 6 以降の統合・レポート手順に合流する。agent-cli-reviewer 相当の外部CLIレビューはどの環境でも実行する（実行主体に応じた CLI 選択は @context/agent-cli-guide.md 冒頭の注記に従う）。
+本スキルは `Agent` ツールによる並列 spawn を前提とする。並列 spawn が使えない環境（Codex 等）では、Step 2 の観点セットをそのまま用いて**観点ごとの逐次レビュー**（利用可能ならサブエージェント、なければ独立した検討パスとして順に実行）で代替し、Step 6 以降の統合・レポート手順に合流する。agent-cli-reviewer 相当の外部CLIレビューはどの環境でも実行する（実行主体に応じた CLI 選択は @context/agent-cli-guide.md 冒頭の注記に従う）。
 
 ## 既存設定との関係
 
-- **Agent Teams（@context/tool-claude-code.md「委譲判断」「並列 spawn の実務」）**: Agent tool による並列 spawn + SendMessage + 共有タスクリストで構成
+- **委譲の構成（@context/tool-claude-code.md「委譲判断」「並列 spawn の実務」）**: 本スキルは相互通信を使わず、各体が独立して結論を返し lead が統合する構成
 - **agent CLI（@context/agent-cli-guide.md）**: 外部CLI（cursor agent / codex）による第三者レビュー
 - **Phase 0-5（@context/workflow-rules.md）**: Phase 2（計画レビュー）やPhase 4（品質確認）で使用可能
 - **codebase-reviewスキル**: コードベース対象（本スキルはドキュメント対象で競合しない）

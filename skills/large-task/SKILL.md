@@ -42,7 +42,7 @@ ${MEMORY_DIR}/
    - 必ずdateコマンドで日付を確認すること
 4. 00_plan.md作成（全体計画）
 5. 01_xxx.md, 02_xxx.md... 作成（個別タスク）
-6. agent reviewで計画検証（reviewerチームメイトが自動実行 - @context/agent-cli-guide.md参照）
+6. 必要なら外部CLIで計画レビュー（@context/agent-cli-guide.md参照）
 
 ### /large-task implement <task_num>
 
@@ -105,14 +105,14 @@ ${MEMORY_DIR}/
 2. **Phase 1**: タスクファイルの「作業内容」を元に詳細調査
 3. **Phase 2**: 必要に応じて詳細計画（タスクファイルで既に十分なら省略可）
 4. **Phase 3**: 実装（4ステップ: 調査→計画→実行→レビュー）
-5. **Phase 4**: 品質確認 + agent review（reviewerチームメイトが自動実行 - @context/agent-cli-guide.md参照）
+5. **Phase 4**: 品質確認（必要なら外部CLIレビュー - @context/agent-cli-guide.md参照）
 6. **Phase 5**: 完了報告、00_plan.mdの状態更新
 
 ## agent review
 
-Agent Teams 使用時（Claude Code）はreviewerチームメイトが自動実行する。単独作業時や Agent Teams が無い環境では、自分で外部CLIを実行する（@context/agent-cli-guide.md）。
+外部CLIは lead が実行する（@context/agent-cli-guide.md）。相互通信を使う構成で reviewer を分けている場合はその agent が実行する。
 
-詳細: @context/agent-cli-guide.md「Agent Teams内での実行パターン」
+詳細: @context/agent-cli-guide.md「レビュー専任 agent に分ける場合」
 
 ### leadの判断基準
 - Action Required → 必ず修正（implementerに委譲）

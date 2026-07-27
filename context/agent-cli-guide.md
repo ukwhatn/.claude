@@ -13,7 +13,7 @@
 - [出力形式（cursor: `agent`）](#出力形式cursor-agent)
 - [レビューループの流れ](#レビューループの流れ)
 - [Severity別のlead判断基準](#severity別のlead判断基準)
-- [Agent Teams内での実行パターン（Claude Code）](#agent-teams内での実行パターンclaude-code)
+- [レビュー専任 agent に分ける場合（Claude Code）](#レビュー専任-agent-に分ける場合claude-code)
 - [モデル選択ガイド](#モデル選択ガイド)
 - [注意事項](#注意事項)
 
@@ -24,7 +24,7 @@
 
 > **実行主体が Codex の場合**: 外部レビューCLIは cursor（`agent`）または claude を用い、codex 自身での再帰レビューは行わない（別ベンダー bias 独立性の確保が目的のため）。claude の non-interactive 例: 初回 `claude -p "<プロンプト>" --output-format json | jq -r '.session_id, .result'`、継続 `claude -p "<プロンプト>" --resume <session_id> --output-format json | jq -r '.result'`（プロンプト本文・Severity分類・ループ規定は本ガイド共通）。以下の cursor/codex の使い分けは「実行主体が Claude Code」の場合の既定。
 
-Agent Teams内ではreviewerチームメイト（general-purpose）がBash経由で外部CLIを自動実行する。leadやimplementerが手動でコマンドを実行する必要はない。
+外部CLIは lead が Bash で直接実行するのが既定。レビュー専任の agent に分ける場合は「レビュー専任 agent に分ける場合」参照。
 
 **重要**: レビューはSeverity分類に基づく収束条件付きループで実施する（詳細は「レビューループの流れ」参照）。
 
@@ -88,7 +88,7 @@ fi
 
 ## 基本コマンド
 
-以下がcursor/codex共通の呼び出しテンプレート（初回・2回目以降）。**計画レビュー・実装レビュー・PRレビュー・Agent Teams内reviewerを含む全レビュー種別がこれを共用する**。各レビュー種別で変わるのは`<プロンプト>`の中身のみ（「レビュー用コマンド例」参照）。
+以下がcursor/codex共通の呼び出しテンプレート（初回・2回目以降）。**計画レビュー・実装レビュー・PRレビュー・レビュー専任agentを含む全レビュー種別がこれを共用する**。各レビュー種別で変わるのは`<プロンプト>`の中身のみ（「レビュー用コマンド例」参照）。
 
 ### cursor（`agent` / `cursor-agent`）— 優先
 
@@ -275,7 +275,7 @@ gh pr diff <番号> を実行して、PRの変更内容をレビューしてく�
 
 2. **Severity別のlead判断**
    - leadがレビュー結果を受け取り、Severity別に修正/スキップを判断
-   - 修正が必要な指摘はimplementerチームメイトに委譲
+   - 修正が必要な指摘は実装担当の agent に委譲（委譲しない構成なら lead が修正）
    - スキップした指摘と理由は05_log.mdに記録
 
 3. **再レビュー（セッション継続）**
@@ -308,11 +308,11 @@ gh pr diff <番号> を実行して、PRの変更内容をレビューしてく�
 
 スキップ理由は05_log.mdに記録すること。
 
-## Agent Teams内での実行パターン（Claude Code）
+## レビュー専任 agent に分ける場合（Claude Code）
 
-Agent Teams使用時、agent reviewはreviewerチームメイトがBash経由で自動実行する。
+外部CLIは lead が直接実行するのが既定。レビューループが長く、指摘と修正の文脈を lead のコンテキストから分離したい場合のみ、reviewer を1体に分ける（`name` を付けて `SendMessage` で連携する構成）。
 
-### reviewerチームメイトのspawn指示テンプレート
+### spawn 指示テンプレート
 
 ```
 あなたはこのセッションのreviewerです。
@@ -347,8 +347,8 @@ lead → reviewer（spawn + レビュー依頼）
 
 ### 長寿命パターン
 
-reviewerはPhase 2（計画レビュー）からPhase 4（実装レビュー）まで存続可能。
-agent CLIのセッションはPhaseごとに新規作成するが、reviewerチームメイト自体は跨いで再利用する。
+reviewer を分けた場合、Phase 2（計画レビュー）からPhase 4（実装レビュー）まで存続させてよい。
+agent CLIのセッションはPhaseごとに新規作成するが、reviewer 自体は跨いで再利用する。
 これにより、コードベースへの理解を保持した状態でレビューの質を維持できる。
 
 ## モデル選択ガイド

@@ -4,7 +4,7 @@
 
 ## ツール別の追加指示（必読）
 
-- **Claude Code**: @context/tool-claude-code.md （@import で自動常駐。Agent Teams 発動条件・Opus ベストプラクティス・Claude Code 固有の Read when）
+- **Claude Code**: @context/tool-claude-code.md （@import で自動常駐。自律実行の前提・委譲判断・並列 spawn の実務・Claude Code 固有の Read when）
 - **Codex**: 最初の作業前に `~/.claude/context/tool-codex.md` を必ず Read（`@`参照の解決規約・ツール対応表・常駐相当ファイルの Read 指針）
 
 ## 最優先指示: 事実主義・一次ソース確認・規約遵守
@@ -38,7 +38,7 @@
 - Goal / Constraints / Acceptance criteria が渡されたら、途中介入を最小化して自律的に進める。検証機構（テスト・スクリーンショット・期待出力）の供給が最も効果が高い（@context/workflow-rules.md「検証機構」参照）
 - 委譲は、真に独立していて並列化できる規模の作業に使う（大量のファイル読み・コードベース横断調査・ログ解析、複数ファイルにまたがる実装）。**自分が数回のツール呼び出しで終えられる作業は委譲しない。自分の作業の検証・ダブルチェックのために委譲しない**。1体で足りるなら1体にし、spawn 数を抑える
 - 委譲したときは、本体（lead）はオーケストレーションと結果の統合に専念する（並列機構が無い環境では逐次で代替）。サブエージェントの報告は一次情報と突き合わせて検証してから採用する
-- Agent Teams / 単発Subagentの使い分け基準は Claude Code 固有 → `context/tool-claude-code.md`「委譲判断」
+- 委譲の要否と構成（体数・相互通信・共有タスクリスト）の決め方は Claude Code 固有 → `context/tool-claude-code.md`「委譲判断」
 
 ## 作業フロー（複雑タスクのフレームワーク Phase 0-5）
 
@@ -64,7 +64,7 @@
 **Read when（該当作業の開始前に必ずRead。常駐させないため@importしない）:**
 - 外部レビュー実行前: `context/agent-cli-guide.md`（CLI選択・コマンド形式・レビューループの規定。読まずに実行するとCLI選択・セッション継続・エラーハンドリングを誤る）
 - **コード実装完了時・PR提出前・レビュー実行前**: `context/code-review-checklist.md`（BOLA/BOPLA・CSRF 登録漏れ・falsy check・Drizzle encoder・LLM injection 等の具体 anti-pattern をセクション別に列挙。self-review / pr-review / codebase-review / writing-code の副読本）
-- Claude Code 固有の Read when（Agent Teams・Taskツール・カスタマイズガイド）: `context/tool-claude-code.md` 参照
+- Claude Code 固有の Read when（Taskツール・カスタマイズガイド）: `context/tool-claude-code.md` 参照
 
 ## メモリ・issueディレクトリ
 - **ワークフローメモリ（Phase 0-5用、05_log.md等）**: `${MEMORY_DIR}/memory/YYMMDD_<context_name>/`

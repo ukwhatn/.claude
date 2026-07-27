@@ -54,7 +54,7 @@ AIエージェントには検証機構の供給が最も効果が高い。PJで�
 
 <!--
 注意: PJ独自のサブエージェント呼び出し慣習（quality-checker / pr-reviewer 等を明示的に呼ぶ等）は記述しない。
-サブエージェント / Agent Teams の発動はuser-level設定（~/.claude/context/tool-claude-code.md「Agent Teams 発動条件」）に従う。
+委譲（サブエージェントへの spawn）の要否と構成は user-level 設定（~/.claude/context/tool-claude-code.md「委譲判断」）に従う。
 -->
 ```
 

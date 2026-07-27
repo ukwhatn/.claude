@@ -127,7 +127,7 @@ TaskUpdate(nextTaskId, status: "in_progress")
 **結果取得の注意（IMPORTANT）:**
 - bash タスクは開始時に出力ファイルパスが返り、完了時に同じパスを含む通知が来るので、**そのファイルパスをReadで読む**
 - **local_agent タスク（Agent toolのサブエージェント）は、Agentの結果を直接使う。`.output`をReadしてはならない**（サブエージェントの全会話transcriptへのsymlinkであり、コンテキストを溢れさせる）
-- ログのパターンマッチ等、特定条件の発生を監視したい場合は`Monitor`ツールを使う（stdoutの各行が通知イベントになる）。実行中のバックグラウンドタスク・Monitor・チームメイトを早期停止したい場合は`TaskStop`（task_idにタスクID/エージェント名/`name@team`のいずれかを渡す）
+- ログのパターンマッチ等、特定条件の発生を監視したい場合は`Monitor`ツールを使う（stdoutの各行が通知イベントになる）。実行中のバックグラウンドタスク・Monitor・サブエージェントを早期停止したい場合は`TaskStop`（task_idにタスクID/エージェント名/`name@team`のいずれかを渡す）
 
 **活用シーン:**
 - `npm install` / `pip install`（依存関係インストール）
@@ -162,22 +162,16 @@ CLAUDE_CODE_TASK_LIST_ID=<task_list_id> claude -p "Task 3を実装してくだ�
 TaskCreateやTaskList実行後、内部的にタスクリストIDが割り当てられる。
 IDは`~/.claude/tasks/`ディレクトリ内のUUIDディレクトリ名。
 
-## Agent Teamsとの連携
+## 委譲時の連携
 
-Agent Teams使用時、TaskCreate/TaskUpdateはチーム共有タスクリストに自動的に紐づく。基本フローは TaskCreate（依存関係付き）→ `Agent` でチームメイトを spawn（`name` 指定）→ `SendMessage` で指示・情報共有 → チームメイトが TaskUpdate で完了 → 全員に `shutdown_request`。
+タスクリストはセッション内で共有される（spawn したサブエージェントも同じリストを読み書きする）。
 
-### Subagentsとの違い
+**依存関係のあるタスクを順序付ける構成**では: TaskCreate（依存関係付き）→ `Agent` で spawn（`name` 指定）→ `SendMessage` で指示・情報共有 → 各体が TaskUpdate で完了 → 全員に `shutdown_request`。各体は TaskList で次に着手できるタスクを自律的に取得できる。
 
-| 項目 | Subagents (Agent tool) | Agent Teams |
-|------|----------------------|-------------|
-| タスクリスト | セッション内 | チーム共有 |
-| 通信 | 結果返却のみ | SendMessage |
-| 自己調整 | 不可 | TaskListで自律的にタスク取得 |
-| コスト | 低い | 高い（独立インスタンス） |
+**各体が独立して結論を返す構成**（相互通信なし）では、タスクリストは lead の進捗管理用に留まる。この場合 TaskCreate は必須ではない。
 
-使い分けの基準: @context/tool-claude-code.md「委譲判断」
+コストは体数に比例する（各体が独立したインスタンス）。構成の決め方: @context/tool-claude-code.md「委譲判断」
 
 ## 注意事項
 
-- Agent Teams 発動時: TaskCreate/TaskUpdateは必須（チーム共有タスクリストとして機能）
-- 単独作業時の使用要否は `context/workflow-rules.md`「適用範囲」の基準に従う
+- 使用要否は `context/workflow-rules.md`「適用範囲」の基準に従う
