@@ -104,13 +104,11 @@
       "mcp__atlassian__set*",
       "mcp__atlassian__transition*",
       "mcp__atlassian__update*",
-      "mcp__playwright__browser_run_code_unsafe",
-      "mcp__playwright__browser_evaluate",
       "mcp__Claude_in_Chrome__javascript_tool"
     ],
     "defaultMode": "auto"
   },
-  "model": "claude-opus-5[1m]",
+  "model": "opus",
   "hooks": {
     "SessionStart": [
       {
@@ -217,7 +215,17 @@
     "refreshInterval": 10
   },
   "enabledPlugins": {
-    "document-skills@anthropic-agent-skills": true
+    "document-skills@anthropic-agent-skills": true,
+    "chrome-devtools-mcp@chrome-devtools-plugins": true
+  },
+  "extraKnownMarketplaces": {
+    "chrome-devtools-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "ChromeDevTools/chrome-devtools-mcp"
+      },
+      "autoUpdate": true
+    }
   },
   "outputStyle": "ukwhatn-style",
   "language": "日本語",
