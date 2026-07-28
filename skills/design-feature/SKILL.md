@@ -1,6 +1,6 @@
 ---
 name: design-feature
-description: 抽象的な要件・Biz 要求から要求を深掘りし、コードベース SSoT で既存実装整合性を確認した上で「実装マスタ（01_requirements_skeleton.md）」と「システム要件書（02_system_requirements.md）」を作成する。使用タイミング (1)「○○って機能を作りたい」「このBiz要求を満たす機能を設計して」等の抽象要件提示時、(2) 既存機能の拡張・Phase 分割等の要件定義開始時、(3) `/design-feature ...` 実行時。境界: 実装の分割・進捗管理は large-task、既存文書のレビューは doc-review。本スキルは新規要件の深掘りと文書化が目的。
+description: 抽象的な要件・Biz 要求から要求を深掘りし、コードベース SSoT で既存実装整合性を確認した上で「実装マスタ（01_requirements_skeleton.md）」と「システム要件書（02_system_requirements.md）」を作成する。使用タイミング (1)「○○って機能を作りたい」「このBiz要求を満たす機能を設計して」等の抽象要件提示時、(2) 既存機能の拡張・Phase 分割等の要件定義開始時、(3) `/design-feature ...` 実行時。境界: 要件確定後の実装計画書・PR分割の立案は plan-feature-prs、実装の分割・進捗管理は large-task、既存文書のレビューは doc-review。本スキルは新規要件の深掘りと文書化が目的。
 ---
 
 # Design Feature
