@@ -370,6 +370,23 @@ codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" ...
 
 - cursor（`agent`）の `-p`モード（非対話モード）ではスキル（`/commit`等）は使用不可。他のオプション・制約は「主要オプション」「基本コマンド」節を参照
 
+### CRITICAL: `codex exec` は stdin を読む（バックグラウンド実行でハングする）
+
+**`codex exec` はプロンプトを位置引数で渡しても stdin を読もうとする**（起動時に `Reading additional input from stdin...` を出す）。バックグラウンド実行（Claude Code の `run_in_background: true` 等）では stdin が開いたままになるため、そこで待ち続けて**レビューが一度も走らないまま終了し、出力ファイルが空になる**。
+
+`2>/dev/null` でstderrを捨てているとこの待機メッセージも見えないため、「実行したつもりで空振り」に気付けない。
+
+**ルール: バックグラウンドで `codex exec` を実行するときは必ず `< /dev/null` で stdin を閉じる。**
+
+```bash
+codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" --json "<プロンプト>" \
+  < /dev/null 2>/dev/null | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'
+```
+
+`codex exec resume --last` も同様。
+
+**空振りの見分け方**: 出力ファイルが空 かつ `ps aux | grep [c]odex` に自分が起動したプロセスが無い場合、ハング後に終了している。パイプを外して前景で軽いプロンプト（`"1+1 は？"` 等）を投げ、CLI 自体が生きているかを先に切り分ける（実例: 2026-07 <PJ>。レビューが空振りし、疎通確認で `Reading additional input from stdin...` を見て原因特定）。
+
 ### CRITICAL: パイプ実行時のエラーハンドリング
 
 `agent ... | jq` / `codex exec ... | jq` のようにパイプで繋ぐと、CLI側のエラー（stderr）がjqのパースエラーに隠蔽される。
@@ -378,3 +395,4 @@ codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" ...
 1. **`2>/dev/null`でstderrを分離する**（基本コマンド例の通り）
 2. **jqがパースエラーを返した場合、パイプを外してCLI単体で再実行し、エラーメッセージを確認する**
 3. **同じコマンドをjqの書式変更やプロンプト簡素化でリトライすることを禁止する** — jqパースエラーの原因は十中八九CLI側のエラー出力であり、jq側の問題ではない
+4. **出力が「空」の場合はパースエラーとは別物**。上の stdin ハングを疑う（jq を外しても何も出ないなら CLI 側が走っていない）
