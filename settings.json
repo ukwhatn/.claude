@@ -1,6 +1,7 @@
 {
   "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5[1m]"
   },
   "attribution": {
     "commit": "",
@@ -108,7 +109,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opus",
+  "model": "opus[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -216,7 +217,10 @@
   },
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true,
-    "chrome-devtools-mcp@chrome-devtools-plugins": true
+    "chrome-devtools-mcp@chrome-devtools-plugins": true,
+    "das@das-plugins": true,
+    "das-dev@das-plugins": true,
+    "das-ops@das-plugins": true
   },
   "extraKnownMarketplaces": {
     "chrome-devtools-plugins": {
@@ -225,6 +229,12 @@
         "repo": "ChromeDevTools/chrome-devtools-mcp"
       },
       "autoUpdate": true
+    },
+    "das-plugins": {
+      "source": {
+        "source": "git",
+        "url": "git@github.com:<org>/<repo>"
+      }
     }
   },
   "outputStyle": "ukwhatn-style",
