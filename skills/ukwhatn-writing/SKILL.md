@@ -33,7 +33,9 @@ ukwhatn文体の核は **相手・媒体・用途でレジスタ（敬体/常体
 | Slack: 対外・公的・目上 | ベンダー・他部署・上長・全社/事務局宛 | 完全敬語。お疲れ様です→〜でしょうか→よろしくお願いいたします | @references/slack.md |
 | Slack: 業務の依頼・確認・報告 | 自チーム・部下・対等な実務相手 | 端的に詰める。敬語薄め・絵文字少 | @references/slack.md |
 | GitHub: レビュー指摘 | 同僚PR作者 | ドライ。事実は断定・提案/推測はぼかす＋一次ソースURL＋代替案 | @references/github.md |
-| GitHub: レビュー返信/作業報告 | レビュアー | 「ありがとうございます！」＋対応報告 | @references/github.md |
+| GitHub: 指摘への回答 | レビュアー | 結論1文＋理由1〜2文で3文以内。証跡・復唱・箇条書きなし | @references/github.md |
+| GitHub: 修正報告/受領 | レビュアー | コミットURL＋「対応しました、ありがとうございます。」 | @references/github.md |
+| GitHub: 自発的な作業報告 | レビュアー | 見出し＋番号＋表で構造化 | @references/github.md |
 | GitHub: PR概要欄 | レビュアー全般 | 固定見出しテンプレ。「やらなかったこと」を立てる | @references/github.md |
 | Confluence: 設計書・思考整理・負債メモ・リサーチ | 自分・チーム内 | 常体。代替案＋採用理由をセットで | @references/confluence.md |
 | Confluence: 対外告知・手順・相談 | 他チーム・Biz | 敬体。目的提示＋各ステップに理由 | @references/confluence.md |
