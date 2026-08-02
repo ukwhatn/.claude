@@ -79,7 +79,13 @@ remove がディレクトリ削除に失敗しても、git 側のメタデータ
 
 削除後は worktree 置き場を実際に `ls` して確認する。残っていた場合、`.git` ファイルの gitdir 先が既に存在しないため `git status` すら取れない。削除前スナップショットの dirty / untracked が 0 だったことを確認してから `rm -rf` する。
 
-## 6. 削除した worktree が cwd だと以降のコマンドが全部壊れる
+## 6. `MERGED_ANCESTOR` なのに `git branch -d` が拒否する
+
+audit は `origin/<base>` を基準に祖先判定するが、**`git branch -d` は「現在の HEAD または upstream」を基準にする**。ローカルの `main` が `origin/main` より遅れていると、origin/main にマージ済みのブランチでも `-d` は「未マージ」として拒否する。
+
+audit が `MERGED_ANCESTOR` と出しているなら削除して問題ない。ローカル `main` を更新するか、そのまま `-D` を使う。**この理由で `-D` が必要になった場合は、squash マージ由来の `-D` と区別して報告する**（前者は base が古いだけ、後者は実際に祖先でない）。
+
+## 7. 削除した worktree が cwd だと以降のコマンドが全部壊れる
 
 調査で `cd` した worktree を削除すると、シェルの cwd が消えて `getcwd: cannot access parent directories` になる。以降のコマンドが軒並み失敗する。
 

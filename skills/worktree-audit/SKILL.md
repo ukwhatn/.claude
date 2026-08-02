@@ -93,6 +93,8 @@ git -C "$repo" branch -d "$br"              # squash マージ分は -D が必�
 
 `-D` は permissions.deny 登録済みの破壊的操作。承認済みの範囲でのみ使う。
 
+`MERGED_ANCESTOR` の行で `-d` が拒否されることがある。`branch -d` の基準が origin ではなくローカル HEAD だからで、削除自体は安全（→ references/gotchas.md §6）。
+
 **完了基準**: 退避ファイルが存在し、削除コマンドの失敗が 0 件。失敗した行は個別に原因を報告する。
 
 ### 6. 検証
