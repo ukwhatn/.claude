@@ -89,6 +89,8 @@
 ## コミット・ブランチ・PR
 - コミット: `/commit`スキル使用。git-cz形式、絵文字なし、prefix以外は日本語。こまめにコミット
 - PR作成: `/create-draft-pr`スキル使用。直接`gh pr create`を実行しない
+- **PRへの返信・コメント投稿は`/pr-comment`スキル使用。ドラフトを提示してユーザー承認を得るまで投稿しない**（`gh api .../pulls/.../replies`・`gh pr comment`・`gh pr review` の直接実行を含む。対外コミュニケーションのため）。「レビュー対応して」「返信して」等の依頼は**返信文の作成までの承認であり、投稿の承認ではない**
+- PRの承認判定は人間レビュワーの Approve のみで行う。`gh pr view`の`reviewDecision`はbotのApproveを含むため、そのまま「承認済み」と報告しない（内訳は `gh api repos/<owner>/<repo>/pulls/<n>/reviews --jq '.[] | "\(.user.login) type=\(.user.type) \(.state)"'` で確認する）
 - ブランチ: BASE_BRANCH（PJ CLAUDE.md参照、未定義時: develop→main→master）
 - ブランチ命名: `feature/<issue_num>-<title-kebab>`、issue番号がない場合は `feature/<title-kebab>`。**prefixは原則 `feature/` で統一**（コミットメッセージのprefixはgit-cz形式と独立）
 - ブランチ作り直し時: 既存コミットをrebase/cherry-pickで保全してからブランチ削除（コミット消失防止）
