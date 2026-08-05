@@ -122,7 +122,7 @@ emit() {
         fi
         ;;
       OPEN)   v="OPEN_PR";   d="PR#$num";;
-      CLOSED) v="CLOSED_PR"; d="PR#$num（マージせずクローズ）";;
+      CLOSED) v="CLOSED_PR"; d="PR#${num}（マージせずクローズ）";;
       *)      v="NO_PR";     d="PRなし";;
     esac
   fi
