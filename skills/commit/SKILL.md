@@ -60,6 +60,14 @@ EOF
 git push
 ```
 
+**rejectされた場合**（別PCから同じリポジトリにpush済みのときに起きる）は、rebaseで取り込んでから再pushする:
+
+```bash
+git pull --rebase --autostash && git push
+```
+
+rebaseがconflictで停止した場合は `git rebase --abort` で元に戻し、コミットは残したままユーザーに報告する（自動解決しない）。
+
 ### 6. 結果の報告
 
 - コミットハッシュ

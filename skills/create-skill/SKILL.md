@@ -107,6 +107,12 @@ description: PRレビュー。
 - 可能なら代表的な実タスク（作り物でないもの）でスキルを発火させ、挙動を観察する
 - 詰まる箇所・読まれないファイル・予想外の探索順があれば本文に反映する（観察→改善の反復）
 
+### Step 8: コミット
+
+user-level（`~/.claude/skills/`）に作成した場合は、そのターン内で `/commit --push` を実行し、コミットとpushまで完了させる（3PC間で同期しているため、変更を手元に残さない）。
+
+project-level（`<project>/.claude/skills/`）に作成した場合は、実装開始前ゲートの「直コミット可否の判定」（@context/workflow-rules.md）に従う。
+
 ## SKILL.md テンプレート
 
 ```yaml
