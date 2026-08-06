@@ -56,7 +56,7 @@
 
 - ` findById(id)` して即返す（owner check なし）
 - `Object.assign(user, req.body)` で mass assignment
-- 一覧 API で「本当は詳細でだけ返せば良い秘密情報」を全行含める（<PJ> で codex 指摘: applications 一覧の `<secretField>`）
+- 一覧 API で「本当は詳細でだけ返せば良い秘密情報」を全行含める（codex 指摘の実例: 一覧レスポンスに認証用の平文パスワード相当が全行入っていた）
 - role check が middleware ではなく各 endpoint 内に散らばる
 
 ### ✅ Rate limit の対称性

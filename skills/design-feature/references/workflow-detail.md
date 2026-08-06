@@ -27,7 +27,7 @@ ls ${MEMORY_DIR}/memory/ | grep -i "<キーワード>"
 mkdir -p ${MEMORY_DIR}/memory/YYMMDD_<context_name>/
 ```
 
-context_name は kebab-case で短く（例: `<feature>`, `<feature>`, `<feature>-error`）。日付は **今日の日付**（システムプロンプトの Today から取得、例示の日付をコピーしない）。
+context_name は kebab-case で短く（例: `<機能名>-spec`, `<画面名>-login`, `<機能名>-error`）。日付は **今日の日付**（システムプロンプトの Today から取得、例示の日付をコピーしない）。
 
 ### 0.2 絶対パス固定（CRITICAL）
 
@@ -36,7 +36,7 @@ worktree 運用時の事故防止のため、05_log.md 冒頭に必ず記録:
 ```markdown
 # 作業ログ
 
-**メモリディレクトリ絶対パス**: <PJルートの絶対パス>/.local/memory/260609_xxx/
+**メモリディレクトリ絶対パス**: <PJルートの絶対パス>/.local/memory/YYMMDD_<context_name>/
 
 ## YYYY-MM-DD HH:MM - 初期指示
 ...
@@ -205,7 +205,7 @@ Phase: Synthesize
 - 既存実装の参照源（05_log.md / 20_implementation_notes.md）
 - プロジェクトのアーキテクチャ参照（@.context/architecture-detail.md 等）
 
-### 3.2 章構成（<PJ> 風の例。プロジェクトに応じて調整）
+### 3.2 章構成（例。プロジェクトに応じて調整）
 
 詳細テンプレ: doc-templates.md §「01 実装マスタ」
 

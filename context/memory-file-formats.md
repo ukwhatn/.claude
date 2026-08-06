@@ -20,7 +20,7 @@
 場所: `${MEMORY_DIR}/memory/YYMMDD_<context_name>/`
 - MEMORY_DIRはPJ CLAUDE.mdで定義（デフォルト: `.local/`）
 - **YYMMDD**: ディレクトリを最初に作成した日付（年2桁+月2桁+日2桁）
-- context_nameはコンテキスト（機能・プロジェクト）を識別する短い名前（例: `<feature>`, `bug-fix-123`）
+- context_nameはコンテキスト（機能・プロジェクト）を識別する短い名前（例: `auth-feature`, `bug-fix-123`）
 - **IMPORTANT**: 同一コンテキストの継続作業は既存ディレクトリを再利用すること。新規ディレクトリを作成しない
 - **IMPORTANT**: 例示の日付をコピーせず、必ずシステムプロンプトの日付を使用すること（新規作成時）
 

@@ -90,6 +90,6 @@ codex exec --sandbox read-only --skip-git-repo-check < /dev/null \
 - **`codex exec` にはグローバル指示がフル注入される**（2026-08 実測。Codex 自身に列挙させ「作業フロー（Phase 0-5）」「外部レビュー」「緩和しない安全項目」を確認）。このため、Codex をレビュアーとして呼ぶと lead 用の外部レビュー規約を読んで**別 CLI へ再委託する事象が発生した**。役割分岐を `AGENTS.md` と `context/agent-cli-guide.md` に追加して解消済み
 - **`~/.agents/skills` 経由で skill が読める**（2026-08 実測。`~/.codex/skills` に存在しない `worktree-audit` / `session-analytics` が Codex から見えることで確認）
 - **AGENTS.md 全文が注入される（0.145.0 / 26KB 時点）**。ただし `project_doc_max_bytes` という byte 上限キーが実在し、超過時は「project doc exceeds remaining budget; truncating」で**警告なく切られる**（公式 docs は default 値を書いていない）。AGENTS.md を大きく伸ばしたら、末尾セクションが返るかを上記「セットアップの検証」で確認する
-- **<org> PC は 2026-08-06 まで配布経路が丸ごと未設定だった**（`~/.codex/AGENTS.md` 不在・`~/.agents/` 不在・`config.toml` に fallback なし）。3PC のうち1台だけ抜けていても Codex 側は正常に起動するため気付けない。**セットアップ手順を変えたら他のPCでも検証する**
+- **3PC のうち1台は 2026-08-06 まで配布経路が丸ごと未設定だった**（`~/.codex/AGENTS.md` 不在・`~/.agents/` 不在・`config.toml` に fallback なし）。1台だけ抜けていても Codex 側は正常に起動するため気付けない。**セットアップ手順を変えたら他のPCでも検証する**
 - `--ignore-rules` は execpolicy `.rules` 用で、AGENTS.md の読込抑制ではない
 - Codex にも plugin marketplace 機構はあるが Claude Code とは**別形式**（`~/.codex/config.toml` の `[marketplaces.*]`）

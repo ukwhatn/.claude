@@ -121,8 +121,8 @@ TaskCreate × 6（各Agentのタスク）
 4. 指摘には「検出箇所」と「同種パターンの全箇所」を両方記載する
 
 例:
-- NG: 「<mapperFn>()でdecrypt(null)クラッシュの可能性がある」
-- OK: 「<mapperFn>()でdecrypt(null)クラッシュの可能性がある。同種のパターンが以下にも存在: <mapperFn>()(user.ts:538), <mapperFn>()(user.ts:603), <finderFn>()(user.ts:926)」
+- NG: 「toDto()でdecrypt(null)クラッシュの可能性がある」
+- OK: 「toDto()でdecrypt(null)クラッシュの可能性がある。同種のパターンが以下にも存在: toListDto()(item.ts:538), toDetailDto()(item.ts:603), findByIdForAdmin()(item.ts:926)」
 
 ## 修正の副作用チェック（全Agentに適用）
 
