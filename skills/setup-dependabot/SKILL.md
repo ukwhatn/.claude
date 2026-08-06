@@ -98,7 +98,7 @@ group 名は `<ecosystem>-all` / `<ecosystem>-security` の形式で ecosystem �
 
 - **`target-branch` に default branch 以外を指定すると、その entry は version-updates のみに適用される**（security-updates は default branch 向けにデフォルト設定で作成される）。default 以外を指定する必要が出た場合は公式 docs で最新挙動を確認してから設定する
 - **`reviewers` キーは deprecated**。レビュアー指定は CODEOWNERS で行い、dependabot.yml では `assignees` を使う
-- **共有 lockfile の group 分割は事故る**: bun/npm workspaces で group をパッケージ別に分けると、同一 weekly run の複数PRが同じ lockfile を触ってコンフリクトする（20+PR を手動一括解決した実例あり）。version-updates は必ず1グループに集約する。react/react-dom 等のランタイム揃えも同一PR内の同時 bump で自動的に達成される
+- **共有 lockfile の group 分割は事故る**: bun/npm workspaces で group をパッケージ別に分けると、同一 weekly run の複数PRが同じ lockfile を触ってコンフリクトし、大量のPRを手で解決する羽目になる。version-updates は必ず1グループに集約する。react/react-dom 等のランタイム揃えも同一PR内の同時 bump で自動的に達成される
 - **`github-actions` の directory は `"/"`**（`.github/workflows` を指定しない。`"/"` で自動検出される）
 - `cooldown` は比較的新しいキー。エディタの schema 警告が出ても有効（サポート状況が疑わしい場合は公式 docs で確認する）
 

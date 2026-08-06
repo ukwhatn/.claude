@@ -59,7 +59,7 @@ uv run ~/.claude/skills/session-analytics/scripts/analyze_sessions.py [オプシ
 
 ```bash
 # 直近2週間・全プロジェクトのサマリ
-uv run ~/.claude/skills/session-analytics/scripts/analyze_sessions.py --since 2026-07-10
+uv run ~/.claude/skills/session-analytics/scripts/analyze_sessions.py --since YYYY-MM-DD
 
 # recerqaプロジェクトに絞って詳細JSONも保存
 uv run ~/.claude/skills/session-analytics/scripts/analyze_sessions.py \

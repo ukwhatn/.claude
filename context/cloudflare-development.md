@@ -9,13 +9,13 @@
 - PJ CLAUDE.mdまたはpackage.jsonに`CLOUDFLARE_ACCOUNT_ID`が明記されている場合はそれを使用する
 - アカウントが明記されていない場合、デフォルトは `ukwhatn`（`40903f86185f39b5108a3dc845090406`）
 
-## Workers ランタイムの落とし穴（2026-07 <PJ>での実測）
+## Workers ランタイムの落とし穴（実機検証済み）
 
 - **`fetch()` の `redirect` は `follow` / `manual` のみ。`"error"` は未実装**で、指定すると即 `TypeError: Invalid redirect value, must be one of "follow" or "manual"`（公式docsは3値とも有効値として記載、TS型も受理、lint/typecheck/test/CIも全通過するため**デプロイするまで気付けない**）。リダイレクトを拒否したい場合は `"manual"` を使い、`!response.ok`（3xxがstatusに出る）で弾く
 - HTTP invocation の `ctx.waitUntil()` は応答後**30秒**上限（cronのwall-clock 15分・CPU時間上限とは別枠）。外部APIのリトライ等で超え得る処理はQueue（consumerはwall-clock 15分）へ逃がす
 - **挙動が疑わしいランタイムAPIは `wrangler dev --remote` に最小スクリプトを載せて実機で叩くのが最速**（数分で確定する）。ローカルworkerdと実機、公式docsと実機で差が出ることがある
 
-## wrangler / D1 の落とし穴（2026-07 <PJ>での実測）
+## wrangler / D1 の落とし穴（実機検証済み）
 
 - **wranglerがタイムアウト系エラー（7429 storage timeout等）を返しても、D1側では処理が完遂していることがある**。長時間DDL（大規模CREATE INDEX等）は、sqlite_master・d1_migrations・実クエリで実態を確認してから失敗と断定する
 - `wrangler d1 export` は100KB超のINSERT文を吐くが、D1のSQL文長上限は100KBのためそのままimportできない（silent failに見える）。大行はチャンク分割INSERT+連結UPDATEが必要

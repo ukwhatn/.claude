@@ -33,7 +33,7 @@
 - OWASP Top 10:2025（A01 Broken Access Control が首位維持、A10 Mishandling of Exceptional Conditions 新設）
 - OWASP API Security Top 10:2023（BOLA が全 API 攻撃の約 40%、BOPLA = Excessive Data Exposure + Mass Assignment 統合）
 - OWASP Top 10 for LLM Applications:2025（LLM01 Prompt Injection に direct/indirect 両方が明記）
-- 実プロジェクト（<PJ> UX 抜本改善 PR）で codex review 17 ラウンドを通じて指摘された頻出パターン
+- 実プロジェクトの codex review を多ラウンド回して抽出した頻出パターン
 
 ---
 
@@ -56,7 +56,7 @@
 
 - ` findById(id)` して即返す（owner check なし）
 - `Object.assign(user, req.body)` で mass assignment
-- 一覧 API で「本当は詳細でだけ返せば良い秘密情報」を全行含める（codex 指摘の実例: 一覧レスポンスに認証用の平文パスワード相当が全行入っていた）
+- 一覧 API で「本当は詳細でだけ返せば良い秘密情報」を全行含める（認証用の平文相当を一覧レスポンスに載せてしまう型）
 - role check が middleware ではなく各 endpoint 内に散らばる
 
 ### ✅ Rate limit の対称性
@@ -137,7 +137,7 @@
 - `z.string().optional()` で長さ無制限（DoS: `Number.MAX_SAFE_INTEGER` を渡すと `toISOString()` で crash）
 - 未使用フィールドを schema で受理して cap しない（サーバは使わないが char cap も無し = 攻撃面）
 - server 側 schema と client 側 URL validation で制約が非対称（URL 直打ちで server validation error）
-- 外部サービスの URL / ID 形式を**サンプル 1 件から正規表現に一般化**（実在パターンの大半を弾く。実サービスで複数パターンを確認する。実例: <service> の `/forum/t-<id>/<page>` から数字限定と誤認し、同位置に来る slug 形式を全拒否）
+- 外部サービスの URL / ID 形式を**サンプル 1 件から正規表現に一般化**（実在パターンの大半を弾く。実サービスで複数パターンを確認する。よくある型: パスの同じ位置に数値 ID と slug の両方が来るのに、数値限定と誤認して slug を全拒否する）
 
 ---
 
@@ -329,7 +329,7 @@
 
 ### ✅ 純粋関数の「呼び出し側との契約」も検証
 
-- 引数の前提（ソート順・単位・正規化済みか）を**引数名でしか表現していない**場合、単体テストは正しい前提でしか渡さないため契約違反を検出できない（実例: `computeBoundary(itemsAscending)` に呼び出し側が降順配列を渡し、最古の投稿を境界にしていた。単体テストは全通過）
+- 引数の前提（ソート順・単位・正規化済みか）を**引数名でしか表現していない**場合、単体テストは正しい前提でしか渡さないため契約違反を検出できない（例: `computeBoundary(itemsAscending)` に呼び出し側が降順配列を渡しても、単体テストは全通過する）
 - 呼び出し側を含む結合テストを 1 本置くか、型（branded type）で守る
 - **純粋関数の単体テストだけが厚く、外部 I/O・状態遷移の結合部が未テストの構成**は、テスト件数が多くても本番障害を止められない（設定値の誤り・契約違反はすべてこの層で出る）
 
@@ -455,4 +455,4 @@
 - [TypeScript Code Review Checklist（Redwerk）](https://redwerk.com/blog/typescript-code-review-checklist/)
 - [Database Transactions and Concurrency Control in TypeScript APIs（AverageDevs）](https://www.averagedevs.com/blog/database-transactions-concurrency-control)
 - [ORM Race Conditions（Propel）](https://www.propelcode.ai/blog/orm-race-conditions-transaction-management-guide)
-- 実プロジェクト <PJ> UX 抜本改善 PR で codex review 17 ラウンドから抽出した頻出パターン
+- 実プロジェクトの codex review を多ラウンド回して抽出した頻出パターン

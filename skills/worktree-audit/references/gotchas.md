@@ -4,7 +4,7 @@
 
 `git diff origin/main...HEAD` は **merge-base から HEAD への差分**、つまりブランチが加えた変更を丸ごと出す。squash マージで base に取り込まれていても出力は 1 行も減らない。
 
-「73 ファイル・+5459 行の差分が残っている」→「未マージ」と読むのは誤り。実測でこの誤読をやり、完全にマージ済みのブランチを「作業中・削除不可」と報告した。
+「大量のファイル・行数の差分が残っている」→「未マージ」と読むのは誤り。この誤読は、完全にマージ済みのブランチを「作業中・削除不可」と誤って報告させる。
 
 反映の有無を見るのは two-dot 比較。
 
@@ -34,7 +34,7 @@ git diff --name-status HEAD "$mc" -- $(cat /tmp/f.txt | tr '\n' ' ')
 
 ## 2. squash マージは `--merged` で検出できない
 
-squash / rebase マージはコミットが潰れて別 SHA になるため、`git branch --merged` にも `merge-base --is-ancestor` にも引っかからない。実測では 64 worktree のうち 26 個がこれで、祖先判定だけなら全部「未マージ」に見えていた。
+squash / rebase マージはコミットが潰れて別 SHA になるため、`git branch --merged` にも `merge-base --is-ancestor` にも引っかからない。**squash マージ運用のリポジトリでは worktree の相当数がこれに該当し、祖先判定だけなら全部「未マージ」に見える**。
 
 PR state を引くのが唯一の確実な検出手段。
 
@@ -50,7 +50,7 @@ gh pr list --head "$br" --state all --json number,state,headRefOid
 - 内容は別 PR として squash マージされた → SHA も patch-id も base に無い
 - マージコミットの塊 → 祖先判定は原理的に通らない
 
-**判定は §1 の two-dot 比較で行う。** 実測では、この形のブランチが「未反映 5459 行」に見えて実際は完全にマージ済みだった。
+**判定は §1 の two-dot 比較で行う。** この形のブランチは大量の「未反映」行数を見せながら、実際は完全にマージ済みであることがある。
 
 分割 PR を出した後で一本化してマージし直した場合、分割側の PR は `CLOSED`（マージせず破棄）になる。`CLOSED_PR` を機械的に「内容が base に無い」と扱わないこと。一本化先の PR を探す。
 

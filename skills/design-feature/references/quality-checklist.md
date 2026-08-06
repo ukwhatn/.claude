@@ -63,8 +63,8 @@ grep -nE 'queue|middleware|protectedProcedure|publicProcedure|instantAllowedProc
 
 ### 02 で許容される技術的識別子
 
-- API レスポンスのフィールド名（例: `<flagField>`、`account_type`）
-- scope / claim 名（例: `<feature>_allowed`、`account_type=instant`）
+- API レスポンスのフィールド名（例: `isEnabled`、`account_type`）
+- scope / claim 名（例: `<feature>_allowed`、`account_type=<value>`）
 - エラーコード（例: `<FEATURE>_NOT_ALLOWED`）
 - 画面 URL のパス例（例: `/instant/register`）
 - 仕様上必要なテーブル名（最小限。極力削る）
@@ -99,9 +99,9 @@ private メソッド名を 01 に直書きしていないか確認:
 
 ### 4. 呼び出し元のガード見落とし予防
 
-ある関数が `<flagField>=true` で動作するかを判定するとき、関数内部のチェックだけでなく**呼び出し元のガード**も見る:
+ある関数がフラグ有効時に動作するかを判定するとき、関数内部のチェックだけでなく**呼び出し元のガード**も見る:
 
-- `<callerFn>:435` の `if (!<flagField>)` ガード → `<calleeFn>` 自体には <flagField> チェックなし、でも全スキップは事実
+- 呼び出し元にフラグの早期 return ガードがあれば、呼ばれる側にチェックが無くても実際には全スキップされている
 - このパターンは agent でも見落としやすい。01 / 02 のレビュー時に再確認
 
 ### 5. 一覧表の網羅性検証
@@ -149,7 +149,7 @@ AskUserQuestion で確定した設計判断は必ず記録する。
 
 ### 99_history.md に書く
 
-- 確定までの経緯（Slack / Confluence コメント等のソース）
+- 確定までの経緯（チャット / ドキュメントのコメント等のソース）
 - 確定日時
 - 確定者（ユーザー / 他チーム）
 
@@ -174,7 +174,7 @@ AskUserQuestion で確定した設計判断は必ず記録する。
 ### 専門用語
 
 - 原語で書く（「OAuth」「Hydra」「webhook」等）
-- コード識別子は `` `code` `` 表記（`<flagField>`、`POST /api/v1/foo`）
+- コード識別子は `` `code` `` 表記（`isEnabled`、`POST /api/v1/foo`）
 - 一般語は日本語で（「ユーザー」「アカウント」「画面」）
 
 ### 自明な前置きを削る
