@@ -56,7 +56,7 @@
 4. 品質確認: lint/format/typecheck/test
 5. 完了報告
 
-**外部レビュー**: 不可逆な変更（認証・secret・migration・対外公開）を含むとき、または必要と判断したときに、別ベンダーの LLM（cursor / codex）でレビューする（手順: `context/agent-cli-guide.md`）。**Claude 自身を reviewer role で spawn する自己検証は行わない**。
+**外部レビュー**: 不可逆な変更（認証・secret・migration・対外公開）を含むとき、または必要と判断したときに、別ベンダーの LLM（cursor / codex）でレビューする（手順: `context/agent-cli-guide.md`）。**Claude 自身を reviewer role で spawn する自己検証は行わない**。この規定は **lead として自分の作業をレビューに出す場合にのみ適用される**。**自分がレビュアーとして呼び出された側のときは、そのレビューを自分で完遂し、別 LLM へ再委託しない**。
 
 **IMPORTANT**: 各Phaseで05_log.mdに実施内容を逐次記録すること
 詳細: @context/workflow-rules.md
