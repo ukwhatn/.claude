@@ -98,7 +98,7 @@
 ## コミット・ブランチ・PR
 - コミット: `/commit`スキル使用。git-cz形式、絵文字なし、prefix以外は日本語。こまめにコミット
 - **user-level 設定（`~/.claude/`）を変更したら、そのターン内でコミットと push まで完了させる**（3PCで同期しているため、変更を手元に残さない）。変更を適用したスキル（update-inst / session-retro / create-skill 等）自身が `/commit --push` を実行する
-- **`~/.claude` の直コミット可否**（実装開始前ゲートの判定結果を永続化したもの）: 単独リポジトリ（コミット著者は `ukwhatn@gmail.com` のみ。判定日: 2026-08-06）のため、main への直コミットを許容する
+- **`~/.claude` の直コミット可否**（実装開始前ゲートの判定結果を永続化したもの）: 全コミットが自分の直コミットで、PR/mergeの痕跡なし（判定日: 2026-08-06）。main への直コミットを許容する
 - PR作成: `/create-draft-pr`スキル使用。直接`gh pr create`を実行しない
 - **PRへの返信・コメント投稿は`/pr-comment`スキル使用。ドラフトを提示してユーザー承認を得るまで投稿しない**（`gh api .../pulls/.../replies`・`gh pr comment`・`gh pr review` の直接実行を含む。対外コミュニケーションのため）。「レビュー対応して」「返信して」等の依頼は**返信文の作成までの承認であり、投稿の承認ではない**
 - PRの承認判定は人間レビュワーの Approve のみで行う。`gh pr view`の`reviewDecision`はbotのApproveを含むため、そのまま「承認済み」と報告しない（内訳は `gh api repos/<owner>/<repo>/pulls/<n>/reviews --jq '.[] | "\(.user.login) type=\(.user.type) \(.state)"'` で確認する）

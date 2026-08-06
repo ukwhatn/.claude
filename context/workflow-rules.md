@@ -114,33 +114,40 @@
 
 ### 直コミット可否の判定
 
-PJ `CLAUDE.md` / `CLAUDE.local.md` に判定結果の記載があればそれに従う。記載が無ければ次の手順で判定し、**結果を永続化してから**コミットする（次回以降の再判定を省くため）。
+PJ `CLAUDE.md` / `CLAUDE.local.md` に判定結果の記載があればそれに従う。記載が無ければ次の事実を集め、**このリポジトリで自分が実際どう運用してきたか**を読み取って判断する（閾値で機械的に決めない）。判断後は**結果を永続化してから**コミットする（次回以降の再判定を省くため）。
 
-1. コミット著者を集計する:
+集める事実:
 
 ```bash
-git log --format='%ae' | grep -v -E '\[bot\]|noreply|bot@' | sort -u
+MY=$(git config user.email)
+git log --format='%ae' | sort | uniq -c | sort -rn | head       # 誰が書いているか
+git log --first-parent --no-merges --author="$MY" --format='%h %ce %s' | head -20
+                                                                # 自分のcommitがmainに直接載っているか
+git log --first-parent -20 --format='%h %ce %s'                 # 直近の変更がどう入っているか
+git branch -r | head                                            # ブランチ運用の痕跡
 ```
 
-2. 判定する:
-   - `git config user.email` のみ、またはコミット0件の新規リポジトリ → **単独リポジトリ**。main への直コミット可
-   - 複数 → **チーム開発**。作業ブランチ必須
+読み取り方:
 
-3. 判定結果を永続化する:
+- 自分のコミットが main に直接並び、PR / merge の痕跡がほとんどない → **直コミット運用**。main 直コミット可
+- 自分のコミットが merge commit 経由、または squash（committer が `noreply@github.com`）でしか入っていない → **PR運用**。作業ブランチ必須
+- 他の書き手がPRを使っていても、**自分がほぼ直コミットしているなら直コミット運用として扱う**（判定するのは自分の運用実態であって、リポジトリの人数ではない）
+- 過去と直近で運用が変わっている場合は**直近を優先する**（PR運用へ移行済みのrepoで、過去の直コミットを根拠にしない）
+- 直コミットとPRが拮抗していて読み取れない場合は、推測せずユーザーに確認する（Claude Code: AskUserQuestion）
 
-| 判定 | 永続化先 | 理由 |
+判定結果の永続化先:
+
+| 書き手 | 永続化先 | 理由 |
 |---|---|---|
-| 単独 | PJ `CLAUDE.md` | 自分しか使わないため、コミットされて問題ない |
-| チーム | `CLAUDE.local.md` | 他メンバーの運用に影響させない（git管理外） |
+| 自分のみ | PJ `CLAUDE.md` | 自分しか使わないため、コミットされて問題ない |
+| 他にもいる | `CLAUDE.local.md` | 他メンバーの運用に影響させない（git管理外） |
 
-記載例（単独の場合）:
+記載例:
 
 ```markdown
 ## コミット運用
-単独リポジトリ（コミット著者は自分のみ。判定日: YYYY-MM-DD）のため、main への直コミットを許容する。
+全コミットが自分の直コミットで、PR/mergeの痕跡なし（判定日: YYYY-MM-DD）。main への直コミットを許容する。
 ```
-
-`~/.claude`（user-level 設定リポジトリ）はこの判定で単独リポジトリに該当する。
 
 委譲の要否と構成は `context/tool-claude-code.md`（Claude Code）／`context/tool-codex.md`（Codex）の基準で決める。各タスクを「調査→計画→実行→レビュー」で進める。
 
