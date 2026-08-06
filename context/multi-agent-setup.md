@@ -27,6 +27,9 @@ Codex の走査パスは `~/.codex/skills/` + `~/.agents/skills/` + `<repo>/.age
 | グローバル指示 | `~/.codex/AGENTS.md` → `~/.claude/AGENTS.md`（symlink） |
 | skills | `~/.agents/skills` → `~/.claude/skills`（**ディレクトリごと1本**） |
 | PJ CLAUDE.md | `~/.codex/config.toml` の `project_doc_fallback_filenames = ["CLAUDE.md"]` で自動読込 |
+| context7（公式仕様の確認） | `~/.codex/config.toml` の `[mcp_servers.context7]`（**git 管理外なのでマシンごとに設定が必要**） |
+
+`~/.codex/config.toml` は `~/.claude` リポジトリの外にあるため **3PC 同期の対象外**。symlink で済む2項目と違い、マシンごとに手で入れる必要がある（下記セットアップ手順に含めた）。
 
 ### CRITICAL: `~/.codex/skills/` に個別 symlink を張らない
 
@@ -44,7 +47,29 @@ ln -sfn ~/.claude/AGENTS.md ~/.codex/AGENTS.md
 mkdir -p ~/.agents && ln -sfn ~/.claude/skills ~/.agents/skills
 ```
 
+`~/.codex/config.toml` に以下を追記する（top-level キーは最初の `[table]` より前に置く。`http_headers` の key は `~/.claude.json` の `mcpServers.context7.headers` と同一値）:
+
+```toml
+project_doc_fallback_filenames = ["CLAUDE.md"]
+
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+http_headers = { CONTEXT7_API_KEY = "ctx7sk-..." }
+```
+
 `CLAUDE.local.md`（マシン固有の実値: Chrome deviceId マッピング、PAT の置き場所等）は git 管理外なので手動で用意する。
+
+### セットアップの検証
+
+symlink の存在確認では**注入されているかどうかが分からない**（AGENTS.md が byte 上限で truncate される可能性がある）。実機で確認する:
+
+```bash
+codex mcp list   # context7 が enabled で出るか
+codex exec --sandbox read-only --skip-git-repo-check < /dev/null \
+  'ツールを使わず即答。1) グローバル指示の最後のセクション見出しを原文で 2) skill `worktree-audit` は見えるか'
+```
+
+`## マシンローカル設定（git管理外）`（AGENTS.md 末尾）が返れば全文注入、`worktree-audit`（`~/.codex/skills` に無い skill）が見えれば `~/.agents/skills` 経由が機能している。
 
 ## 同期の運用
 
@@ -64,5 +89,7 @@ mkdir -p ~/.agents && ln -sfn ~/.claude/skills ~/.agents/skills
 
 - **`codex exec` にはグローバル指示がフル注入される**（2026-08 実測。Codex 自身に列挙させ「作業フロー（Phase 0-5）」「外部レビュー」「緩和しない安全項目」を確認）。このため、Codex をレビュアーとして呼ぶと lead 用の外部レビュー規約を読んで**別 CLI へ再委託する事象が発生した**。役割分岐を `AGENTS.md` と `context/agent-cli-guide.md` に追加して解消済み
 - **`~/.agents/skills` 経由で skill が読める**（2026-08 実測。`~/.codex/skills` に存在しない `worktree-audit` / `session-analytics` が Codex から見えることで確認）
+- **AGENTS.md 全文が注入される（0.145.0 / 26KB 時点）**。ただし `project_doc_max_bytes` という byte 上限キーが実在し、超過時は「project doc exceeds remaining budget; truncating」で**警告なく切られる**（公式 docs は default 値を書いていない）。AGENTS.md を大きく伸ばしたら、末尾セクションが返るかを上記「セットアップの検証」で確認する
+- **<org> PC は 2026-08-06 まで配布経路が丸ごと未設定だった**（`~/.codex/AGENTS.md` 不在・`~/.agents/` 不在・`config.toml` に fallback なし）。3PC のうち1台だけ抜けていても Codex 側は正常に起動するため気付けない。**セットアップ手順を変えたら他のPCでも検証する**
 - `--ignore-rules` は execpolicy `.rules` 用で、AGENTS.md の読込抑制ではない
 - Codex にも plugin marketplace 機構はあるが Claude Code とは**別形式**（`~/.codex/config.toml` の `[marketplaces.*]`）
