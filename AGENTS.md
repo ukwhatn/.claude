@@ -65,6 +65,7 @@
 - 外部レビュー実行前: `context/agent-cli-guide.md`（CLI選択・コマンド形式・レビューループの規定。読まずに実行するとCLI選択・セッション継続・エラーハンドリングを誤る）
 - **コード実装完了時・PR提出前・レビュー実行前**: `context/code-review-checklist.md`（BOLA/BOPLA・CSRF 登録漏れ・falsy check・Drizzle encoder・LLM injection 等の具体 anti-pattern をセクション別に列挙。self-review / pr-review / codebase-review / writing-code の副読本）
 - Claude Code 固有の Read when（Taskツール・カスタマイズガイド）: `context/tool-claude-code.md` 参照
+- **`~/.claude` の構成変更・新PCセットアップ・Codexへの配布経路を触る前**: `context/multi-agent-setup.md`（3PC同期のリポジトリ管理範囲・Codexへの配布経路・plugin化しない判断の根拠。読まずに `~/.codex/skills/` へ個別symlinkを張るとドリフトする）
 
 ## メモリ・issueディレクトリ
 - **ワークフローメモリ（Phase 0-5用、05_log.md等）**: `${MEMORY_DIR}/memory/YYMMDD_<context_name>/`
