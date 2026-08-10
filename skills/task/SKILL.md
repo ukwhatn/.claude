@@ -30,6 +30,7 @@ argument-hint: "やりたいこと（空ならカタログ表示）"
 | チェックポイント | 発火判定と代表スキル |
 |---|---|
 | 着手前 | 複雑タスク→Phase 0 + `/findmem`。要件が抽象→`/design-feature`。複数PR規模→`/plan-feature-prs`・`/large-task`。コード編集あり→worktree判定（AGENTS.md「worktree 運用ルール」） |
+| 計画書の作成完了時（実装着手前） | 計画の外部レビュー（**必須**。@context/agent-cli-guide.md を Read してから実行し、Action Required = 0 まで回す） |
 | 実装開始時 | `/writing-code`（プロダクションコード変更で常に。除外はスキル側の適用外条件に従う） |
 | バグ・エラー・テスト失敗に遭遇 | `/systematic-debugging`（修正案を出す前に） |
 | 実装完了・コミット前 | PJ品質チェック（lint/format/typecheck/test）→ `/self-review` |
