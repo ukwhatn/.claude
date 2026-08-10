@@ -188,6 +188,8 @@ https://github.com/<org>/<repo>/pull/<n>/commits/<sha> で対応しました、�
 
 語彙は `不要` / `不要判断` / `〜の判断` / `却下` / `一旦放置` / `scope外` / `問題なし`。
 
+却下してよいかどうかの**判断軸**は `~/.claude/context/code-review-checklist.md` §16（双方向で使う棄却類型）。本節はその結論を書くときの文体だけを規定する。
+
 ### 3-4. 受領・次アクション宣言
 - `ありがとうございます！念の為update branchしてからマージします`
 - close/保留判断（短く逃げ道付き）: `一度closeします、必要であればreopen / recreateしてください`
