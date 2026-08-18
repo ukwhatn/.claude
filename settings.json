@@ -110,7 +110,7 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "fable",
+  "model": "sonnet",
   "hooks": {
     "SessionStart": [
       {
