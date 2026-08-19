@@ -249,6 +249,7 @@
   "preferredNotifChannel": "auto",
   "autoCompactEnabled": false,
   "switchModelsOnFlag": true,
+  "autoContinueAtUsageLimit": true,
   "teammateMode": "auto",
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
