@@ -32,6 +32,8 @@
 
 **重要**: レビューはSeverity分類に基づく収束条件付きループで実施する（詳細は「レビューループの流れ」参照）。
 
+**本ファイルは末尾の「注意事項」まで読んでからコマンドを組む。** 実行が空振りする既知の落とし穴（stdin 待ち・パイプのバッファリング）はそこに集約されており、コマンド例だけを見て組むと再現する。
+
 ## Agent（Claude subagent）使用後の codex 裏取り（CRITICAL）
 
 Agent ツール（Claude subagent）を review 目的で使用したら、続けて **codex（または cursor）でも同じ対象を必ずレビューする**。credit 切れ・network 遮断で codex が実行不能な場合は、05_log.md に理由付きで skip を記録し、**codex 復旧後に裏取りを実施する**（当該 PR がマージされる前に間に合えばよく、その phase 内で完結させる必要はない。後回し可）。
@@ -106,18 +108,30 @@ agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-m
 
 ### codex（`codex exec`）— cursorが無い環境のfallback
 
+**前景（同期実行）で待てる場合:**
+
 ```bash
 # 初回（read-only sandboxで完走。最終メッセージのみ抽出）
-codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" --json "<プロンプト>" 2>/dev/null \
+codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" --json "<プロンプト>" < /dev/null 2>/dev/null \
   | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'
 
 # 2回目以降（CWDの直近セッションを継続。プロンプトは位置引数で渡す）
-codex exec resume --last --json "<プロンプト>" 2>/dev/null \
+codex exec resume --last --json "<プロンプト>" < /dev/null 2>/dev/null \
   | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'
 ```
 
+**バックグラウンド実行する場合は上のパイプ形を使わない**（理由は「注意事項」の stdin ハングとパイプ・バッファリング）。`-o` でファイルに落とし、ログも別ファイルへ流す:
+
+```bash
+codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" \
+  -o "<出力先>/review.txt" "$(cat "<プロンプトファイル>")" \
+  < /dev/null > "<出力先>/review.log" 2>&1
+```
+
+長いプロンプトはヒアドキュメントで argv に埋めず、**ファイルに書いて `"$(cat ...)"` で渡す**（引用の入れ子で壊れやすく、壊れても気付けないため）。
+
 - 最終メッセージはJSONLの `item.completed`（`item.type=="agent_message"`）の `.item.text` に入る。`thread.started` の `.thread_id` がセッションID（`resume --last` を使えばID追跡は不要）。
-- `--json` の代わりに `-o <file>`（`--output-last-message`）で最終メッセージをファイルへ書き出すことも可能（stdoutにも出力される）。
+- `-o <file>`（`--output-last-message`）は最終メッセージをファイルへ書き出す（stdoutにも出力される）。**進捗を追える形になるのはこちらだけ**なので、待ち時間が読めない実行では既定にする。
 - 特定セッションを継続する場合は `codex exec resume <SESSION_ID> "<プロンプト>"`。
 - 認証は保存済みCLIログインを既定で再利用。CI等では `CODEX_API_KEY` を当該コマンド限定で付与する。
 
@@ -427,7 +441,21 @@ codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" --json "<プ�
 
 `codex exec resume --last` も同様。
 
-**空振りの見分け方**: 出力ファイルが空 かつ `ps aux | grep [c]odex` に自分が起動したプロセスが無い場合、ハング後に終了している。パイプを外して前景で軽いプロンプト（`"1+1 は？"` 等）を投げ、CLI 自体が生きているかを先に切り分ける（`Reading additional input from stdin...` で止まっていれば stdin 待ちが原因）。
+**空振りの見分け方**: プロセスの生死だけでは判定できない。**プロセスが生きたまま何もせず待ち続ける**ケースがあるため、次の 3 つを順に見る。
+
+1. **セッションファイルが作られたか**（`codex exec` は起動時にセッションを作る）。実行開始後もセッションが 1 件も増えていなければ、**レビューは一度も始まっていない**
+2. **累積 CPU 時間**（`ps aux` の TIME 列）。経過時間に対して CPU 時間がほぼゼロなら待機状態。ただしモデルの応答待ちでも CPU は低いので、これ単独では断定しない
+3. **出力ファイルが空のまま**か
+
+切り分けは、パイプを外して前景で軽いプロンプト（`"1+1 は？"` 等）を投げ、CLI 自体が生きているかを先に確認する（`Reading additional input from stdin...` で止まっていれば stdin 待ちが原因）。
+
+### CRITICAL: バックグラウンド実行にパイプを付けない
+
+stdin を閉じても、**`| jq` のようなパイプを付けたままバックグラウンドへ回すと出力が終端までバッファされる**。出力ファイルが最後まで空に見えるため、上の「見分け方」の 3 番目が機能せず、進捗監視も stuck 検知もできなくなる。
+
+**ルール: バックグラウンド実行では生の出力をそのままファイルへ落とし、整形・抽出は読む側で行う。** codex なら `-o <file>`、それ以外は `> <file> 2>&1`。
+
+この規則は外部レビュー CLI に限らず、バックグラウンドで走らせる長時間コマンド全般に適用する。
 
 ### CRITICAL: パイプ実行時のエラーハンドリング
 
