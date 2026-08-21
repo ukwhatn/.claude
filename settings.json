@@ -247,7 +247,7 @@
   "theme": "auto",
   "editorMode": "normal",
   "preferredNotifChannel": "auto",
-  "autoCompactEnabled": false,
+  "autoCompactEnabled": true,
   "switchModelsOnFlag": true,
   "autoContinueAtUsageLimit": true,
   "teammateMode": "auto",
