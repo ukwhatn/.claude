@@ -1,6 +1,6 @@
 #!/bin/sh
 # Claude Code status line script
-# 表示: model | effort[A] | ctx% (tok/size) | 5h/1w rate | owner/repo | branch (in worktree) | PR #n (state) +a -r | proj -> cwd
+# 表示: model | effort[A] | ctx% (tok/size) | 5h now%→着地% (残り) | 1w now%→着地% (reset) | owner/repo | branch (in worktree) | PR #n (state) +a -r | proj -> cwd
 
 input=$(cat)
 
@@ -25,6 +25,27 @@ fmt_remaining() {
   [ "$secs" -lt 0 ] && secs=0
   h=$((secs / 3600)); m=$(((secs % 3600) / 60))
   if [ "$h" -gt 0 ]; then printf "%dh%02dm" "$h" "$m"; else printf "%dm" "$m"; fi
+}
+
+ESC=$(printf '\033')
+C_OFF="${ESC}[0m"; C_GRN="${ESC}[32m"; C_YEL="${ESC}[33m"; C_RED="${ESC}[31m"
+
+# 窓終了時点の消費率を窓平均ペースから外挿し、色付きで返す
+# $1:現在% $2:残り秒 $3:窓長秒 $4:予測を出す最小経過秒
+# Why not: 直近増分からの外挿にしない。statusline は数秒間隔で呼ばれるためノイズが乗り、
+# アイドル中は増分ゼロで着地0%に振れて警告として機能しなくなる
+project() {
+  _now=$1; _rem=$2; _total=$3; _min=$4
+  [ "$_rem" -lt 0 ] && _rem=0
+  _elapsed=$((_total - _rem))
+  [ "$_elapsed" -lt "$_min" ] && return
+  _p=$((_now * _total / _elapsed))
+  [ "$_p" -gt 999 ] && _p=999
+  if   [ "$_p" -ge 100 ]; then _c="$C_RED"
+  elif [ "$_p" -ge 80 ];  then _c="$C_YEL"
+  else                         _c="$C_GRN"
+  fi
+  printf "%s%d%%%s" "$_c" "$_p" "$C_OFF"
 }
 
 # セグメントを " | " 区切りで連結 (空はスキップ)
@@ -81,19 +102,23 @@ if [ -n "$used_pct" ]; then
   add "$ctx"
 fi
 
-# 4. rate limits: 5h は残り時間 / 1w は絶対時刻
+# 4. rate limits: 現在%→窓終了時の着地予測 (残り時間 / 絶対時刻)
 now=$(date +%s)
-rate=""
 if [ -n "$fh_pct" ]; then
   rem=$((fh_reset - now))
-  rate="5h:${fh_pct}%($(fmt_remaining "$rem"))"
+  seg="5h ${fh_pct}%"
+  pj=$(project "$fh_pct" "$rem" 18000 1800)
+  [ -n "$pj" ] && seg="${seg}→${pj}"
+  add "${seg} ($(fmt_remaining "$rem"))"
 fi
 if [ -n "$sd_pct" ]; then
+  rem=$((sd_reset - now))
   abs=$(date -r "$sd_reset" +"%m/%d %H:%M" 2>/dev/null)
-  part="1w:${sd_pct}%(${abs})"
-  if [ -n "$rate" ]; then rate="${rate} ${part}"; else rate="$part"; fi
+  seg="1w ${sd_pct}%"
+  pj=$(project "$sd_pct" "$rem" 604800 21600)
+  [ -n "$pj" ] && seg="${seg}→${pj}"
+  add "${seg} (${abs})"
 fi
-add "$rate"
 
 # 5. owner/repo (native, .git 無し)
 add "$repo"
