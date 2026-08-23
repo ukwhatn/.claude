@@ -110,7 +110,6 @@
     ],
     "defaultMode": "auto"
   },
-  "model": "opus",
   "hooks": {
     "SessionStart": [
       {
@@ -237,7 +236,12 @@
   },
   "outputStyle": "ukwhatn-style",
   "language": "日本語",
-  "effortLevel": "high",
+  "effortLevel": "xhigh",
+  "modelSettings": {
+    "claude-opus-5": {
+      "effortLevel": "xhigh"
+    }
+  },
   "promptSuggestionEnabled": false,
   "askUserQuestionTimeout": "never",
   "tui": "fullscreen",
