@@ -6,6 +6,8 @@
 !/AGENTS.md
 !/settings.json
 !/statusline-command.sh
+!/subagent-statusline.py
+!/codex-usage.py
 !/commands/
 !/commands/**
 !/context/
