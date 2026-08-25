@@ -215,6 +215,10 @@
     "padding": 0,
     "refreshInterval": 10
   },
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "python3 ~/.claude/subagent-statusline.py"
+  },
   "enabledPlugins": {
     "document-skills@anthropic-agent-skills": true,
     "chrome-devtools-mcp@chrome-devtools-plugins": true

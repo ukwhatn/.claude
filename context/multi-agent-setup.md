@@ -14,7 +14,9 @@ Read when: `~/.claude` の構成を変更するとき、新しいPCをセット�
 |---|---|
 | `AGENTS.md`（実体）/ `CLAUDE.md`（symlink）/ `settings.json` | `CLAUDE.local.md`（マシン固有の実値） |
 | `context/` `skills/` `hooks/` `agents/` `templates/` `output-styles/` | `.local/`（メモリ・issue） |
-| `statusline-command.sh` `README.md` `NOTICE.md` | `plugins/`（marketplace キャッシュ） |
+| `statusline-command.sh` `subagent-statusline.py` `codex-usage.py` `README.md` `NOTICE.md` | `plugins/`（marketplace キャッシュ） |
+
+statusline 系スクリプトは**ルート直下**に置く（`bin/` を切らない）。`settings.json` が `statusLine` / `subagentStatusLine` から参照しており、settings だけ同期されてスクリプトが無いと毎 tick で実行失敗するため、allowlist への追加は必須。
 
 `settings.json` にマシン依存の値はほぼ無く、そのまま3台で共有できている（`extraKnownMarketplaces` / `enabledPlugins` もここに載るため、plugin の導入は settings.json の同期だけで全台に伝播する）。
 
