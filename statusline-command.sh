@@ -1,6 +1,6 @@
 #!/bin/sh
 # Claude Code status line script (2 rows)
-#   row1 (予算): model | effort | ctx | 5h now→着地 (残り) | 1w now→着地 (reset) | codex 月次枠
+#   row1 (予算): model | effort | ctx | 5h now→着地 (残り) | 1w now→着地 (reset) | codex 枠
 #   row2 (位置): owner/repo | branch | PR (state) +a -r | proj -> cwd
 
 input=$(cat)
@@ -84,6 +84,49 @@ project() {
   _p=$((_now * _total / _elapsed))
   [ "$_p" -gt 999 ] && _p=999
   printf "%s%d%%%s" "$(limit_color "$_p")" "$_p" "$C_OFF"
+}
+
+# 窓長 (秒) を 5h / 1w のラベルにする
+window_label() {
+  if   [ $(($1 % 604800)) -eq 0 ]; then printf "%dw" $(($1 / 604800))
+  elif [ $(($1 % 86400))  -eq 0 ]; then printf "%dd" $(($1 / 86400))
+  else                                  printf "%dh" $(($1 / 3600))
+  fi
+}
+
+# 着地予測を出し始める最小経過秒
+# Why not: 窓長の一定割合にしない。1w 窓に 5h 窓と同じ割合 (1/10) を当てると
+# 2 日以上経つまで予測が出ず、週枠の警告として遅すぎるため
+project_min() {
+  if [ "$1" -ge 604800 ]; then printf 21600; else printf "%d" $(($1 / 10)); fi
+}
+
+# codex の rate limit 窓を "5h 13%→18% 4h12m" の形にする
+# $1:現在% $2:窓長秒 $3:リセット時刻 $4:現在時刻 $5:リセット日を出すか
+codex_window() {
+  [ -z "$1" ] && return
+  _cw_pct=$1; _cw_win=$2; _cw_reset=$3; _cw_now=$4; _cw_abs=$5
+  if [ -n "$_cw_win" ]; then
+    _cw_out="${C_FG}$(window_label "$_cw_win") ${_cw_pct}%${C_OFF}"
+  else
+    _cw_out="${C_FG}${_cw_pct}%${C_OFF}"
+  fi
+  if [ -n "$_cw_win" ] && [ -n "$_cw_reset" ]; then
+    _cw_rem=$((_cw_reset - _cw_now))
+    _cw_pj=$(project "$_cw_pct" "$_cw_rem" "$_cw_win" "$(project_min "$_cw_win")")
+    [ -n "$_cw_pj" ] && _cw_out="${_cw_out}${C_DIM}${ARROW}${C_OFF}${_cw_pj}"
+    # Why not: 窓長によらず残り時間で出さない。1w 窓では "148h30m" となり
+    # いつ空くかが読み取れないため、日をまたぐ窓は日付で出す
+    if [ "$_cw_win" -ge 86400 ]; then
+      if [ "$_cw_abs" -eq 1 ]; then
+        _cw_d=$(date -r "$_cw_reset" +"%-m/%-d" 2>/dev/null)
+        [ -n "$_cw_d" ] && _cw_out="${_cw_out} ${C_DIM}${_cw_d}${C_OFF}"
+      fi
+    else
+      _cw_out="${_cw_out} ${C_DIM}$(fmt_remaining "$_cw_rem")${C_OFF}"
+    fi
+  fi
+  printf "%s" "$_cw_out"
 }
 
 # context window の閾値 (40% 超で警告、60% 以上で危険)
@@ -182,31 +225,74 @@ if [ -n "$sd_pct" ]; then
   add1 "$(ic "$I_CAL") ${seg}"
 fi
 
-# 5. codex の月次クレジット枠 (キャッシュを読むだけ。古ければ裏で更新をキックする)
+# 5. codex の利用枠 (キャッシュを読むだけ。古ければ裏で更新をキックする)
+#    枠の構成は契約で変わる (個人契約は月次枠 + 5h/1w 窓、team 契約は窓のみ) ため、
+#    キャッシュに載っているものだけを出す
 cdx_cache="$HOME/.cache/claude-statusline/codex-usage.json"
 CDX_STALE_SEC=300
 CDX_AGE_VISIBLE_SEC=1800
-cdx_pct=""; cdx_reset=""; cdx_fetched=""
+cdx_m_pct=""; cdx_m_used=""; cdx_m_limit=""; cdx_m_reset=""
+cdx_p_pct=""; cdx_p_win=""; cdx_p_reset=""
+cdx_s_pct=""; cdx_s_win=""; cdx_s_reset=""
+cdx_unlim=""; cdx_bal=""; cdx_tickets=""; cdx_fetched=""
 if [ -f "$cdx_cache" ]; then
-  cdx_fields=$(jq -r '[(.pct // ""), (.resets_at // ""), (.fetched_at // "")]
-    | map(tostring) | join("")' "$cdx_cache" 2>/dev/null)
-  IFS="$US" read -r cdx_pct cdx_reset cdx_fetched <<EOF
+  cdx_fields=$(jq -r '[
+      (.monthly.pct // ""), (.monthly.used // ""), (.monthly.limit // ""), (.monthly.resets_at // ""),
+      (.primary.pct // ""), (.primary.window_sec // ""), (.primary.resets_at // ""),
+      (.secondary.pct // ""), (.secondary.window_sec // ""), (.secondary.resets_at // ""),
+      (.credits.unlimited // false), (.credits.balance // ""),
+      (.reset_credits // ""), (.fetched_at // "")
+    ] | map(tostring) | join("")' "$cdx_cache" 2>/dev/null)
+  IFS="$US" read -r cdx_m_pct cdx_m_used cdx_m_limit cdx_m_reset \
+    cdx_p_pct cdx_p_win cdx_p_reset \
+    cdx_s_pct cdx_s_win cdx_s_reset \
+    cdx_unlim cdx_bal cdx_tickets cdx_fetched <<EOF
 $cdx_fields
 EOF
 fi
-if [ -n "$cdx_pct" ]; then
-  seg="$(limit_color "$cdx_pct")${cdx_pct}%${C_OFF}"
-  if [ "$show_cdx_reset" -eq 1 ] && [ -n "$cdx_reset" ]; then
-    cdx_abs=$(date -r "$cdx_reset" +"%-m/%-d" 2>/dev/null)
-    [ -n "$cdx_abs" ] && seg="${seg} ${C_DIM}${cdx_abs}${C_OFF}"
+
+cdx=""
+cdx_add() {
+  [ -z "$1" ] && return
+  [ -n "$cdx" ] && cdx="${cdx} ${C_DIM}|${C_OFF} "
+  cdx="${cdx}$1"
+}
+
+# 月次クレジット枠 (個人契約でのみ返る)
+if [ -n "$cdx_m_pct" ]; then
+  seg="$(limit_color "$cdx_m_pct")${cdx_m_pct}%${C_OFF}"
+  if [ "$show_cdx_reset" -eq 1 ]; then
+    if [ -n "$cdx_m_used" ] && [ -n "$cdx_m_limit" ]; then
+      # Why not: humanize で k 表記に丸めない。単位がクレジットで桁感が読めず、
+      # 1234/4000 が 1k/4k になると残量の判断に使えないため
+      seg="${seg} ${C_DIM}$(printf '%.0f' "$cdx_m_used")/$(printf '%.0f' "$cdx_m_limit")${C_OFF}"
+    fi
+    if [ -n "$cdx_m_reset" ]; then
+      abs=$(date -r "$cdx_m_reset" +"%-m/%-d" 2>/dev/null)
+      [ -n "$abs" ] && seg="${seg} ${C_DIM}${abs}${C_OFF}"
+    fi
   fi
+  cdx_add "$seg"
+fi
+
+cdx_add "$(codex_window "$cdx_p_pct" "$cdx_p_win" "$cdx_p_reset" "$now" "$show_cdx_reset")"
+cdx_add "$(codex_window "$cdx_s_pct" "$cdx_s_win" "$cdx_s_reset" "$now" "$show_cdx_reset")"
+
+if [ "$cdx_unlim" = "true" ]; then
+  cdx_add "${C_GRN}unlimited${C_OFF}"
+elif [ -n "$cdx_bal" ]; then
+  cdx_add "${C_FG}bal ${cdx_bal}${C_OFF}"
+fi
+[ -n "$cdx_tickets" ] && cdx_add "${C_DIM}reset x${cdx_tickets}${C_OFF}"
+
+if [ -n "$cdx" ]; then
   # codex を動かしていない間は値が動かないため、古いことが読み取れるようにする
   if [ -n "$cdx_fetched" ]; then
     cdx_age=$((now - cdx_fetched))
     [ "$cdx_age" -ge "$CDX_AGE_VISIBLE_SEC" ] &&
-      seg="${seg} ${C_DIM}~$(fmt_remaining "$cdx_age")${C_OFF}"
+      cdx="${cdx} ${C_DIM}~$(fmt_remaining "$cdx_age")${C_OFF}"
   fi
-  add1 "$(ic "$I_CASH") ${seg}"
+  add1 "$(ic "$I_CASH") ${C_DIM}cdx${C_OFF} ${cdx}"
 fi
 if [ -z "$cdx_fetched" ] || [ $((now - cdx_fetched)) -ge "$CDX_STALE_SEC" ]; then
   # detach して待たない。多重起動は codex-usage.py 側のロックが吸収する
