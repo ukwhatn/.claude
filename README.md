@@ -40,7 +40,7 @@ git clone <this-repo> ~/.claude
 | ファイル | Read するタイミング |
 |---|---|
 | `code-review-checklist.md` | コード実装完了時・PR 提出前・レビュー実行前 |
-| `agent-cli-guide.md` | 外部 CLI（cursor / codex）でレビューする前 |
+| `agent-cli-guide.md` | 外部 CLI（codex / cursor）でレビューする前 |
 | `worktree-guide.md` | worktree の作成・片付け前 |
 | `task-tool-guide.md` | TaskCreate/TaskUpdate を複雑タスクで初めて使う時 |
 | `claude-customization-guide.md` | 指示ファイル・skills・hooks の設計・監査時 |

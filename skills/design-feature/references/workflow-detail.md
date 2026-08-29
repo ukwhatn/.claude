@@ -231,7 +231,7 @@ Phase 2 調査または AskUserQuestion で必ず決め切る。残しそうに�
 
 ### 4.1 CLI 選択
 
-CLI 判定・共通呼び出しテンプレートは @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」を使う（cursor 優先・codex fallback）。
+CLI 判定・共通呼び出しテンプレートは @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」を使う（codex 優先・cursor fallback、両方使えなければ fable subagent）。
 
 ### 4.2 初回プロンプト例
 

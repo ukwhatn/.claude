@@ -1,6 +1,6 @@
 ---
 name: pr-review
-description: PRレビュー。PR番号・URL・ブランチ名・Slackリンク等を添えてPRの「レビュー」を依頼された時に使用（PRのレビュー依頼ではビルトインの/reviewでなく本スキルを使う。ローカル未コミット変更のレビュー→/code-review、自ブランチの提出前チェック→self-review、特定レビューコメントへの対応→pr-comment、PRの状態確認・PR作成相談では使わない）。Claude Codeと外部CLI（cursor agent / codex）のマルチモデルレビューでCritical/High/Medium分類の指摘を報告。
+description: PRレビュー。PR番号・URL・ブランチ名・Slackリンク等を添えてPRの「レビュー」を依頼された時に使用（PRのレビュー依頼ではビルトインの/reviewでなく本スキルを使う。ローカル未コミット変更のレビュー→/code-review、自ブランチの提出前チェック→self-review、特定レビューコメントへの対応→pr-comment、PRの状態確認・PR作成相談では使わない）。Claude Codeと外部CLI（codex / cursor agent）のマルチモデルレビューでCritical/High/Medium分類の指摘を報告。
 allowed-tools: Read, Grep, Bash(gh:*), Bash(git:*)
 ---
 
@@ -75,9 +75,9 @@ CLAUDE.mdを読み、以下を把握:
 - 確かめられなかったものは断定せず `〜ではないかと思います（おそらく）` に落とす。落とせないなら指摘そのものを取り下げる
 - 設定値・タイムアウト・上限は該当リポジトリの実設定を読んで確認する（フレームワークの既定値を前提にしない）
 
-### 5. 外部CLIによるレビュー（cursor優先 / codex fallback）
+### 5. 外部CLIによるレビュー（codex優先 / cursor fallback）
 
-別モデルの観点を追加する。CLI判定（cursor優先／codex fallback）・コマンド形式（`--trust`・`--output-format json`・jq抽出等）は @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」に従う。プロンプト本文は両CLI共通で以下を渡す:
+別モデルの観点を追加する。CLI判定（codex優先／cursor fallback、両方使えなければ fable subagent）・コマンド形式（codexの`-c model_reasoning_effort`・cursorの`--trust`／`--output-format json`・jq抽出等）は @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」に従う。プロンプト本文は共通で以下を渡す:
 
 ```
 gh pr diff <番号> を実行してPR #<番号> の変更内容をレビューしてください。

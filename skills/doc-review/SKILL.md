@@ -14,7 +14,7 @@ description: Agent Teamsによる多角的ドキュメントレビュー。設�
 ## 既存設定との関係
 
 - **委譲の構成（@context/tool-claude-code.md「委譲判断」「並列 spawn の実務」）**: 本スキルは相互通信を使わず、各体が独立して結論を返し lead が統合する構成
-- **agent CLI（@context/agent-cli-guide.md）**: 外部CLI（cursor agent / codex）による第三者レビュー
+- **agent CLI（@context/agent-cli-guide.md）**: 外部CLI（codex / cursor agent）による第三者レビュー
 - **Phase 0-5（@context/workflow-rules.md）**: Phase 2（計画レビュー）やPhase 4（品質確認）で使用可能
 - **codebase-reviewスキル**: コードベース対象（本スキルはドキュメント対象で競合しない）
 
@@ -80,7 +80,7 @@ description: Agent Teamsによる多角的ドキュメントレビュー。設�
 | Agent | 観点 |
 |-------|------|
 | devils-advocate | 根本的な前提への挑戦、見落とされたリスク、代替案 |
-| agent-cli-reviewer | 外部CLI（cursor agent / codex）による第三者レビュー |
+| agent-cli-reviewer | 外部CLI（codex / cursor agent）による第三者レビュー |
 
 ### Step 3: タスク作成
 
@@ -189,7 +189,7 @@ Agent(subagent_type: "general-purpose", name: "agent-cli-reviewer", prompt: ...)
 
 **agent-cli-reviewerの特別指示:**
 
-外部CLIをBash経由で実行し、第三者レビューをleadに報告する。CLI判定（cursor優先／codex fallback）・コマンド形式・セッション継続は @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」に従う。
+外部CLIをBash経由で実行し、第三者レビューをleadに報告する。CLI判定（codex優先／cursor fallback）・コマンド形式・セッション継続は @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」に従う。外部CLIが両方使えない場合は自分で fable subagent を spawn せず、その旨を lead に報告する（fallback の判断は lead が行う）。
 - プロンプトにはレビュー対象のファイルパスのみを渡す（ファイル内容の埋め込みは禁止。CLIに自分で読ませるため）
 - 外部CLIのモデルはagent-cli-guide準拠の固定値（Agent spawn時の「モデル指定なし」とは別系統）
 

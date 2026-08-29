@@ -5,12 +5,12 @@
 ## 目次
 
 - [概要](#概要)
-- [Agent（Claude subagent）使用後の codex 裏取り（CRITICAL）](#agentclaude-subagent使用後の-codex-裏取りcritical)
-- [使用するCLIの選択（cursor優先 / codex fallback）](#使用するcliの選択cursor優先--codex-fallback)
+- [Claude subagent を review に使った場合の外部CLI裏取り（CRITICAL）](#claude-subagent-を-review-に使った場合の外部cli裏取りcritical)
+- [使用するCLIの選択（codex優先 / cursor fallback / fable subagent）](#使用するcliの選択codex優先--cursor-fallback--fable-subagent)
 - [基本コマンド](#基本コマンド)
 - [CRITICAL: diff/ファイル内容の埋め込み禁止](#critical-diffファイル内容の埋め込み禁止)
 - [レビュー用コマンド例](#レビュー用コマンド例)
-- [出力形式（cursor: `agent`）](#出力形式cursor-agent)
+- [出力形式](#出力形式)
 - [レビューループの流れ](#レビューループの流れ)
 - [Severity別のlead判断基準](#severity別のlead判断基準)
 - [レビュー専任 agent に分ける場合（Claude Code）](#レビュー専任-agent-に分ける場合claude-code)
@@ -19,10 +19,10 @@
 
 ## 概要
 
-外部CLI（既定は cursor の `agent` CLI、無い環境では codex CLI にfallback）のnon-interactive modeを使用して、別モデルによるレビューを実施する。
+外部CLI（既定は codex CLI、無い環境では cursor の `agent` CLI にfallback）のnon-interactive modeを使用して、別モデルによるレビューを実施する。どちらも使えない環境では fable subagent にfallbackする（「外部CLIが両方使えない場合」参照）。
 実行主体とは異なるベンダーのモデルによる分析で、計画・実装の品質を向上させる。
 
-> **実行主体が Codex の場合**: 外部レビューCLIは cursor（`agent`）または claude を用い、codex 自身での再帰レビューは行わない（別ベンダー bias 独立性の確保が目的のため）。claude の non-interactive 例: 初回 `claude -p "<プロンプト>" --output-format json | jq -r '.session_id, .result'`、継続 `claude -p "<プロンプト>" --resume <session_id> --output-format json | jq -r '.result'`（プロンプト本文・Severity分類・ループ規定は本ガイド共通）。以下の cursor/codex の使い分けは「実行主体が Claude Code」の場合の既定。
+> **実行主体が Codex の場合**: 外部レビューCLIは cursor（`agent`）または claude を用い、codex 自身での再帰レビューは行わない（別ベンダー bias 独立性の確保が目的のため）。claude の non-interactive 例: 初回 `claude -p "<プロンプト>" --output-format json | jq -r '.session_id, .result'`、継続 `claude -p "<プロンプト>" --resume <session_id> --output-format json | jq -r '.result'`（プロンプト本文・Severity分類・ループ規定は本ガイド共通）。以下の codex/cursor の使い分けは「実行主体が Claude Code」の場合の既定。
 
 > **Codex が「レビュアーとして呼ばれた」場合**: 上記は Codex が **lead として自分の作業をレビューに出す**ときの規定であり、**レビュー依頼を受けた側には適用されない**。本ガイドのテンプレートで `codex exec` に渡されたレビューを実行しているときは、そのレビューを**自分で完遂し、他CLI・他LLMへ再委託しない**。
 >
@@ -34,46 +34,66 @@
 
 **本ファイルは末尾の「注意事項」まで読んでからコマンドを組む。** 実行が空振りする既知の落とし穴（stdin 待ち・パイプのバッファリング）はそこに集約されており、コマンド例だけを見て組むと再現する。
 
-## Agent（Claude subagent）使用後の codex 裏取り（CRITICAL）
+## Claude subagent を review に使った場合の外部CLI裏取り（CRITICAL）
 
-Agent ツール（Claude subagent）を review 目的で使用したら、続けて **codex（または cursor）でも同じ対象を必ずレビューする**。credit 切れ・network 遮断で codex が実行不能な場合は、05_log.md に理由付きで skip を記録し、**codex 復旧後に裏取りを実施する**（当該 PR がマージされる前に間に合えばよく、その phase 内で完結させる必要はない。後回し可）。
+Agent ツール（Claude subagent）を review 目的で使用したら、続けて **codex（無ければ cursor）でも同じ対象を必ずレビューする**。credit 切れ・network 遮断で外部CLIが実行不能な場合は、05_log.md に理由付きで skip を記録し、**外部CLI復旧後に裏取りを実施する**（当該 PR がマージされる前に間に合えばよく、その phase 内で完結させる必要はない。後回し可）。
 
 理由:
 
-- Claude 単独 review の主な弱点は同一モデル系列内の bias（見落としパターンが同型）
+- Claude 単独 review の主な弱点は同一ベンダー内の bias（モデルが違っても見落としパターンが同型になりやすい）
 - 別ベンダー LLM の指摘は「使えるときに一度回せば十分」ではなく、review の各 phase で bias 独立性の担保が必要
 - Agent review Phase 2 / Phase 4、実装レビュー、PR 前レビューのいずれでも適用する
 
-「外部CLIが使えない場合の方針（§3）」に従い外部レビューを省略した場合も、**Claude 単独で review を完結させたとみなさない**。省略した旨は完了報告に明記し、codex/cursor 復旧後に上記手順で裏取りを実施する。
+**この規定は fable subagent fallback にも適用する**。「外部CLIが両方使えない場合（fable subagent fallback）」に従って fable subagent でレビューした場合も、**Claude 単独で review を完結させたとみなさない**。代替した旨は完了報告に明記し、codex/cursor 復旧後に上記手順で裏取りを実施する。
 
-## 使用するCLIの選択（cursor優先 / codex fallback）
+## 使用するCLIの選択（codex優先 / cursor fallback / fable subagent）
 
 環境によって利用可能なCLIが異なる。**実行前に必ず以下の判定でCLIを選択すること。**
 
 ```bash
-# cursor CLI の実体コマンドを捕捉（cursor-agent / agent のどちらでも動くように）。無ければ codex にfallback
-CURSOR_CLI="$(command -v cursor-agent || command -v agent)"
-if [ -n "$CURSOR_CLI" ]; then
-  REVIEW_CLI=cursor   # 以後 "$CURSOR_CLI" -p ... で呼ぶ
-elif command -v codex >/dev/null 2>&1; then
+# codex を第1選択とし、無ければ cursor CLI（cursor-agent / agent のどちらでも動くように）にfallback
+if command -v codex >/dev/null 2>&1; then
   REVIEW_CLI=codex
 else
-  echo "レビュー用CLI（cursor-agent / codex）が見つからない" >&2
+  CURSOR_CLI="$(command -v cursor-agent || command -v agent)"
+  if [ -n "$CURSOR_CLI" ]; then
+    REVIEW_CLI=cursor   # 以後 "$CURSOR_CLI" -p ... で呼ぶ
+  else
+    REVIEW_CLI=fable    # 外部CLI不在 → fable subagent（後述）
+  fi
 fi
 ```
 
 > 以降の例では cursor 側を `agent` と表記するが、これは `"$CURSOR_CLI"`（= `cursor-agent` または `agent`）の短縮表記。`cursor-agent` しか無い環境では `agent` を `cursor-agent` に読み替える（または上記 `$CURSOR_CLI` を使う）。
 
-### 外部CLIが使えない場合の方針（両 CLI 使えない・credit 切れ・network 遮断時）
+### 外部CLIが両方使えない場合（fable subagent fallback）
 
-外部CLIが使えない環境（両方不在・credit切れ・network遮断）では、外部レビューを省略し、その旨を完了報告に明記する。**Claude 自身を reviewer role で spawn する自己検証で代替しない**（同一モデルによる自己検証は指示がなくても行われており、reviewer role での spawn は bias 独立性を持たないままコストを倍増させるだけのため）。
+外部CLI（codex / cursor）がどちらも使えない環境では、**fable subagent でレビューする**。`Agent` ツールを `model: "fable"` で spawn し、本ガイドのレビュープロンプト本文をそのまま渡す。
 
 **発火条件（いずれか）:**
-- `command -v cursor-agent && command -v codex` が両方失敗
-- codex 実行時に `Your workspace is out of credits` エラー
+- `command -v codex` と `command -v cursor-agent`（または `command -v agent`）が全て失敗
+- 実行時の credit 切れエラー（codex は `Your workspace is out of credits`）
 - ネットワーク遮断・API 障害でどちらも実行不能
 
-**省略時の手順**: 05_log.md に理由付きで skip を記録し、外部CLI復旧後に「Agent 使用後の codex 裏取り原則」に従って裏取りを実施する（PR マージ前に間に合えばよく、後回し可）。
+**spawn テンプレート:**
+
+```
+Agent(
+  subagent_type: "general-purpose",
+  model: "fable",
+  prompt: "<「レビュー用コマンド例」のプロンプト本文をそのまま渡す>"
+)
+```
+
+**fable subagent は暫定手段であり、外部レビューの完了とはみなさない**（lead と同一ベンダーのモデルであり、別ベンダー LLM の bias 独立性を持たないため）。適用時は次を必ず行う:
+
+1. 05_log.md に、外部CLIが使えなかった理由と fable subagent で代替した旨を記録する
+2. 完了報告に「外部CLIレビュー未実施（fable subagent で代替）」と明記する
+3. 外部CLI復旧後に「Claude subagent を review に使った場合の外部CLI裏取り」に従って裏取りを実施する（PR マージ前に間に合えばよく、後回し可）
+
+**lead 自身と同じモデルで reviewer role の subagent を spawn しない**（同一モデルによる自己検証は指示がなくても行われており、bias 独立性を持たないままコストを倍増させるだけのため）。fallback として使うのは fable subagent のみ。
+
+`Agent` ツールが使えない環境（Codex 等）では fable subagent も使えないため、外部レビューを省略し、その旨を完了報告に明記する。省略時も上記 1・3 は同様に行う。
 
 **レビュー実施前は必ず Read:**
 - `~/.claude/context/code-review-checklist.md`（汎用 anti-pattern チェックリスト）
@@ -82,31 +102,21 @@ fi
 
 | CLI | 実体 | 既定モデル | セッション継続 | 結果取得 |
 |-----|------|-----------|--------------|---------|
-| cursor（優先） | `agent`（= `cursor-agent`） | `gpt-5.6-sol-medium` | `--resume <session_id>` | `--output-format json` → `jq -r '.result'` |
-| codex（fallback） | `codex exec` | `gpt-5.6-sol` + `-c model_reasoning_effort="medium"` | `codex exec resume --last`（CWDの直近セッション） | `--json` → `jq` で `agent_message` を抽出、または `-o <file>` |
+| codex（優先） | `codex exec` | `gpt-5.6-sol` + `-c model_reasoning_effort="medium"` | `codex exec resume --last`（CWDの直近セッション） | `--json` → `jq` で `agent_message` を抽出、または `-o <file>` |
+| cursor（fallback） | `agent`（= `cursor-agent`） | `gpt-5.6-sol-medium` | `--resume <session_id>` | `--output-format json` → `jq -r '.result'` |
 
 **CRITICAL: モデル/effortの指定体系は両CLIで異なる（混同禁止）**
-- **cursor**: effort/speedをモデル名に含む合成slug（例: `gpt-5.6-sol-medium`。実在は `agent --list-models` で確認する）。effort表記はモデル系列で揺れる（gpt-5.6-sol系・gpt-5.4以前・claude系は `medium`/`xhigh` 表記、gpt-5.5系のxhigh相当のみ `extra-high` 表記で `gpt-5.5-xhigh-fast` は存在しない＝実測）。利用可能なslugは `agent --list-models` で確認（`gpt-5.6-sol-medium` が無ければ一覧の最も近いgpt-5.6-sol系slugにfallback）
 - **codex**: モデルslug（`gpt-5.6-sol`）とreasoning effort（`-c model_reasoning_effort="medium"`）を別指定。`gpt-5.6-sol-medium` のような合成名は**存在しない**。速度（Fast）はservice tier側の概念でslugに含めない
+- **cursor**: effort/speedをモデル名に含む合成slug（例: `gpt-5.6-sol-medium`。実在は `agent --list-models` で確認する）。effort表記はモデル系列で揺れる（gpt-5.6-sol系・gpt-5.4以前・claude系は `medium`/`xhigh` 表記、gpt-5.5系のxhigh相当のみ `extra-high` 表記で `gpt-5.5-xhigh-fast` は存在しない＝実測）。利用可能なslugは `agent --list-models` で確認（`gpt-5.6-sol-medium` が無ければ一覧の最も近いgpt-5.6-sol系slugにfallback）
 
 - **どちらもプロンプトにdiff/ファイル内容を埋め込まない**（後述「diff/ファイル内容の埋め込み禁止」）。CLIは自分でBash/Readを使って取得できる。
 - codex は **既定で read-only sandbox かつ承認プロンプトなしで完走**するため、レビュー（git diff・ファイル読取のみ）にそのまま使える。
 
 ## 基本コマンド
 
-以下がcursor/codex共通の呼び出しテンプレート（初回・2回目以降）。**計画レビュー・実装レビュー・PRレビュー・レビュー専任agentを含む全レビュー種別がこれを共用する**。各レビュー種別で変わるのは`<プロンプト>`の中身のみ（「レビュー用コマンド例」参照）。
+以下がcodex/cursor共通の呼び出しテンプレート（初回・2回目以降）。**計画レビュー・実装レビュー・PRレビュー・レビュー専任agentを含む全レビュー種別がこれを共用する**。各レビュー種別で変わるのは`<プロンプト>`の中身のみ（「レビュー用コマンド例」参照）。
 
-### cursor（`agent` / `cursor-agent`）— 優先
-
-```bash
-# 初回（session_idを取得）
-agent -p "<プロンプト>" --trust --model gpt-5.6-sol-medium --output-format json 2>/dev/null | jq -r '.session_id, .result'
-
-# 2回目以降（セッション継続）
-agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-medium --output-format json 2>/dev/null | jq -r '.result'
-```
-
-### codex（`codex exec`）— cursorが無い環境のfallback
+### codex（`codex exec`）— 優先
 
 **前景（同期実行）で待てる場合:**
 
@@ -135,17 +145,15 @@ codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" \
 - 特定セッションを継続する場合は `codex exec resume <SESSION_ID> "<プロンプト>"`。
 - 認証は保存済みCLIログインを既定で再利用。CI等では `CODEX_API_KEY` を当該コマンド限定で付与する。
 
-### 主要オプション（cursor: `agent`）
+### cursor（`agent` / `cursor-agent`）— codexが使えない環境のfallback
 
-| オプション | 説明 |
-|-----------|------|
-| `-p, --print` | 非対話モード、結果を出力 |
-| `--trust` | **必須**。ワークスペース信頼を自動承認（省略するとインタラクティブ確認が発生しnon-interactiveモードで失敗する） |
-| `--model <model>` | 使用モデル（gpt-5.6-sol-medium推奨） |
-| `--output-format json` | JSON形式で出力（session_id取得に必須） |
-| `--resume <session_id>` | 特定のセッションを再開 |
+```bash
+# 初回（session_idを取得）
+agent -p "<プロンプト>" --trust --model gpt-5.6-sol-medium --output-format json 2>/dev/null | jq -r '.session_id, .result'
 
-**CRITICAL: cursorの `--output-format stream-json` は使用禁止。バッファリング問題でハングする可能性がある。必ず `json` を使用すること。**（codexは `--json`（JSONL）を使用する）
+# 2回目以降（セッション継続）
+agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-medium --output-format json 2>/dev/null | jq -r '.result'
+```
 
 ### 主要オプション（codex: `codex exec`）
 
@@ -159,11 +167,23 @@ codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" \
 | `resume --last` / `resume <SESSION_ID>` | セッション継続（プロンプトは位置引数） |
 | `--sandbox <policy>` | `read-only`（既定）/ `workspace-write` / `danger-full-access`。レビューは既定のまま |
 
+### 主要オプション（cursor: `agent`）
+
+| オプション | 説明 |
+|-----------|------|
+| `-p, --print` | 非対話モード、結果を出力 |
+| `--trust` | **必須**。ワークスペース信頼を自動承認（省略するとインタラクティブ確認が発生しnon-interactiveモードで失敗する） |
+| `--model <model>` | 使用モデル（gpt-5.6-sol-medium推奨） |
+| `--output-format json` | JSON形式で出力（session_id取得に必須） |
+| `--resume <session_id>` | 特定のセッションを再開 |
+
+**CRITICAL: cursorの `--output-format stream-json` は使用禁止。バッファリング問題でハングする可能性がある。必ず `json` を使用すること。**（codexは `--json`（JSONL）を使用する）
+
 ## CRITICAL: diff/ファイル内容の埋め込み禁止
 
-**プロンプトに `$(git diff ...)` や `$(cat ...)` でdiff/ファイル内容を埋め込むことを禁止する（cursor/codex共通）。**
+**プロンプトに `$(git diff ...)` や `$(cat ...)` でdiff/ファイル内容を埋め込むことを禁止する（codex/cursor共通）。**
 
-外部CLI（cursor/codex）はツール（Bash等）を持っているため、自分でdiffやファイル内容を取得できる。
+外部CLI（codex/cursor）はツール（Bash等）を持っているため、自分でdiffやファイル内容を取得できる。
 プロンプトには「何を取得してレビューすべきか」の指示のみ記載する。
 
 ### 理由
@@ -191,9 +211,9 @@ agent -p "/path/to/plan.md を読んで計画をレビューしてください�
 
 ## レビュー用コマンド例
 
-以降は各レビュー種別の**プロンプト本文のみ**を示す。CLIコマンドへの組み込み方（`--trust --model ... --output-format json` 等）は「基本コマンド」節の共通テンプレートを参照し、`<プロンプト>` の部分に以下の本文を差し込む。cursor/codexどちらを使うかは「使用するCLIの選択」の判定に従う（コマンド形の対応は「基本コマンド」参照）。
+以降は各レビュー種別の**プロンプト本文のみ**を示す。CLIコマンドへの組み込み方（`--trust --model ... --output-format json` 等）は「基本コマンド」節の共通テンプレートを参照し、`<プロンプト>` の部分に以下の本文を差し込む。codex/cursorどちらを使うかは「使用するCLIの選択」の判定に従う（コマンド形の対応は「基本コマンド」参照）。fable subagent fallback の場合も、以下のプロンプト本文をそのまま渡す。
 
-**レビュープロンプトには必ず「`~/.claude/context/code-review-checklist.md` を Read して各セクションをチェックせよ」を含める**（cursor/codex どちらも Bash / Read を持つので自ら参照可能）。checklist を明示させることで、抽象観点（「セキュリティを見て」）だけでは検出できない具体的 anti-pattern（BOLA、CSRF 登録漏れ、Drizzle encoder、falsy check 等）の見落としを減らす。
+**レビュープロンプトには必ず「`~/.claude/context/code-review-checklist.md` を Read して各セクションをチェックせよ」を含める**（codex/cursor どちらも Bash / Read を持つので自ら参照可能）。checklist を明示させることで、抽象観点（「セキュリティを見て」）だけでは検出できない具体的 anti-pattern（BOLA、CSRF 登録漏れ、Drizzle encoder、falsy check 等）の見落としを減らす。
 
 **併せて「あなたはレビュアーとして呼ばれている。他のCLI・LLMへ再委託せず、自分でレビューを完遂して結果を返せ」をプロンプトに含める**。呼び出し側での二重防御であり、被呼び出し側の指示ファイル（グローバル指示の役割分岐）だけに頼らない。
 
@@ -241,7 +261,7 @@ agent -p "/path/to/plan.md を読んで計画をレビューしてください�
 
 指摘がなければ「指摘なし」とだけ回答してください。
 ```
-コマンド組み込みは「基本コマンド」の初回パターン（cursorは`--output-format json`からsession_id取得、codexは`--json`からthread_id取得）。
+コマンド組み込みは「基本コマンド」の初回パターン（codexは`--json`からthread_id取得、cursorは`--output-format json`からsession_id取得）。
 
 **2回目以降のプロンプト:**
 ```
@@ -288,7 +308,13 @@ gh pr diff <番号> を実行して、PRの変更内容をレビューしてく�
 ```
 コマンド組み込みは「基本コマンド」の初回パターン。
 
-## 出力形式（cursor: `agent`）
+## 出力形式
+
+### codex（`codex exec`）
+
+`--json` で JSONL（newline-delimited JSON）。最終メッセージは `item.completed`（`item.type=="agent_message"`）の `.item.text`、セッションIDは `thread.started` の `.thread_id`。`-o <file>` を併用すると最終メッセージがファイルにも書き出される。
+
+### cursor（`agent`）
 
 | 形式 | 説明 | 使用可否 |
 |------|------|----------|
@@ -296,9 +322,7 @@ gh pr diff <番号> を実行して、PRの変更内容をレビューしてく�
 | `text` | プレーンテキスト | 使用可 |
 | `stream-json` | ストリーミングJSON | **使用禁止** |
 
-> codexは `--json`（JSONL）。最終メッセージは `item.completed`（`item.type=="agent_message"`）の `.item.text`、セッションIDは `thread.started` の `.thread_id`。
-
-### JSON出力の構造
+#### JSON出力の構造
 
 ```json
 {
@@ -315,8 +339,8 @@ gh pr diff <番号> を実行して、PRの変更内容をレビューしてく�
 ## レビューループの流れ
 
 1. **初回レビュー実行**
-   - `agent -p`でレビュープロンプトを送信
-   - `--output-format json`でsession_idを取得
+   - 「使用するCLIの選択」で決めたCLIにレビュープロンプトを送信
+   - セッションID（codex: `thread_id` / cursor: `session_id`）を取得
    - 結果のSeverity分類を確認
 
 2. **Severity別のlead判断**
@@ -325,7 +349,7 @@ gh pr diff <番号> を実行して、PRの変更内容をレビューしてく�
    - スキップした指摘と理由は05_log.mdに記録
 
 3. **再レビュー（セッション継続）**
-   - `--resume <session_id>`でセッション継続
+   - `codex exec resume --last` / `--resume <session_id>` でセッション継続
    - 改善内容を伝えて再度レビューを依頼
 
 4. **打ち切り条件（いずれかを満たした時点で終了）**
@@ -374,10 +398,10 @@ gh pr diff <番号> を実行して、PRの変更内容をレビューしてく�
 あなたはこのセッションのreviewerです。
 
 ## 役割
-外部CLI（cursorの`agent`、無ければcodex）をBash経由で実行し、レビュー結果をleadに報告する。
+外部CLI（codex、無ければcursorの`agent`）をBash経由で実行し、レビュー結果をleadに報告する。
 
 ## 実行手順
-0. CLI判定（`command -v cursor-agent || command -v agent` で無ければ `codex`）
+0. CLI判定（`command -v codex` で無ければ `command -v cursor-agent || command -v agent`。どちらも無ければ本ガイド「外部CLIが両方使えない場合」に従い lead に報告して指示を仰ぐ）
 1. `~/.claude/context/agent-cli-guide.md`の「基本コマンド」節のテンプレートで、Bashから外部CLIコマンドを実行（初回: session_id/thread_id取得）
 2. 結果をleadにSendMessageで報告（Severity分類付き）
 3. leadからの修正完了報告を受け、同節の「2回目以降」パターン（`--resume` / `resume --last`）でセッション継続して再レビュー
@@ -411,15 +435,16 @@ agent CLIのセッションはPhaseごとに新規作成するが、reviewer 自
 
 | CLI | 指定 | 特徴 | 推奨用途 |
 |-----|--------|------|----------|
-| cursor | `--model gpt-5.6-sol-medium`（合成slug） | medium reasoning | コードレビュー標準 |
-| codex | `--model gpt-5.6-sol -c model_reasoning_effort="medium"` | 同等 | コードレビュー標準（fallback時） |
+| codex | `--model gpt-5.6-sol -c model_reasoning_effort="medium"` | medium reasoning | コードレビュー標準 |
 | codex | `--model gpt-5.4` | 軽量・低コスト | 簡易チェック用の代替 |
+| cursor | `--model gpt-5.6-sol-medium`（合成slug） | 同等 | コードレビュー標準（fallback時） |
+| fable subagent | `Agent(model: "fable")` | 同一ベンダー・bias独立性なし | 外部CLIが両方使えないときの暫定 |
 
 ```bash
-# cursor: 利用可能な合成slug一覧を確認（medium variantが無ければ一覧の最も近いgpt-5.6-sol系slugにfallback）
-agent --list-models
 # codex: モデルとreasoningは別指定（合成slug不可）
 codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" ...
+# cursor: 利用可能な合成slug一覧を確認（medium variantが無ければ一覧の最も近いgpt-5.6-sol系slugにfallback）
+agent --list-models
 ```
 
 ## 注意事項

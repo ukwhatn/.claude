@@ -115,7 +115,7 @@
 
 指摘が Action Required ゼロになるまでループする（安全上限5R）。実行前に `context/agent-cli-guide.md` を必ずRead（CLI選択・コマンド形式・レビューループの規定）。レビュー結果と対応は計画書に記録する。
 
-省略できるのは外部CLIが使えない環境のときだけで、その場合は計画書と完了報告の双方に省略した旨を明記する（Claude 自身を reviewer role で spawn する自己検証で代替しない）。
+外部CLI（codex / cursor）が両方使えない環境では fable subagent で代替し、計画書と完了報告の双方にその旨を明記する（lead 自身と同じモデルでの自己検証では代替しない）。
 
 ## Phase 3: 実装
 
@@ -237,10 +237,10 @@ PJ CLAUDE.mdに記載のコマンドで実行:
 2. 修正後、`--resume` で再レビュー
 3. 打ち切り条件: Action Required = 0 / 同一指摘2R連続 / 安全上限5R
 
-**外部CLIが使えない環境では、外部レビューを省略し、その旨を完了報告に明記する。Claude 自身を reviewer role で spawn する自己検証で代替しない**（外部レビューの価値は別ベンダー LLM の bias 独立性にある）。
+**外部CLI（codex / cursor）が両方使えない環境では fable subagent で代替し、その旨を完了報告に明記する。lead 自身と同じモデルでの自己検証では代替しない**（外部レビューの価値は別ベンダー LLM の bias 独立性にあり、fable subagent もそれを持たない暫定手段のため、外部CLI復旧後に裏取りする）。
 
 **実行前に必ずRead:**
-- `context/agent-cli-guide.md`（CLI 選択・コマンド形式・Claude fallback pattern・レビューループの規定）
+- `context/agent-cli-guide.md`（CLI 選択・コマンド形式・fable subagent fallback・レビューループの規定）
 - `context/code-review-checklist.md`（汎用の実装 anti-pattern チェックリスト。BOLA/BOPLA / CSRF 登録漏れ / falsy check / Drizzle encoder / LLM injection 等を具体レベルで列挙）
 
 ## Phase 5: 完了報告

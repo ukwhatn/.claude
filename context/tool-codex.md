@@ -38,7 +38,7 @@ Claude Code では @import で常駐する以下のファイルを、Codex で�
 | Agent Teams / Workflow ツール | 対応物なし。各スキルの「環境要件」節の代替手順（観点の逐次実行等）に従う |
 | WebSearch | Codex の web search 機能 |
 | context7 | MCP サーバー（未設定なら `~/.codex/config.toml` の `[mcp_servers.context7]` に追加して使用） |
-| 外部レビューCLI（agent review） | cursor（`agent`）または claude（`claude -p`）を使用。**codex 自身での再帰レビューは行わない**（別ベンダー bias 独立性のため。コマンド例: `~/.claude/context/agent-cli-guide.md` 冒頭の注記） |
+| 外部レビューCLI（agent review） | cursor（`agent`）を第1選択、無ければ claude（`claude -p`）。**codex 自身での再帰レビューは行わない**（別ベンダー bias 独立性のため。実行主体が Claude Code の場合の既定は codex 優先だが、実行主体が Codex のときは自分自身を選ばない。コマンド例: `~/.claude/context/agent-cli-guide.md` 冒頭の注記） |
 
 ## Claude Code 専用ガイドの扱い
 

@@ -33,7 +33,7 @@ Phase 0: 準備           → メモリディレクトリ・タスク管理
 Phase 1: 要求深掘り     → AskUserQuestion で目的・スコープ・制約を確定
 Phase 2: 既存実装調査   → コードベース SSoT で関連実装を把握
 Phase 3: 01 ドラフト     → 実装マスタを章別に書く
-Phase 4: agent review   → cursor agent で Action Required 0 まで反映
+Phase 4: agent review   → 外部CLI で Action Required 0 まで反映
 Phase 5: 02 抽出         → 01 から What だけ抽出して書き、完了報告
 ```
 
@@ -153,7 +153,7 @@ AskUserQuestion で以下を **必ず確定** してから次に進む:
 
 @context/agent-cli-guide.md に従う:
 
-1. 初回: cursor agent CLI（fallback: codex）で 01 をレビュー
+1. 初回: codex CLI（fallback: cursor agent → fable subagent）で 01 をレビュー
 2. Severity 別判断:
    - Action Required → 必ず修正
    - Recommended → 必要性で判断、スキップ時は理由を 05_log.md に記録
