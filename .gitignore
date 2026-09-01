@@ -22,3 +22,5 @@
 !/templates/**
 !/output-styles/
 !/output-styles/**
+!/bin/
+!/bin/**

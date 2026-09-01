@@ -223,6 +223,23 @@ Chrome 拡張は複数 profile 同時接続をサポートするが、Connected 
 
 **Read when**: deviceId から実 Chrome を特定する必要が出たら `~/.claude/local/chrome-browser-mapping.md` を Read する（マシン固有の実値。`@`import していないため常駐しない。git 管理外で存在しない環境もある）。
 
+## ブラウザ操作MCP（複数セッションでの共有）
+
+普段使いのブラウザを複数セッションから同時に操作する場合、**MCP サーバをセッションごとに起こさない**。stdio で起こすと、拡張ブリッジ方式では拡張が同時に1接続しか保持しないため後から繋いだセッションが先のセッションを切断し、CDP 直結方式では接続ごとにブラウザ側の承認ダイアログが出る。
+
+構成は「サーバ1本を常駐させ、各セッションは HTTP クライアントとして接続する」。playwright-mcp の場合:
+
+- 常駐: `~/.claude/bin/playwright-mcp-server.sh`（LaunchAgent `com.ukwhatn.playwright-mcp`。ログ: `~/Library/Logs/playwright-mcp.log`）
+- 接続: MCP 設定は `{"type":"http","url":"http://127.0.0.1:8931/mcp"}`
+- サーバは `--cdp-endpoint`（ユーザーが起動したブラウザに接続）+ `--shared-browser-context`（全クライアントで同一コンテキストを共有）で起動する
+- 接続クライアントが 0 になるとブラウザから detach され、次の操作で承認ダイアログが再度出る。これを防ぐため常駐クライアント（`bin/playwright-mcp-pin.py`）が1本張り続ける。**承認ダイアログが出たら pin が落ちている合図**なのでログを見る
+
+**同一コンテキストを共有するため、タブは自分のものだけを触る**:
+
+- 操作の開始時に自分のタブを新規に開き、以後は自分の current tab に対してのみ操作する
+- `browser_tabs` の index 指定で select / close しない（index は他セッションのタブ開閉でずれるため、ユーザーの既存タブや他セッションのタブを閉じる事故になる）
+- タブ一覧にはユーザーの実タブが全て見える。**読み取った内容を無関係な文脈で持ち出さない**
+
 ## Cloudflare
 詳細: @context/cloudflare-development.md
 
