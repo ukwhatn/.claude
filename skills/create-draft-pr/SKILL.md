@@ -181,9 +181,19 @@ gh pr create --draft \
 
 **完了基準**: `gh pr view <n> --json isDraft,assignees,baseRefName` で Draft / assignee / base を確認できている。
 
-### 8. 結果の報告
+### 8. CI と conflict の確認
 
-PRのURL、base、Draftか、本文の文字数（予算に対して）を1〜3行で報告する。
+**CI の結果と conflict の有無を自分で確認してから報告する**。走行中なら完了まで監視する。落ちている・conflict がある場合は、指摘を待たず原因調査に入る。
+
+```bash
+gh pr view <n> --json mergeable,mergeStateStatus,statusCheckRollup
+```
+
+**完了基準**: CI が結論（success / failure）に達しており、`mergeable` を確認済み。走行中のまま報告していない。
+
+### 9. 結果の報告
+
+PRのURL、base、Draftか、本文の文字数（予算に対して）、CI と conflict の状態を1〜3行で報告する。
 
 ---
 

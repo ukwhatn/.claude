@@ -38,6 +38,14 @@ baseRef は `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.md の `BASE
 
 ## worktree の片付け（ExitWorktree の注意）
 
+**消して良い状況なら、確認を待たずに worktree を削除する**（ユーザーの恒久指示）。消して良い状況とは、次の全てを満たすとき:
+
+- 実機検証・動作確認が完了している、または worktree での作業自体が終わっている
+- 未コミットの変更がない（`git status` で確認）
+- そのブランチのコミットが push 済み、または PR に載っている（未 push のコミットがあるなら削除しない。保全が先）
+
+**worktree の削除は確認不要だが、ブランチの削除は別扱い**（`-D` は破壊的操作として事前確認が必要。下記）。
+
 `ExitWorktree(action: 'remove')` は **EnterWorktree が作った元のブランチ名**（`worktree-<sanitized>`）を削除しようとする。上記フローで `feature/...` に改名している場合、改名後のブランチは消えない。
 - **基本方針**: 改名後ブランチは残す（PR 作成・マージのため）
 - 不要ブランチを削除する場合は AGENTS.md「コミット・ブランチ・PR」の「ブランチ作り直し時」ルールに従う:
@@ -60,3 +68,4 @@ baseRef は `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.md の `BASE
 - 各 bg session は独立して起動され（`claude agents` の Agent View から dispatch 等）、自分で Phase 0 を実施して自分の `.local/memory/YYMMDD_<context_name>/` を作るため、`05_log.md` は自然に別ファイルで競合しない
 - メモリ・issue ファイルへの書き込みは必ず **Phase 0 で確定した元repoの絶対パス**で行うこと（worktree 内には `.local/` が存在しないため）
 - 一時ファイル（スクリプト・クエリ・中間出力等）は `/tmp` ではなく **`$CLAUDE_JOB_DIR`** を使う（並列 bg session が `/tmp` を共有して上書きするため）
+- **共有リソース（開発サーバー・DB・ブラウザ自動化）を使う検証は、開始前に使用中かを機械的に確認する**（ポートの占有・プロセスの生存）。使用中なら他セッションが検証中と判断して開始を控える。worktree を分けても、ローカルの検証環境は分かれない

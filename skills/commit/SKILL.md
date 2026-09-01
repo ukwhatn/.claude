@@ -68,7 +68,17 @@ git pull --rebase --autostash && git push
 
 rebaseがconflictで停止した場合は `git rebase --abort` で元に戻し、コミットは残したままユーザーに報告する（自動解決しない）。
 
-### 6. 結果の報告
+### 6. push 後の確認（--push の場合のみ）
+
+push したブランチに PR があれば、**CI の結果と conflict の有無を確認してから報告する**。走行中なら完了まで監視する。落ちている・conflict がある場合は、指摘を待たず原因調査に入る。
+
+```bash
+gh pr view --json number,mergeable,mergeStateStatus,statusCheckRollup 2>/dev/null
+```
+
+PR がまだ無いブランチではこの確認は不要。
+
+### 7. 結果の報告
 
 - コミットハッシュ
-- pushした場合はその旨
+- pushした場合はその旨と、PR があれば CI・conflict の状態

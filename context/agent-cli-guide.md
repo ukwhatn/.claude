@@ -50,6 +50,20 @@ Agent ツール（Claude subagent）を review 目的で使用したら、続け
 
 環境によって利用可能なCLIが異なる。**実行前に必ず以下の判定でCLIを選択すること。**
 
+### 実行前に利用枠を確認する
+
+CLI が存在していても枠が枯渇していれば実行は失敗する。**存在確認と併せて、実行前に残枠を確認する**（枯渇の申告をユーザーに求めない）:
+
+```bash
+# statusline 用のキャッシュを更新してから読む（照会に1.5秒前後かかるため --refresh を先に打つ）
+python3 ~/.claude/codex-usage.py --refresh >/dev/null 2>&1
+python3 ~/.claude/codex-usage.py --show
+# 出力例: {"plan": ..., "monthly": {"pct": 6, "used": ..., "limit": ...}, "credits": null, ...}
+# 契約形態でフィールドが変わる。monthly が null なら credits 側を見る（どちらも null なら照会失敗とみなし、実行して判断する）
+```
+
+枯渇していれば実行せず fallback へ切り替え、切り替えた旨だけ報告して作業を進める（外部レビューの省略は品質ゲートの緩和にあたるが、枯渇時に止まってユーザーの指示を待つより、代替で通して裏取りを後に回す方を既定とする）。
+
 ```bash
 # codex を第1選択とし、無ければ cursor CLI（cursor-agent / agent のどちらでも動くように）にfallback
 if command -v codex >/dev/null 2>&1; then
@@ -72,6 +86,7 @@ fi
 
 **発火条件（いずれか）:**
 - `command -v codex` と `command -v cursor-agent`（または `command -v agent`）が全て失敗
+- **実行前の利用枠確認で枯渇が分かった**（「実行前に利用枠を確認する」参照）
 - 実行時の credit 切れエラー（codex は `Your workspace is out of credits`）
 - ネットワーク遮断・API 障害でどちらも実行不能
 
