@@ -221,8 +221,7 @@
     "command": "python3 ~/.claude/subagent-statusline.py"
   },
   "enabledPlugins": {
-    "document-skills@anthropic-agent-skills": true,
-    "chrome-devtools-mcp@chrome-devtools-plugins": true
+    "document-skills@anthropic-agent-skills": true
   },
   "extraKnownMarketplaces": {
     "chrome-devtools-plugins": {
@@ -247,6 +246,7 @@
       "effortLevel": "xhigh"
     }
   },
+  "autoCompactWindow": 600000,
   "promptSuggestionEnabled": false,
   "askUserQuestionTimeout": "never",
   "tui": "fullscreen",
@@ -263,6 +263,5 @@
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true,
-  "autoCompactWindow": 600000
+  "skipAutoPermissionPrompt": true
 }
