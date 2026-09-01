@@ -27,6 +27,7 @@ log "starting (profile: $CHROME_PROFILE, port: $PORT)"
   --allowed-hosts "127.0.0.1:$PORT,localhost:$PORT,[::1]:$PORT" \
   --browser chrome \
   --user-data-dir "$CHROME_PROFILE" \
+  --config "$(dirname "$0")/playwright-mcp-config.json" \
   --shared-browser-context &
 child=$!
 

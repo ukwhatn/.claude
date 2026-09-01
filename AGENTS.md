@@ -231,7 +231,7 @@ Chrome 拡張は複数 profile 同時接続をサポートするが、Connected 
 
 - 常駐: `~/.claude/bin/playwright-mcp-server.sh`（LaunchAgent `com.ukwhatn.playwright-mcp`。ログ: `~/Library/Logs/playwright-mcp.log`）
 - 接続: MCP 設定は `{"type":"http","url":"http://127.0.0.1:8931/mcp"}`
-- サーバ自身が `--user-data-dir`（**自動化専用**の user-data-dir）でブラウザを起動し、`--shared-browser-context` で全クライアントに同一コンテキストを共有させる
+- サーバ自身が `--user-data-dir`（**自動化専用**の user-data-dir）でブラウザを起動し、`--shared-browser-context` で全クライアントに同一コンテキストを共有させる。起動フラグの追加は `--config` の `browser.launchOptions.args` で渡す
 - **自動化ドライバに普段使いのブラウザプロファイルを開かせない（CRITICAL）**: ドライバはブラウザ起動時に既定でモックの資格情報ストア（`--use-mock-keychain` / `--password-store=basic`）と `--disable-extensions` を付ける。OS キーチェーン由来の鍵で暗号化された cookie とアカウントトークンは復号できなくなって cookie ストアが作り直され、拡張は無効化されたうえで未参照ディレクトリが削除される。ブックマークと履歴は暗号化されていないため残るので、**被害が部分的にしか見えず、プロファイルが壊れたことに気付きにくい**
 - 上記の帰結として、自動化ブラウザでは**拡張機能が動かない**。ログイン状態（cookie）は持てるが、拡張前提の操作は自動化できない
 - **ユーザーが起動したブラウザへ `--cdp-endpoint` で繋ぐ方式は使わない**（接続ごとにブラウザ側の承認ダイアログが出るため）。サーバ自身に起動させれば承認経路を通らない
@@ -250,7 +250,8 @@ Chrome 拡張は複数 profile 同時接続をサポートするが、Connected 
 - 操作・状態いじり・テスト生成は playwright（cookie / localStorage / sessionStorage の CRUD、storage state の保存、リクエストのモックとオフライン化、ロケータ生成）
 - 計測は chrome-devtools（performance trace と Core Web Vitals、Lighthouse、heap snapshot によるリーク調査、CPU・ネットワークのスロットリング）
 - navigate / click / snapshot / console / network 一覧はどちらでもできる。常用しているサーバ側で済ませる
-- chrome-devtools は stdio 専用で HTTP transport を持たないため、サーバ1本を複数セッションで共有できない（接続ごとにブラウザ側の承認が要求される）。計測が必要になったときだけ使い、常用しない
+- chrome-devtools は stdio 専用で HTTP transport を持たないため、サーバ1本を複数セッションで共有できない（セッションごとにプロセスが立ち、同一エンドポイントに複数プロセスが群がると CDP セッションが競合する）。計測が必要になったときだけ使い、常用しない
+- **両者は同じ自動化ブラウザを共有できる**。ブラウザに `--remote-debugging-port` を開けておき、chrome-devtools は `--browserUrl` でそこへ繋ぐ。自動化用の user-data-dir は既定パス外なので古典的な remote debugging が使え、**承認ダイアログも出ない**（承認を要求するのはブラウザ内から有効化する新方式のみ）。引き換えに、そのポートは無認証で開くので、ログイン状態を持つ自動化ブラウザをローカルの任意プロセスが操作できる
 
 ## Cloudflare
 詳細: @context/cloudflare-development.md
