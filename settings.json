@@ -144,6 +144,17 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if command -v kairan >/dev/null 2>&1; then kairan hook stop; else exit 0; fi",
+            "asyncRewake": true,
+            "timeout": 3900,
+            "statusMessage": "kairan: 回答を待っています"
+          }
+        ]
       }
     ],
     "StopFailure": [
