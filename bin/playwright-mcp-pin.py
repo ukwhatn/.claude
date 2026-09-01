@@ -45,8 +45,10 @@ def connect():
     })
     post({"jsonrpc": "2.0", "method": "notifications/initialized"}, session_id)
     # initialize だけでは backend が生成されず CDP attach が起きないため、副作用のないツールを1回呼ぶ
+    # initialize だけでは backend が生成されず CDP attach が起きないため、副作用のないツールを1回呼ぶ。
+    # ここで返らない場合はサーバ側の CDP セッションが応答していないので、短めの timeout で失敗させる
     post({"jsonrpc": "2.0", "id": 2, "method": "tools/call",
-          "params": {"name": "browser_tabs", "arguments": {"action": "list"}}}, session_id)
+          "params": {"name": "browser_tabs", "arguments": {"action": "list"}}}, session_id, timeout=60)
     log(f"attached (session {session_id})")
     return session_id
 
@@ -54,6 +56,7 @@ def connect():
 def main():
     session_id = None
     request_id = 2
+    failures = 0
     while True:
         try:
             if session_id is None:
@@ -61,10 +64,15 @@ def main():
             else:
                 request_id += 1
                 post({"jsonrpc": "2.0", "id": request_id, "method": "tools/list"}, session_id, timeout=30)
+            failures = 0
         except Exception as error:
-            if session_id is not None:
-                log(f"session lost ({type(error).__name__}: {error}); will re-attach")
+            log(f"attach failed or session lost ({type(error).__name__}: {error})")
             session_id = None
+            failures += 1
+            # サーバ側が応答しない状態は再接続では解けないため、プロセスごと落として launchd に作り直させる
+            if failures >= 3:
+                log("giving up; exiting so the server is restarted")
+                raise SystemExit(1)
         time.sleep(KEEPALIVE_INTERVAL if session_id else RETRY_INTERVAL)
 
 
