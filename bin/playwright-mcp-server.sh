@@ -12,7 +12,9 @@ set -u
 
 PORT="${PLAYWRIGHT_MCP_PORT:-8931}"
 HOST="${PLAYWRIGHT_MCP_HOST:-127.0.0.1}"
-CHROME_PROFILE="${CHROME_PROFILE_DIR:-$HOME/Library/Application Support/Google/Chrome}"
+# 普段使いのプロファイルは共有しない（自動化側の事故が業務プロファイルに波及するため）。
+# 自動化専用の user-data-dir を playwright に所有させ、普段使いブラウザとは別インスタンスで動かす。
+CHROME_PROFILE="${CHROME_PROFILE_DIR:-$HOME/Library/Application Support/Google/Chrome-automation}"
 NPX="${NPX_BIN:-$HOME/.local/share/mise/shims/npx}"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }

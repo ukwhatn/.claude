@@ -231,7 +231,9 @@ Chrome 拡張は複数 profile 同時接続をサポートするが、Connected 
 
 - 常駐: `~/.claude/bin/playwright-mcp-server.sh`（LaunchAgent `com.ukwhatn.playwright-mcp`。ログ: `~/Library/Logs/playwright-mcp.log`）
 - 接続: MCP 設定は `{"type":"http","url":"http://127.0.0.1:8931/mcp"}`
-- サーバ自身が `--user-data-dir`（普段使いのプロファイル）でブラウザを起動し、`--shared-browser-context` で全クライアントに同一コンテキストを共有させる
+- サーバ自身が `--user-data-dir`（**自動化専用**の user-data-dir）でブラウザを起動し、`--shared-browser-context` で全クライアントに同一コンテキストを共有させる
+- **自動化ドライバに普段使いのブラウザプロファイルを開かせない（CRITICAL）**: ドライバはブラウザ起動時に既定でモックの資格情報ストア（`--use-mock-keychain` / `--password-store=basic`）と `--disable-extensions` を付ける。OS キーチェーン由来の鍵で暗号化された cookie とアカウントトークンは復号できなくなって cookie ストアが作り直され、拡張は無効化されたうえで未参照ディレクトリが削除される。ブックマークと履歴は暗号化されていないため残るので、**被害が部分的にしか見えず、プロファイルが壊れたことに気付きにくい**
+- 上記の帰結として、自動化ブラウザでは**拡張機能が動かない**。ログイン状態（cookie）は持てるが、拡張前提の操作は自動化できない
 - **ユーザーが起動したブラウザへ `--cdp-endpoint` で繋ぐ方式は使わない**（接続ごとにブラウザ側の承認ダイアログが出るため）。サーバ自身に起動させれば承認経路を通らない
 - 接続クライアントが 0 になるとブラウザが閉じられるため、常駐クライアント（`bin/playwright-mcp-pin.py`）が1本張り続けて生かしておく
 - 永続プロファイルは同時に1インスタンスしか掴めない。サーバ起動前にブラウザが起動していると profile lock で失敗する
