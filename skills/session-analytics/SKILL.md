@@ -1,6 +1,6 @@
 ---
 name: session-analytics
-description: 複数セッションを横断した利用傾向分析。~/.claude/projects/配下の全JSONLログを集計し、skill発火回数・tool使用頻度・ユーザーの軌道修正シグナル(中断・権限拒否・AskUserQuestionでのOther回答率)・compaction頻度・未発火skillを可視化してハーネス改善の示唆を出す。使用タイミング: (1) 「このPCでのセッション傾向を分析して」「skillの発火状況を教えて」「ハーネス改善の示唆が欲しい」等の依頼時、(2) 定期的な.claude設定の棚卸し時、(3) 新しいskill/ルール追加の効果を過去傾向と比較したい時。境界: 単一セッション内の振り返りと指示ファイルへの自律反映→session-retro、過去メモリ/issueのキーワード検索→findmem、CLAUDE.md/skills/context自体の静的品質監査→instructions-audit。
+description: 複数セッションを横断した利用傾向分析。~/.claude/projects/配下の全JSONLログを集計し、skill発火回数・tool使用頻度・ユーザーの軌道修正シグナル(中断・権限拒否・AskUserQuestionでのOther回答率)・compaction頻度・未発火skillを可視化してハーネス改善の示唆を出す。使用タイミング: (1) 「このPCでのセッション傾向を分析して」「skillの発火状況を教えて」「ハーネス改善の示唆が欲しい」等の依頼時、(2) 定期的な.claude設定の棚卸し時、(3) 新しいskill/ルール追加の効果を過去傾向と比較したい時。境界: ユーザー発話そのものの全件マイニングと既定化提案→directive-mining、単一セッション内の振り返りと指示ファイルへの自律反映→session-retro、過去メモリ/issueのキーワード検索→findmem、CLAUDE.md/skills/context自体の静的品質監査→instructions-audit。
 allowed-tools: Bash(uv run:*), Read
 ---
 
@@ -11,6 +11,7 @@ allowed-tools: Bash(uv run:*), Read
 ## 既存設定との関係
 
 - **session-retro**: 対象範囲が逆。session-retroは「今回1セッション」を振り返り指示ファイルへ自律反映する。本skillは「複数セッションの集計統計」を出すだけで、指示ファイルへの反映は行わない（示唆をユーザーに提示し、適用は`/update-inst`・`/session-retro`・`/instructions-audit`に委ねる）
+- **directive-mining**: データ源は同じだが、あちらはユーザー発話そのものを全件読んで「訂正」と「繰り返し指示の既定化」の提案を作る。本skillは発話を読まずカウンタだけを出す。両方回すと、定量シグナル（中断・権限拒否の件数）と発話の内容が突き合わせられる
 - **findmem**: メモリディレクトリ(`.local/memory/`, `.local/issues/`)のテキスト検索。本skillはそれとは別データソース（生セッションログ）を扱う
 - **メモリディレクトリ**: 分析結果を保存する場合は@context/memory-file-formats.mdの既存構造（`${MEMORY_DIR}/memory/YYMMDD_<context>/`）に従う
 
