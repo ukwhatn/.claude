@@ -133,6 +133,15 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x \"$HOME/.claude/hooks/taskherd-sync.py\" ]; then python3 \"$HOME/.claude/hooks/taskherd-sync.py\" prompt; fi",
+            "timeout": 15
+          }
+        ]
       }
     ],
     "Stop": [
@@ -150,9 +159,18 @@
           {
             "type": "command",
             "command": "if command -v kairan >/dev/null 2>&1; then kairan hook stop; else exit 0; fi",
-            "asyncRewake": true,
             "timeout": 3900,
-            "statusMessage": "kairan: 回答を待っています"
+            "statusMessage": "kairan: 回答を待っています",
+            "asyncRewake": true
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x \"$HOME/.claude/hooks/taskherd-sync.py\" ]; then python3 \"$HOME/.claude/hooks/taskherd-sync.py\" stop; fi",
+            "timeout": 30
           }
         ]
       }
@@ -274,5 +292,6 @@
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true
+  "skipAutoPermissionPrompt": true,
+  "model": "opus"
 }

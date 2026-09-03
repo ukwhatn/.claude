@@ -60,6 +60,10 @@ sed -n '/^\[\[columns\]\]/,/^$/p' "$(taskherd config path --json | jq -r .config
 
 **自律的に動かしてよいのは、自分のセッションに紐づくタスクだけ。** 他のタスクの列は、ユーザーの指示なしに変えない。
 
+**PR の状態に対応する列の前進は Stop hook（`hooks/taskherd-sync.py`）が自動で行う。** PR が Ready になれば review、merge されれば deploying へ、ターン終了時に前進する（前進方向のみ・終端列は触らない）。この2つを手で `move` しに行く必要はない。手で動かすのは hook が判断しない列（planning / working / wontfix 等）と、ユーザーから指示された移動だけ。
+
+紐づくタスクが無いまま実装が進んでいる場合、同 hook が UserPromptSubmit で1回だけ起票を促す。促されたら下記「起票する」に従う。
+
 ### 1. 自分に紐づくタスクを引く
 
 ```bash
