@@ -1,7 +1,8 @@
 #!/bin/sh
-# Claude Code status line script (2 rows)
+# Claude Code status line script (2〜3 rows。タスク紐付けが無いセッションでは2行)
 #   row1 (予算): model | effort | ctx | 5h now→着地 (残り) | 1w now→着地 (reset) | codex 枠
 #   row2 (位置): owner/repo | branch | PR (state) +a -r | proj -> cwd
+#   row3 (作業): taskherd タスク | 紐づく PR | 紐づく Jira
 
 input=$(cat)
 
@@ -42,6 +43,18 @@ else
   C_GRN="${ESC}[38;2;26;127;55m";   C_AMB="${ESC}[38;2;154;103;0m"
   C_RED="${ESC}[38;2;207;34;46m";   C_BLU="${ESC}[38;2;9;105;218m"
 fi
+
+# --- OSC 8 ハイパーリンク ---
+# Why not: 常時有効の前提にしない。Claude Code がそのまま端末へ渡すかは未確認のため、
+# 剥がれてもラベルだけで意味が通る呼び方にしつつ、ここ1箇所 (USE_OSC8) で切替できるようにする
+USE_OSC8=1
+osc8() {
+  if [ "$USE_OSC8" = "1" ] && [ -n "$1" ]; then
+    printf '\033]8;;%s\033\\%s\033]8;;\033\\' "$1" "$2"
+  else
+    printf "%s" "$2"
+  fi
+}
 
 # --- アイコン (Material Design Icons / U+F0000 以降) ---
 # Why not: BMP の Private Use Area (U+E000-F8FF) のグリフを使わない。East Asian Width が
@@ -142,6 +155,8 @@ row1=""; sep1=""
 add1() { [ -z "$1" ] && return; row1="${row1}${sep1}$1"; sep1="  "; }
 row2=""; sep2=""
 add2() { [ -z "$1" ] && return; row2="${row2}${sep2}$1"; sep2="  "; }
+row3=""; sep3=""
+add3() { [ -z "$1" ] && return; row3="${row3}${sep3}$1"; sep3="  "; }
 
 # --- JSON を 1 回で抽出 (empty 保持のため US=0x1f 区切り) ---
 US=$(printf '\037')
@@ -164,12 +179,13 @@ fields=$(echo "$input" | jq -r '[
   .pr.review_state // "",
   .cost.total_lines_added // 0,
   .cost.total_lines_removed // 0,
-  (.fast_mode // false)
+  (.fast_mode // false),
+  .session_id // ""
 ] | map(tostring) | join("")')
 
 IFS="$US" read -r model effort thinking used_pct in_tok win \
   fh_pct fh_reset sd_pct sd_reset repo worktree proj cur \
-  pr_num pr_state added removed fast_mode <<EOF
+  pr_num pr_state added removed fast_mode session_id <<EOF
 $fields
 EOF
 
@@ -182,6 +198,12 @@ show_sd_abs=1; show_ctx_tok=1; show_cdx_reset=1
 [ "$cols" -lt 100 ] && show_sd_abs=0
 [ "$cols" -lt 88 ]  && show_ctx_tok=0
 [ "$cols" -lt 76 ]  && show_cdx_reset=0
+
+# taskherd タスクタイトルの最大文字数 (段階的縮退。既存の閾値をそのまま使う)
+th_title_max=60
+[ "$cols" -lt 100 ] && th_title_max=40
+[ "$cols" -lt 88 ]  && th_title_max=28
+[ "$cols" -lt 76 ]  && th_title_max=16
 
 # ---------- row1: 予算 ----------
 
@@ -346,6 +368,93 @@ else
 fi
 add2 "$(ic "$I_FOLDER") ${C_DIM}${path_disp}${C_OFF}"
 
+# ---------- row3: 作業 (taskherd タスク | 紐づく PR | 紐づく Jira) ----------
+
+# 10. taskherd: 現在セッションに紐づくタスクを引く
+# Why not: `taskherd refresh` を呼ばない。ネットワークアクセスが走り、statusline は
+# 数秒間隔で呼ばれるため、キャッシュされた json を読むだけにする
+th_id=""; th_status=""; th_title=""
+th_pr_url=""; th_pr_num=""; th_pr_state=""; th_pr_draft=""; th_pr_review=""
+th_jira_url=""; th_jira_key=""; th_jira_status=""
+if command -v taskherd >/dev/null 2>&1 && [ -n "$session_id" ]; then
+  th_fields=$(taskherd list --all --json 2>/dev/null | jq -r --arg s "$session_id" --arg us "$US" --argjson max "$th_title_max" '
+    (.tasks // [] | map(select(any(.sessions[]?; .session_id == $s))) | .[0]) as $t |
+    if $t == null then "" else
+      ($t.title // "") as $ttl |
+      (if ($ttl | length) > $max then ($ttl[0:$max] + "…") else $ttl end) as $ttl2 |
+      [($t.id | tostring), ($t.status // ""), $ttl2] | join($us)
+    end
+  ' 2>/dev/null)
+  if [ -n "$th_fields" ]; then
+    IFS="$US" read -r th_id th_status th_title <<EOF
+$th_fields
+EOF
+  fi
+fi
+
+# 11. taskherd: タスクに紐づく PR / Jira リンクと live 状態 (github_pr, jira 以外の kind は無視)
+if [ -n "$th_id" ]; then
+  th_show=$(taskherd show "$th_id" --json 2>/dev/null | jq -r --arg us "$US" '
+    (.task.links // []) as $links |
+    ($links | map(select(.kind == "github_pr")) | .[0].url // "") as $pr_url |
+    ($links | map(select(.kind == "jira")) | .[0].url // "") as $jira_url |
+    ($pr_url   | if . == "" then "" else (split("/") | last) end) as $pr_num |
+    ($jira_url | if . == "" then "" else (split("/") | last) end) as $jira_key |
+    (((.link_states // {})[$pr_url].GitHub) // {}) as $gh |
+    (((.link_states // {})[$jira_url].Jira) // {}) as $ji |
+    [
+      $pr_url, $pr_num, ($gh.state // ""), (($gh.is_draft // false) | tostring), ($gh.review_decision // ""),
+      $jira_url, $jira_key, ($ji.status_name // "")
+    ] | join($us)
+  ' 2>/dev/null)
+  if [ -n "$th_show" ]; then
+    IFS="$US" read -r th_pr_url th_pr_num th_pr_state th_pr_draft th_pr_review \
+      th_jira_url th_jira_key th_jira_status <<EOF
+$th_show
+EOF
+  fi
+fi
+
+# 12. タスク本体 (id / status / title)
+# Why not: 専用アイコンを追加しない。MDI にはブランドロゴ (Jira 等) が無く、
+# タスク一覧に見合う絵柄も未確認のため、既存の "cdx" と同じ dim テキストタグで代替する
+if [ -n "$th_id" ]; then
+  th_seg="${C_DIM}task${C_OFF} ${C_FG}#${th_id}${C_OFF}"
+  [ -n "$th_status" ] && th_seg="${th_seg} ${C_DIM}${th_status}${C_OFF}"
+  [ -n "$th_title" ]  && th_seg="${th_seg}  ${C_FG}${th_title}${C_OFF}"
+  add3 "$th_seg"
+fi
+
+# 13. 紐づく PR (state は GitHub の state/review_decision/draft から表示用に変換)
+if [ -n "$th_pr_num" ]; then
+  if   [ "$th_pr_draft" = "true" ];               then pr_disp="draft"
+  elif [ "$th_pr_state" = "MERGED" ];             then pr_disp="merged"
+  elif [ "$th_pr_state" = "CLOSED" ];             then pr_disp="closed"
+  elif [ "$th_pr_review" = "APPROVED" ];          then pr_disp="approved"
+  elif [ "$th_pr_review" = "CHANGES_REQUESTED" ]; then pr_disp="changes requested"
+  elif [ "$th_pr_state" = "OPEN" ];               then pr_disp="open"
+  else pr_disp=""
+  fi
+  pr_link=$(osc8 "$th_pr_url" "#${th_pr_num}")
+  th_pr_seg="$(ic "$I_PR") ${C_BLU}${pr_link}${C_OFF}"
+  [ -n "$pr_disp" ] && th_pr_seg="${th_pr_seg} ${C_DIM}${pr_disp}${C_OFF}"
+  add3 "$th_pr_seg"
+fi
+
+# 14. 紐づく Jira
+if [ -n "$th_jira_key" ]; then
+  jira_link=$(osc8 "$th_jira_url" "$th_jira_key")
+  th_jira_seg="${C_DIM}jira${C_OFF} ${C_BLU}${jira_link}${C_OFF}"
+  [ -n "$th_jira_status" ] && th_jira_seg="${th_jira_seg} ${C_DIM}${th_jira_status}${C_OFF}"
+  add3 "$th_jira_seg"
+fi
+
 # Why not: 行を C_OFF で閉じずに出力しない。Claude Code は N 行目の先頭に
 # 1..N-1 行目の SGR を連結するため、閉じ忘れると色が次の行へ漏れる
-printf "%s%s\n%s%s" "$row1" "$C_OFF" "$row2" "$C_OFF"
+# Why not: row3 が空でも3行で出力しない。紐づくタスクが無いセッションが普通にあり、
+# 空行だけの3行目を毎回出すと縮退ではなくノイズになる
+if [ -n "$row3" ]; then
+  printf "%s%s\n%s%s\n%s%s" "$row1" "$C_OFF" "$row2" "$C_OFF" "$row3" "$C_OFF"
+else
+  printf "%s%s\n%s%s" "$row1" "$C_OFF" "$row2" "$C_OFF"
+fi
