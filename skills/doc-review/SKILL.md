@@ -13,7 +13,7 @@ description: Agent Teamsによる多角的ドキュメントレビュー。設�
 
 ## 既存設定との関係
 
-- **委譲の構成（@context/tool-claude-code.md「委譲判断」「並列 spawn の実務」）**: 本スキルは相互通信を使わず、各体が独立して結論を返し lead が統合する構成
+- **委譲の構成（@context/tool-claude-code.md「委譲判断」「spawn 後の実務」）**: 本スキルは相互通信を使わず、各体が独立して結論を返し lead が統合する構成
 - **agent CLI（@context/agent-cli-guide.md）**: 外部CLI（codex / cursor agent）による第三者レビュー
 - **Phase 0-5（@context/workflow-rules.md）**: Phase 2（計画レビュー）やPhase 4（品質確認）で使用可能
 - **codebase-reviewスキル**: コードベース対象（本スキルはドキュメント対象で競合しない）

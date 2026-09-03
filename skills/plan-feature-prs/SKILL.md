@@ -106,4 +106,4 @@ description: 実装計画書とPR分割の立案。要件ソース・デザイ�
 
 - @context/workflow-rules.md（Phase 0-5・実装計画書の記載範囲・検証機構）
 - @context/memory-file-formats.md（メモリディレクトリ構造）
-- 委譲判断・並列 spawn: @context/tool-claude-code.md
+- 委譲判断・spawn 後の実務: @context/tool-claude-code.md

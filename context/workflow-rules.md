@@ -296,4 +296,4 @@ Phase完了・ユーザー承認待ち・compaction接近などの区切りで�
 
 ## 委譲（Claude Code）
 
-委譲の要否・構成（体数・相互通信・共有タスクリスト）・並列 spawn の実務は @context/tool-claude-code.md「委譲判断」「並列 spawn の実務」を参照する。
+委譲の要否・構成（体数・相互通信・共有タスクリスト）・spawn 後の実務は @context/tool-claude-code.md「委譲判断」「spawn 後の実務」を参照する。

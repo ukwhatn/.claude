@@ -29,7 +29,7 @@ git clone <this-repo> ~/.claude
 
 | ファイル | 内容 |
 |---|---|
-| `tool-claude-code.md` | Claude Code 固有指示（委譲判断・並列 spawn の実務） |
+| `tool-claude-code.md` | Claude Code 固有指示（委譲判断・spawn 後の実務） |
 | `workflow-rules.md` | Phase 0-5 の詳細 |
 | `memory-file-formats.md` | メモリファイルの形式 |
 | `figma-verification.md` | Figma を一次ソースとする UI 検証 |
