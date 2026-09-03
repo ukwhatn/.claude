@@ -18,19 +18,22 @@ import sys
 import time
 
 REFRESH_INTERVAL_SEC = 180  # PR の live 状態を取り直す最小間隔
+PR_LOOKUP_INTERVAL_SEC = 120  # 未起票セッションで gh に PR を問い合わせる最小間隔
 
 
-def run(args, timeout=20):
+def run(args, timeout=20, cwd=None):
     """コマンドを実行して (exit_code, stdout) を返す。失敗は例外にしない。"""
     try:
-        p = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+        p = subprocess.run(
+            args, capture_output=True, text=True, timeout=timeout, cwd=cwd
+        )
         return p.returncode, p.stdout
     except Exception:
         return 1, ""
 
 
-def run_json(args, timeout=20):
-    code, out = run(args, timeout=timeout)
+def run_json(args, timeout=20, cwd=None):
+    code, out = run(args, timeout=timeout, cwd=cwd)
     if code != 0 or not out.strip():
         return None
     try:
@@ -139,13 +142,106 @@ def desired_column(task_id, current, order, terminal):
     return target if order.index(target) > order.index(current) else None
 
 
-def mode_stop(payload):
-    task = linked_task(payload.get("session_id"))
+def throttled(key, interval_sec):
+    """key ごとに interval_sec 以内の再実行を抑止する。抑止するとき True。"""
+    d = state_dir()
+    if not d:
+        return False
+    marker = os.path.join(d, "throttle-%s" % hashlib.sha256(key.encode()).hexdigest()[:16])
+    if os.path.exists(marker) and (time.time() - os.path.getmtime(marker)) < interval_sec:
+        return True
+    try:
+        open(marker, "w").close()
+    except Exception:
+        pass
+    return False
+
+
+def task_by_link(url):
+    data = run_json(["taskherd", "list", "--all", "--json"])
+    if not data:
+        return None
+    for task in data.get("tasks") or []:
+        for link in task.get("links") or []:
+            if link.get("url") == url:
+                return task
+    return None
+
+
+def open_pr_for_branch(cwd):
+    """現在のブランチに紐づく open な PR を返す（無ければ None）。"""
+    if not which("gh"):
+        return None
+    branch = git(["rev-parse", "--abbrev-ref", "HEAD"], cwd=cwd)
+    if not branch or branch == "HEAD":
+        return None
+    base = git(["symbolic-ref", "--short", "refs/remotes/origin/HEAD"], cwd=cwd)
+    if not base or branch == base.split("/", 1)[-1]:
+        return None
+    # gh はネットワークを叩くので、ブランチ単位で間隔を空ける
+    if throttled("pr-lookup|%s|%s" % (cwd, branch), PR_LOOKUP_INTERVAL_SEC):
+        return None
+    pr = run_json(
+        ["gh", "pr", "view", "--json", "number,title,url,isDraft,state"],
+        timeout=25,
+        cwd=cwd,
+    )
+    if not pr or (pr.get("state") or "").upper() != "OPEN":
+        return None
+    return pr
+
+
+def register_pr(payload, order, terminal):
+    """紐づくタスクが無い状態で PR がある場合に、起票と紐づけを行う。"""
+    cwd = payload.get("cwd") or os.getcwd()
+    if not git(["rev-parse", "--is-inside-work-tree"], cwd=cwd):
+        return None
+    pr = open_pr_for_branch(cwd)
+    if not pr:
+        return None
+
+    url = pr.get("url") or ""
+    task = task_by_link(url)
     if not task:
-        return
+        status = "working" if pr.get("isDraft") else "review"
+        if status not in order:
+            status = order[0] if order else "todo"
+        created = run_json(
+            [
+                "taskherd",
+                "add",
+                pr.get("title") or ("PR #%s" % pr.get("number")),
+                "--status",
+                status,
+                "--link",
+                url,
+                "--note",
+                "PR を検出して hook が起票した。列は PR の状態に追随する。",
+                "--json",
+            ]
+        )
+        task = (created or {}).get("task")
+        if not task:
+            return None
+        print("taskherd: PR #%s を task %s として起票しました（%s）" % (pr.get("number"), task.get("id"), task.get("status")))
+
+    # 起票済み・既存いずれの場合もこのセッションに紐づける
+    # Why not: session_id を直接渡さない。link の対象指定は herdr の pane 経由しか無く、
+    # pane が無い環境（herdr 外）では紐づけを諦めて列の追随だけ行う
+    if os.environ.get("HERDR_PANE_ID"):
+        run_json(["taskherd", "session", "link", str(task["id"]), "--current", "--json"])
+    return task
+
+
+def mode_stop(payload):
     order, terminal = column_order()
     if not order:
         return
+    task = linked_task(payload.get("session_id"))
+    if not task:
+        task = register_pr(payload, order, terminal)
+        if not task:
+            return
     target = desired_column(task.get("id"), task.get("status"), order, terminal)
     if not target:
         return
@@ -154,8 +250,16 @@ def mode_stop(payload):
         print("taskherd: task %s を %s へ移動しました（PR の状態に追随）" % (task["id"], target))
 
 
-def git(args):
-    code, out = run(["git"] + args, timeout=10)
+def which(name):
+    return any(
+        os.path.exists(os.path.join(p, name))
+        for p in os.environ.get("PATH", "").split(os.pathsep)
+        if p
+    )
+
+
+def git(args, cwd=None):
+    code, out = run(["git"] + args, timeout=10, cwd=cwd)
     return out.strip() if code == 0 else ""
 
 
@@ -219,11 +323,7 @@ def main():
         payload = {}
 
     # taskherd が無い環境では何もしない
-    if not any(
-        os.path.exists(os.path.join(p, "taskherd"))
-        for p in os.environ.get("PATH", "").split(os.pathsep)
-        if p
-    ):
+    if not which("taskherd"):
         return
 
     if mode == "stop":

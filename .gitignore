@@ -24,3 +24,4 @@
 !/output-styles/**
 !/bin/
 !/bin/**
+__pycache__/
