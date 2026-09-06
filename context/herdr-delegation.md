@@ -1,0 +1,156 @@
+# herdr pane への委譲
+
+Read when: 作業の委譲を検討した時点。経路の選択・指示書の書き方・結果の回収・後片付けの規則はここが真実源。
+
+**Agent tool を選ぶ場合も本ファイルを読む。** 経路の選択軸はここにあり、指示書の書き方と生成物の検証は経路によらず同じだから。pane 固有なのは起動と結果の回収の手順だけ。
+
+herdr CLI そのものの構文・ID 規約・状態モデル（idle / done / blocked）は `skills/herdr/SKILL.md` が真実源。本ファイルは委譲のポリシーと `bin/herdr-delegate.sh` の運用を扱う。
+
+## 経路の選択
+
+**「委譲先自身が成果物をファイルに書くか」で決める。体数・調査範囲・所要時間では決めない。**
+
+| 委譲の内容 | 経路 |
+|---|---|
+| **委譲先自身がファイルを書く**（実装・ファイル生成・issue やレポートの作成） | **pane**（`bin/herdr-delegate.sh`） |
+| **委譲先はファイルを書かず、結果を lead に返す**（`Explore` による探索、複数観点のレビュー報告、fresh な単発判定） | Agent tool |
+
+書き込みの有無で切るのは、中断したときに失われるものが違うため。`Explore` は書き込み不可なので、中断してもやり直せば同じ結論に戻れる。ファイルを書く委譲が中断すると、書きかけの作業文脈が失われ、成果物が不完全な状態でディスクに残る（どこまで書けているかを lead が読み直して判断することになる）。
+
+pane を選ぶ利点は3つ。レートリミットに当たっても pane 側の Claude Code が `autoContinueAtUsageLimit` で継続し、失敗に倒れない。進捗が pane の画面にそのまま出る。他ベンダーのエージェントを同じ手順で扱える。
+
+委譲するかどうか自体の判断（1体で足りるか、自分でやるほうが速いか）は `context/tool-claude-code.md`「委譲判断」に従う。本ファイルは「委譲すると決めた後」を扱う。
+
+## モデルの選択
+
+**委譲は基本 Claude（`--kind claude`）で行う。** codex は subscription の枠が小さいので、**別ベンダーであること自体が要件になる用途（外部レビュー）に温存する**。
+
+| 用途 | 指定 |
+|---|---|
+| 設計判断を含む実装・難所の切り分け | `--kind claude --model opus` |
+| パターンが確立した実装・調査・文書生成 | `--kind claude --model sonnet` |
+| 壁打ち・対話での検討 | `--kind claude --model fable` |
+| 外部レビュー（別ベンダーの bias 独立性が要る） | `--kind codex` |
+
+codex を起動する前に枠を確認する（`python3 ~/.claude/codex-usage.py --refresh` → `--show`）。枯渇していれば `context/agent-cli-guide.md` の fallback 規定に従う。**枠に余裕があっても、Claude で足りる委譲に codex を使わない。**
+
+## Herdr 外でのフォールバック
+
+`HERDR_ENV != 1` の環境では pane を使えない。このときは **Agent tool にフォールバックする**（委譲の必要性は環境で消えないため）。Codex 実行時は Agent tool が無いので、`context/tool-codex.md` の逐次実行規定に従う。
+
+フォールバックしてよい失敗は、スクリプトが返す `reason` で判別する。
+
+| reason | 意味 | 扱い |
+|---|---|---|
+| `not_in_herdr` | Herdr の外で実行された | Agent tool へ |
+| `herdr_unavailable` | `herdr` が PATH に無い | Agent tool へ |
+| `workspace_missing` | workspace を特定できない | Agent tool へ |
+| `agent_cli_unavailable` | `--kind` に対応する CLI が無い | **条件付き**（下記） |
+| `task_invalid` / `arg_invalid` / `python3_unavailable` | 呼び出し側の誤り | 直して再実行する |
+
+**フォールバックは、元のタスクが要求するモデル・ベンダーの条件を保てるときに限る。** `--kind codex` が別ベンダーによる外部レビューを目的にしているなら、Claude の Agent tool へ落とすと bias 独立性という品質ゲートを満たさないまま進むことになる。**外部レビュー用途では `context/agent-cli-guide.md` の fallback 規定（fable subagent で暫定・外部レビュー未完了として扱い、復旧後に裏取り）が優先する。**
+
+## ライフサイクル
+
+`bin/herdr-delegate.sh` は完了まで同期ブロックする。**`--state` を付けてバックグラウンドで起動し、state ファイルの生成を確認してからそのターンを終える。** 完了は harness の通知で受け取る。
+
+```bash
+~/.claude/bin/herdr-delegate.sh \
+  --kind claude --model opus \
+  --task "<指示書の絶対パス>" \
+  --out "<成果物の絶対パス>" \
+  --state "<state の絶対パス>" --run-id "<lead が採番した ID>" \
+  --lead-name "<ListAgents に出る自分のセッション名>" \
+  --name "<agent 名>" --cwd "<作業ディレクトリ>" \
+  > "<結果 JSON の出力先>" 2> "<ログの出力先>"
+```
+
+- `--state` は tab 作成と agent 起動の直後に `{"run_id","name","tab_id","pane_id","task","out","started_at"}` を書き出す。stdout の最終 JSON は完了まで出ないので、識別子はここから取る
+- **state を読んだら `run_id` の一致を確認してから採用する**（同じパスに前回実行の state が残っていると、置換前の古い内容を読むことがある）
+- **起動したら 05_log.md に1行記録してからターンを終える**（agent 名 / tab_id / 指示書 / 成果物 / 起動時刻）。compaction から復帰したら、この記録と `herdr tab list` を突き合わせる。**記録に残っている委譲を再起動しない**
+- 並列に回すときは、ジョブごとに `--state` / `--out` / 結果 JSON / ログの保存先を分ける
+
+### `~/.claude` の追跡ファイルを pane に直接書かせない
+
+user-level 設定の変更は同じターン内で commit・push まで完了させる規定がある（`AGENTS.md`「コミット・ブランチ・PR」）。pane 委譲はターンをまたぐため、これと両立しない。
+
+**pane には草案をメモリディレクトリ（git 管理外）へ書かせ、lead が全文を確認してから追跡下のファイルへ適用し、そのターン内で commit・push する。** これは「委譲先の生成物をそのまま成果物にしない」規定（`AGENTS.md`「自律実行とサブエージェント活用」）とも一致する。
+
+## 指示書の書き方
+
+**委譲先は指示書だけを読んで作業できる状態にする。** lead の会話履歴は共有されない。
+
+| 項目 | 内容 |
+|---|---|
+| 目的 | 何のための成果物か。1〜2文 |
+| 成果物 | **絶対パスで1つ**。複数書かせるなら全て絶対パスで列挙する |
+| 入力 | 読むべきファイルの絶対パス。何が書いてあるかを1行添える |
+| 構成 | 成果物に含める章立て。順序も指定する |
+| やらないこと | 触ってはいけないファイル、取り込まない情報源、書いてはいけない内容 |
+| 完了基準 | 満たしていれば完了と判断できる条件を、確認可能な形で列挙する |
+
+**確認済みの事実と未確認の推測を分けて書く。** 推測を事実の顔で渡すと、委譲先はそれを検証せずに前提として使う。
+
+`herdr-delegate.sh` は指示書の先頭に**連絡経路の定型ヘッダを自動で前置きする**ので、指示書側に書く必要はない。ヘッダとタスク本文が食い違ったときは**タスク本文が優先する**とヘッダ自身に明記してある。
+
+## 委譲先とのやり取り
+
+委譲先は、指示書の前提が実態と食い違ったときに lead へ問い合わせる。ヘッダがその方法を渡している。
+
+- **pane 上の Claude Code**: `ListAgents` に現れるので、`SendMessage` で名前宛に送れる。lead → 委譲先も同じ
+- **pane 上の codex**: SendMessage は届かない。`herdr agent prompt <name> "<メッセージ>"` を使う（委譲先から lead へも、codex が Bash でこのコマンドを叩く）
+
+**lead がスクリプトを同期実行していると、問い合わせをリアルタイムに受け取れない**（完了後にまとめて届く）。バックグラウンド起動が必要なのはこのためでもある。
+
+**委譲先が問い合わせて応答を終えると、lead 側からは「成果物なし」に見える**（`missing_output` / exit 4）。失敗と断ずる前に、委譲先からのメッセージが届いていないかを確認する。
+
+追加指示を送るには tab が残っている必要があるので、やり取りが予想される委譲は `--keep` を付ける。
+
+## 結果の受け取り
+
+**成果物はファイルから読む。pane の画面を成果物の受け取り口にしない。**
+
+スクリプトは終了時に1行 JSON を stdout に出す。
+
+| status | exit | tab | 意味 |
+|---|---|---|---|
+| `done` | 0 | 閉じた | 正常終了 |
+| `done_close_failed` | 7 | 残る | 作業は完了したが tab を閉じられなかった。手で片付ける |
+| `invalid_input` | 2 | 作らない | 前提エラー。`reason` を見る |
+| `blocked_trust` | 3 | 残る | 作業ディレクトリの信頼確認で止まった。**自動承認していない** |
+| `blocked_unknown` | 3 | 残る | 未知の画面で止まった。画面を読んで判断する |
+| `missing_output` | 4 | 残る | `--out` が作成も更新もされていない |
+| `timeout` | 5 | 残る | 完了待ちが上限に達した |
+| `create_failed` / `start_failed` / `prompt_failed` | 6 | 作成後なら残る | herdr の操作そのものが失敗した |
+
+`out` の各要素は `created` / `updated` / `unchanged` / `absent` を返す。**存在確認では通さず、実行前の `st_mtime_ns` と比較している**ので、実行前から置いてあったファイルが更新されなければ失敗になる。
+
+## 失敗時の調査と後片付け
+
+失敗した委譲は tab を残す。pane の画面が唯一の調査材料になるため。
+
+```bash
+herdr pane read <pane_id> --source recent-unwrapped --lines 120
+herdr pane get <pane_id>
+```
+
+調べ終えたら `herdr tab close <tab_id>` で閉じる。**放置した tab を残さない**（次の委譲の画面が埋まり、どれが生きている委譲か分からなくなる）。
+
+## 実機で確定している挙動
+
+推測で回避策を書かないための記録。**変わり得るので、挙動が違ったらここを更新する。**
+
+- **herdr はエラーを stderr に JSON で出す**（`{"error":{"code":...,"message":...}}`）。exit も非0で、stdout は空になる。`2>/dev/null` で捨てると失敗の理由が一切取れない
+- **`herdr agent start` は起動時ダイアログで止まっている pane に対して `agent_not_ready` を返す。** これは「起動できなかった」ではなく「画面を見て分類すべき状態」。ダイアログを抜けた後に `agent start` を**再実行**しないと agent 名が登録されず、以後の `agent prompt <name>` が使えない
+- **codex の更新通知には選択ダイアログと通知バナーの2形態がある。** 「次のバージョンまでスキップ」を一度選ぶと、以後はバナーとして表示され続ける。`Update available!` の文字列だけでは区別できないので、**選択待ちの目印は `Press enter to continue`** で判定する
+- **codex の承認バイパス（`--dangerously-bypass-approvals-and-sandbox`）は、作業ディレクトリの信頼確認ダイアログをバイパスしない。** 信頼確認は自動承認しない（プロンプトインジェクション耐性を落とすため）。信頼済みのディレクトリを `--cwd` に渡すか、`~/.codex/config.toml` の `[projects."<path>"]` に登録する
+- **承認プロンプトのバイパスは既定で付く**（claude: `--dangerously-skip-permissions` / codex: `--dangerously-bypass-approvals-and-sandbox`）。承認待ちで止まると委譲が進まないため。追加のフラグは `--agent-arg` で透過的に渡せる
+- `herdr pane run` と `herdr agent prompt` はテキストと Enter を一括送信する。**改行を含む長文を直接渡すと途中で送信される**ので、指示書はファイルに書いてパスだけを渡す（スクリプトがこれを行う）
+
+## 未検証の経路
+
+スクリプトに実装はあるが実機で通していない経路。ここに当たったら、挙動を確認してこのファイルを更新する。
+
+- `done_close_failed`（tab close の失敗）
+- 起動タイムアウトによる `blocked_unknown`
+- codex の更新**選択ダイアログ**の自動スキップ（バナー形態しか再現できていない）

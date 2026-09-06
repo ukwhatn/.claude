@@ -34,7 +34,7 @@ description: 実装計画書とPR分割の立案。要件ソース・デザイ�
 
 ### Step 2: 既存実装調査（並列委譲 + lead 検証）
 
-1. 調査領域を機能ドメイン単位で 2〜4 に分割し、Explore agent を並列 spawn する（**model: sonnet を明示**。@context/tool-claude-code.md「委譲判断」）
+1. 調査領域を機能ドメイン単位で 2〜4 に分割し、Explore agent を並列 spawn する（**model: sonnet を明示**。@context/tool-claude-code.md「委譲判断」）。**経路は Agent tool**: `Explore` は書き込み不可で調査結果を lead に返すだけなので、委譲の既定である herdr pane に当たらない（@context/herdr-delegation.md「経路の選択」）
 2. 各 agent への指示に含める: 対象リポジトリとアーキテクチャ概要 / 調査項目の列挙 / 報告形式「セクションごとに要点2-4文 + ファイルパス:行番号。存在しないものは『存在しない』と明記」
 3. **lead 検証**: 報告のうち設計判断が依拠する主張（「この処理は存在しない」「この前提で動いている」等）を一次情報（コード）と突き合わせてから採用する
 4. 統合結果を `20_survey.md` に記録する（各節に検証状況を注記）
@@ -106,4 +106,5 @@ description: 実装計画書とPR分割の立案。要件ソース・デザイ�
 
 - @context/workflow-rules.md（Phase 0-5・実装計画書の記載範囲・検証機構）
 - @context/memory-file-formats.md（メモリディレクトリ構造）
-- 委譲判断・spawn 後の実務: @context/tool-claude-code.md
+- 委譲判断・委譲後の実務: @context/tool-claude-code.md
+- 委譲の経路・モデル・指示書の書き方・結果の回収: @context/herdr-delegation.md

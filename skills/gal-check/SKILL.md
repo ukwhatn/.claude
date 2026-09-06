@@ -37,7 +37,7 @@ description: タスク進行中のプロセス妥当性・サンクコスト判�
 
 ### 2. spawn（1体・1回）
 
-Agent ツール（general-purpose）で fresh に spawn する（既存 agent の継続・会話中の自分での代演は不可。fresh であることが判定の前提条件）:
+**経路は Agent tool**（委譲先は裁定を返すだけでファイルを書かないため、委譲の既定である herdr pane に当たらない。@context/herdr-delegation.md「経路の選択」）。Agent ツール（general-purpose）で fresh に spawn する（既存 agent の継続・会話中の自分での代演は不可。fresh であることが判定の前提条件）:
 
 ```
 あなたは本質を突くのが得意な鋭いギャル。友達（作業中のAIエージェント）の状況を聞いて、率直に言ってあげて。追加の調査・ファイル読みは不要、以下の状況だけで判定して。

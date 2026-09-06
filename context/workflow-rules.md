@@ -21,7 +21,7 @@
 5. **05_log.mdを初期化し、ユーザーからの最初の指示を記録**
 6. **関連する過去タスク・issueを検索**（詳細は1.0参照）
 7. **タスク管理機構でタスクを作成し、依存関係を設定**（Claude Code: TaskCreate、Codex: plan）
-8. （Claude Code）委譲する場合は `context/tool-claude-code.md`「委譲判断」で手法を確定する
+8. 委譲する場合は要否と構成を確定する（Claude Code: `context/tool-claude-code.md`「委譲判断」／Codex: `context/tool-codex.md`「委譲」）。委譲すると決めたら `context/herdr-delegation.md` を Read して経路とモデルを決める
 
 ## Phase 1: 調査（最重要）
 
@@ -181,9 +181,11 @@ git log "$BASE" --first-parent -20 --format='%h %ce %s'              # 直近の
 
 ### 委譲する場合
 
-lead は依存関係に基づく実行順序の管理、spawn とタスク割り当て、完了報告の統合、05_log.md への進捗記録を担う。ただし方針判断を伴う中核ファイルなど、lead が直接実装した方が明らかに効率的なものは自身で編集してよい（「leadは絶対にコードを書かない」という強制ルールではない）。
+経路・モデル・指示書の書き方・結果の回収は `context/herdr-delegation.md` に従う（実装の委譲は委譲先自身がファイルを書くので pane 経路になる）。本節は担当の切り方だけを扱う。
 
-並列で spawn する場合、各 agent の担当ファイルを spawn 前にリストアップする。複数領域が集約された共有ファイル（`routes/*.ts` の集約・`migrations/`・スキーマ定義等）は分担境界が曖昧になるため、担当を分離するか順次実行に切り替える。
+lead は依存関係に基づく実行順序の管理、委譲の起動とタスク割り当て、完了報告の統合、05_log.md への進捗記録を担う。ただし方針判断を伴う中核ファイルなど、lead が直接実装した方が明らかに効率的なものは自身で編集してよい（「leadは絶対にコードを書かない」という強制ルールではない）。
+
+並列で委譲する場合、各担当のファイルを起動前にリストアップする。複数領域が集約された共有ファイル（`routes/*.ts` の集約・`migrations/`・スキーマ定義等）は分担境界が曖昧になるため、担当を分離するか順次実行に切り替える。
 
 ### 共通の実装品質ルール
 
@@ -294,6 +296,7 @@ Phase完了・ユーザー承認待ち・compaction接近などの区切りで�
 タスク管理機構（Claude Code: TaskCreate/TaskUpdate/TaskList、Codex: plan）は複雑タスクで使用。単純タスク（3ステップ以下）では省略可。
 詳細（Claude Code で複雑タスクに初めて使う時にRead）: `context/task-tool-guide.md`
 
-## 委譲（Claude Code）
+## 委譲
 
-委譲の要否・構成（体数・相互通信・共有タスクリスト）・spawn 後の実務は @context/tool-claude-code.md「委譲判断」「spawn 後の実務」を参照する。
+- 委譲の要否・構成（体数・相互通信・共有タスクリスト）と委譲後の実務: @context/tool-claude-code.md「委譲判断」「委譲後の実務」（Codex は @context/tool-codex.md「委譲」）
+- 委譲すると決めた後の経路・モデル・指示書の書き方・結果の回収・後片付け: @context/herdr-delegation.md

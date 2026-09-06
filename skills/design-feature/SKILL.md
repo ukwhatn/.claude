@@ -132,7 +132,7 @@ AskUserQuestion で以下を **必ず確定** してから次に進む:
 - 影響範囲（同類画面・同類 procedure）
 
 調査手段:
-- **Explore agent を並列 3-5 で起動**してファイル/関数のリストアップ
+- **Explore agent を並列 3-5 で起動**してファイル/関数のリストアップ（**経路は Agent tool**: `Explore` は書き込み不可で調査結果を返すだけなので、委譲の既定である herdr pane に当たらない。@context/herdr-delegation.md「経路の選択」）
 - **重要箇所は Read で直接確認する**（agent の判定をそのまま信じない）
 - context7 / WebSearch で公式仕様確認（必須）
 - 発見は `05_log.md` に逐次記録

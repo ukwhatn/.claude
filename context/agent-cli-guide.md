@@ -7,6 +7,7 @@
 - [概要](#概要)
 - [Claude subagent を review に使った場合の外部CLI裏取り（CRITICAL）](#claude-subagent-を-review-に使った場合の外部cli裏取りcritical)
 - [使用するCLIの選択（codex優先 / cursor fallback / fable subagent）](#使用するcliの選択codex優先--cursor-fallback--fable-subagent)
+- [単発レビューと継続ループの使い分け（pane 経由）](#単発レビューと継続ループの使い分けpane-経由)
 - [基本コマンド](#基本コマンド)
 - [CRITICAL: diff/ファイル内容の埋め込み禁止](#critical-diffファイル内容の埋め込み禁止)
 - [レビュー用コマンド例](#レビュー用コマンド例)
@@ -126,6 +127,26 @@ Agent(
 
 - **どちらもプロンプトにdiff/ファイル内容を埋め込まない**（後述「diff/ファイル内容の埋め込み禁止」）。CLIは自分でBash/Readを使って取得できる。
 - codex は **既定で read-only sandbox かつ承認プロンプトなしで完走**するため、レビュー（git diff・ファイル読取のみ）にそのまま使える。
+
+## 単発レビューと継続ループの使い分け（pane 経由）
+
+ここまでの `codex exec` 直叩きは、lead が Bash から同期実行して1〜2往復で終える単発レビュー向け。**レビューループが長く続く見込みのとき、進捗を画面で確認したいとき、指摘と修正のやり取りを lead 自身のコンテキストから分離したいときは、pane 経由に切り替える**（経路の選び方の一般原則は `context/herdr-delegation.md`「経路の選択」参照。ここでは外部レビュー固有の使い分けだけを書く）。
+
+| 見込み | 経路 |
+|---|---|
+| 1〜2ラウンドで収束する単発レビュー | `codex exec` 直叩き（本ファイルの「基本コマンド」） |
+| ラウンドが長引く・進捗を画面で追いたい・文脈を分離したい | pane（`bin/herdr-delegate.sh --kind codex --keep`） |
+
+pane で回す手順:
+
+1. `bin/herdr-delegate.sh --kind codex --keep` で起動する。**`--keep` は必須**（付けないと完了時に tab が閉じ、次のラウンドを送れなくなる）
+2. 初回の指示書には「レビュー用コマンド例」のプロンプト本文をそのまま渡す
+3. 2ラウンド目以降は `herdr agent prompt <name> "<次のプロンプト>"` で同じセッションへ送る（codex はセッション内で文脈を保持しているので `--resume` は不要）
+4. 各ラウンドの結果は別パスに出させ、収束したら `herdr tab close <tab_id>` で閉じる
+
+**codex は Claude Code のセッションではないため `SendMessage` が届かない。** lead から委譲先への追加指示も `herdr agent prompt` を使う（委譲先からの問い合わせ方法は `bin/herdr-delegate.sh` が指示書に自動で前置きする）。
+
+**モデルの選択・枠の節約の基準はここでは扱わない。** 委譲は基本 Claude で行い、codex は別ベンダーであること自体が要件になる用途（外部レビュー）に温存する、という判断軸は `context/herdr-delegation.md`「モデルの選択」が真実源。
 
 ## 基本コマンド
 
@@ -406,6 +427,8 @@ gh pr diff <番号> を実行して、PRの変更内容をレビューしてく�
 ## レビュー専任 agent に分ける場合（Claude Code）
 
 外部CLIは lead が直接実行するのが既定。レビューループが長く、指摘と修正の文脈を lead のコンテキストから分離したい場合のみ、reviewer を1体に分ける（`name` を付けて `SendMessage` で連携する構成）。
+
+**Herdr 環境（`HERDR_ENV=1`）では前節の pane 経由が既定**。本節の構成は Herdr 外（`HERDR_ENV` 未設定）でのフォールバック、または reviewer を Claude Code 側の agent として残したい場合に使う。
 
 ### spawn 指示テンプレート
 

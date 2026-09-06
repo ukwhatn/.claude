@@ -29,7 +29,7 @@ git clone <this-repo> ~/.claude
 
 | ファイル | 内容 |
 |---|---|
-| `tool-claude-code.md` | Claude Code 固有指示（委譲判断・spawn 後の実務） |
+| `tool-claude-code.md` | Claude Code 固有指示（委譲判断・委譲後の実務） |
 | `workflow-rules.md` | Phase 0-5 の詳細 |
 | `memory-file-formats.md` | メモリファイルの形式 |
 | `figma-verification.md` | Figma を一次ソースとする UI 検証 |
@@ -39,6 +39,7 @@ git clone <this-repo> ~/.claude
 
 | ファイル | Read するタイミング |
 |---|---|
+| `herdr-delegation.md` | 作業の委譲を検討した時点（経路・モデル・指示書・結果の回収） |
 | `code-review-checklist.md` | コード実装完了時・PR 提出前・レビュー実行前 |
 | `agent-cli-guide.md` | 外部 CLI（codex / cursor）でレビューする前 |
 | `worktree-guide.md` | worktree の作成・片付け前 |

@@ -34,11 +34,19 @@ Claude Code では @import で常駐する以下のファイルを、Codex で�
 | EnterWorktree / ExitWorktree | `git worktree add <path> -b feature/<issue_num>-<title-kebab>` / `git worktree remove <path>` を直接実行（原則: `~/.claude/context/worktree-guide.md`） |
 | TaskCreate / TaskUpdate / TaskList | 組み込みの plan 機構で代替 |
 | Skill ツール / `/skill-name` | `$skill-name` の明示発動、または description による暗黙発動 |
-| サブエージェント委譲（Explore / general-purpose） | multi-agent 機構が利用可能ならそれを使用。無ければ同じ手順を逐次実行 |
+| サブエージェント委譲（Explore / general-purpose） | Herdr の pane 内で動いているなら pane 委譲（後述「委譲」）。pane 外では multi-agent 機構が利用可能ならそれを使用し、無ければ同じ手順を逐次実行 |
 | Agent Teams / Workflow ツール | 対応物なし。各スキルの「環境要件」節の代替手順（観点の逐次実行等）に従う |
 | WebSearch | Codex の web search 機能 |
 | context7 | MCP サーバー（未設定なら `~/.codex/config.toml` の `[mcp_servers.context7]` に追加して使用） |
 | 外部レビューCLI（agent review） | cursor（`agent`）を第1選択、無ければ claude（`claude -p`）。**codex 自身での再帰レビューは行わない**（別ベンダー bias 独立性のため。実行主体が Claude Code の場合の既定は codex 優先だが、実行主体が Codex のときは自分自身を選ばない。コマンド例: `~/.claude/context/agent-cli-guide.md` 冒頭の注記） |
+
+## 委譲
+
+`bin/herdr-delegate.sh` は herdr CLI を叩くシェルスクリプトなので、Codex からも同じ引数で呼べる。規則は `~/.claude/context/herdr-delegation.md` が真実源で、委譲すると決めた時点で Read する。ここに書くのは Codex 固有の差分だけ。
+
+- **Herdr の pane 内で動いているかで分岐する**（`HERDR_ENV=1` かどうか）。pane 内なら pane 委譲を使う。pane 外ではスクリプトが `not_in_herdr` を返し、Codex には Agent tool が無いので、上のツール対応表に従って逐次実行に落ちる
+- **`--lead-name` は渡さない**。Codex は Claude Code の ListAgents に現れないため、この名前を渡すと委譲先が届かない宛先へ問い合わせることになる。省略すれば、委譲先へは pane 経由の連絡方法だけが案内される
+- **委譲先とのやり取りは `herdr agent prompt <name> "<メッセージ>"` で行う**（Codex には SendMessage が無い）。往復が予想される委譲は tab を残す
 
 ## Claude Code 専用ガイドの扱い
 

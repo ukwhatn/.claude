@@ -2,6 +2,8 @@
 
 > Claude Code 専用（TaskCreate/TaskUpdate/TaskList/TaskGet は Claude Code のツール）。Codex では組み込みの plan 機構で代替し、本ガイドは読まなくてよい。
 
+> 本ファイルが扱うのはタスク管理機構（TaskCreate / TaskUpdate / TaskList）の使い方だけ。委譲の経路・モデル・手順は `context/herdr-delegation.md` が真実源。
+
 ## 概要
 
 TaskCreate/TaskList/TaskGet/TaskUpdateツールを使用して、タスクの進捗管理と可視化を行う。
@@ -164,7 +166,7 @@ IDは`~/.claude/tasks/`ディレクトリ内のUUIDディレクトリ名。
 
 ## 委譲時の連携
 
-タスクリストはセッション内で共有される（spawn したサブエージェントも同じリストを読み書きする）。
+タスクリストはセッション内で共有される（`Agent` ツールで spawn したサブエージェントも同じリストを読み書きする）。**pane 委譲は別セッションになるため、このリストは共有されない**（本節の連携パターンは Agent tool 経路にだけ当てはまる）。pane 委譲の進捗は結果ファイルと 05_log.md の記録で追う（@context/herdr-delegation.md「ライフサイクル」）。
 
 **依存関係のあるタスクを順序付ける構成**では: TaskCreate（依存関係付き）→ `Agent` で spawn（`name` 指定）→ `SendMessage` で指示・情報共有 → 各体が TaskUpdate で完了 → 全員に `shutdown_request`。各体は TaskList で次に着手できるタスクを自律的に取得できる。
 

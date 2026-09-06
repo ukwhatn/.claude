@@ -1,11 +1,13 @@
 ---
 name: herdr
-description: "Control Herdr, a terminal multiplexer for coding agents. Use only when the user explicitly mentions Herdr or asks to use Herdr to inspect or control panes, tabs, workspaces, terminals, commands, or communication with another agent. Do not use merely because a task could benefit from a background terminal, delegation, or parallel work. Requires HERDR_ENV=1."
+description: "Control Herdr, a terminal multiplexer for coding agents, and the truth source for the herdr CLI itself: command syntax, ID conventions, and the agent status model (idle / working / blocked / done). Use when inspecting or controlling panes, tabs, workspaces, terminals, or commands, when starting an agent in another pane, or when communicating with an agent that runs in one. Boundary: whether and how to delegate work to a pane - the route, the agent kind and model, the instruction file, and how results come back - is governed by context/herdr-delegation.md and driven by bin/herdr-delegate.sh; this skill covers the CLI, not the delegation policy. Requires HERDR_ENV=1."
 ---
 
 # Herdr
 
 Herdr is a terminal multiplexer and runtime for coding agents. It organizes terminals into workspaces, tabs, and panes, detects agent identity and status, and exposes the running session through the `herdr` CLI.
+
+This skill is the truth source for the CLI itself: command syntax, ID conventions, and the agent status model. Delegating work to a pane is a separate concern. The route, the agent kind and model, the instruction file handed to the agent, and how its output files come back are governed by `context/herdr-delegation.md`, and delegated agents are launched through `bin/herdr-delegate.sh` rather than by the manual sequences below. Read that file when the task is to delegate; read this one when the task is to drive the CLI.
 
 Before issuing any control command, check that this agent is running inside a Herdr-managed pane:
 
@@ -91,6 +93,8 @@ An agent that first opens at its prompt reports `idle`, including in a backgroun
 Focusing a pane, switching to its tab, or regaining outer terminal focus marks the visible tab as seen, so `done` becomes `idle`. Switching away does not turn an existing `idle` status into `done`; `done` is created by a later completion while the pane is unseen. With no foreground client, a new completion in the globally active tab is treated as seen while completions in background tabs still become `done`.
 
 ## Start agents interactively
+
+This section covers starting an agent the user will watch and talk to. For delegated work, use `bin/herdr-delegate.sh`: it creates its own tab, injects the instruction file, waits for the output files, and cleans up (`context/herdr-delegation.md`).
 
 Default to a sibling pane in the current tab and current working directory. Do not create a workspace, tab, worktree, or different cwd unless the user explicitly requests that topology or location.
 

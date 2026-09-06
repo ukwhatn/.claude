@@ -13,7 +13,8 @@ description: Agent Teamsによる多角的ドキュメントレビュー。設�
 
 ## 既存設定との関係
 
-- **委譲の構成（@context/tool-claude-code.md「委譲判断」「spawn 後の実務」）**: 本スキルは相互通信を使わず、各体が独立して結論を返し lead が統合する構成
+- **委譲の経路（@context/herdr-delegation.md「経路の選択」）**: 各 reviewer は指摘を lead に返すだけで、`80_review.md` を書くのは lead。委譲先がファイルを書かないため、委譲の既定である herdr pane ではなく Agent tool を使う
+- **委譲の構成（@context/tool-claude-code.md「委譲判断」「委譲後の実務」）**: 本スキルは相互通信を使わず、各体が独立して結論を返し lead が統合する構成
 - **agent CLI（@context/agent-cli-guide.md）**: 外部CLI（codex / cursor agent）による第三者レビュー
 - **Phase 0-5（@context/workflow-rules.md）**: Phase 2（計画レビュー）やPhase 4（品質確認）で使用可能
 - **codebase-reviewスキル**: コードベース対象（本スキルはドキュメント対象で競合しない）

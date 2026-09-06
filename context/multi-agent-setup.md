@@ -13,7 +13,7 @@ Read when: `~/.claude` の構成を変更するとき、新しいPCをセット�
 | 追跡する | 追跡しない |
 |---|---|
 | `AGENTS.md`（実体）/ `CLAUDE.md`（symlink）/ `settings.json` | `CLAUDE.local.md`（マシン固有の実値） |
-| `context/` `skills/` `hooks/` `agents/` `templates/` `output-styles/` | `.local/`（メモリ・issue） |
+| `context/` `skills/` `hooks/` `agents/` `templates/` `output-styles/` `bin/` | `.local/`（メモリ・issue） |
 | `statusline-command.sh` `subagent-statusline.py` `codex-usage.py` `README.md` `NOTICE.md` | `plugins/`（marketplace キャッシュ） |
 
 statusline 系スクリプトは**ルート直下**に置く（`bin/` を切らない）。`settings.json` が `statusLine` / `subagentStatusLine` から参照しており、settings だけ同期されてスクリプトが無いと毎 tick で実行失敗するため、allowlist への追加は必須。
@@ -73,6 +73,15 @@ codex exec --sandbox read-only --skip-git-repo-check < /dev/null \
 
 `## マシンローカル設定（git管理外）`（AGENTS.md 末尾）が返れば全文注入、`worktree-audit`（`~/.codex/skills` に無い skill）が見えれば `~/.agents/skills` 経由が機能している。
 
+`bin/herdr-delegate.sh` も3台へ配布されるが、**herdr 本体のバージョンが古いと依存コマンドが欠けている可能性がある**。symlink の存在確認と同じく、コマンドの実在は別途確認が要る。スクリプトが依存しているのは次のサブコマンド・オプション:
+
+- `herdr tab create` の `--workspace` / `--cwd` / `--label` / `--no-focus`
+- `herdr agent start` の `--kind` / `--pane` / `--timeout` と `--` 以降の argv 渡し
+- `herdr agent prompt` の `--wait` / `--until`（複数指定）/ `--timeout`
+- `herdr pane read` / `herdr pane send-keys` / `herdr pane get` / `herdr tab close`
+
+確認方法は、各コマンドグループを引数なしで実行して usage を出す形（`herdr tab` / `herdr agent` / `herdr pane`）。**bare の `herdr` は TUI を起動するので実行しない**。
+
 ## 同期の運用
 
 - **user-level 設定を変更したら、変更したスキル自身が `/commit --push` でコミット・push まで行う**（AGENTS.md「コミット・ブランチ・PR」）。手元に残さない
@@ -91,7 +100,7 @@ codex exec --sandbox read-only --skip-git-repo-check < /dev/null \
 
 - **`codex exec` にはグローバル指示がフル注入される**（Codex 自身にコンテキストを列挙させて確認できる）。このため Codex をレビュアーとして呼ぶと lead 用の外部レビュー規約を読んで**別 CLI へ再委託する**。役割分岐を `AGENTS.md` と `context/agent-cli-guide.md` に規定して解消済み
 - **`~/.agents/skills` 経由で skill が読める**（`~/.codex/skills` に存在しない skill が Codex から見えることで確認できる）
-- **AGENTS.md 全文が注入される（0.145.0 / 26KB 時点）**。ただし `project_doc_max_bytes` という byte 上限キーが実在し、超過時は「project doc exceeds remaining budget; truncating」で**警告なく切られる**（公式 docs は default 値を書いていない）。AGENTS.md を大きく伸ばしたら、末尾セクションが返るかを上記「セットアップの検証」で確認する
+- **AGENTS.md には byte 上限がある。** `project_doc_max_bytes` というキーが実在し、超過分は「project doc exceeds remaining budget; truncating」で**警告なく切られる**（公式 docs は default 値を書いていない）。26KB では全文が注入されたが、**48KB では末尾が切られることを実測で確認している**（`codex 0.145.0`。検証コマンドが返す「最後のセクション見出し」が AGENTS.md の実際の末尾より手前になる）。切られた分は Codex から見えないまま動くので、**AGENTS.md を伸ばしたら必ず上記「セットアップの検証」で末尾セクションが返るかを確認する**。切れていたら、`~/.codex/config.toml` に `project_doc_max_bytes` を明示して上限を上げるか、内容を `context/` へ移して AGENTS.md を縮める
 - **配布経路が未設定でも Codex は正常に起動する**（`~/.codex/AGENTS.md` 不在・`~/.agents/` 不在・`config.toml` に fallback なし、のいずれでもエラーにならない）ため、1台だけ設定が抜けていても気付けない。**セットアップ手順を変えたら全PCで上記の検証コマンドを流す**
 - `--ignore-rules` は execpolicy `.rules` 用で、AGENTS.md の読込抑制ではない
 - Codex にも plugin marketplace 機構はあるが Claude Code とは**別形式**（`~/.codex/config.toml` の `[marketplaces.*]`）

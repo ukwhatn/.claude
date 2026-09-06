@@ -1,7 +1,7 @@
 ---
 name: codebase-review
-description: コードベース包括的レビュー。6観点（perf/sec/test/arch/cq/docs）を並列サブエージェントで実行し、優先度付きissueファイルをメモリディレクトリに生成。使用タイミング: コードベース全体の監査・定期レビュー・リリース前品質確認の依頼時、/codebase-review実行時。境界: PR単位のレビュー→pr-review、自ブランチの提出前確認→self-review、ローカル未コミット変更→/code-review、ドキュメントのレビュー→doc-review、実行時のパフォーマンス計測が必要な場合はweb-perf。
-allowed-tools: Read, Write, Grep, Glob, Bash(mkdir:*), Bash(find:*), Bash(ls:*)
+description: コードベース包括的レビュー。6観点（perf/sec/test/arch/cq/docs）を herdr pane へ並列委譲して実行し、優先度付きissueファイルと観点サマリをメモリディレクトリに生成。使用タイミング: コードベース全体の監査・定期レビュー・リリース前品質確認の依頼時、/codebase-review実行時。境界: PR単位のレビュー→pr-review、自ブランチの提出前確認→self-review、ローカル未コミット変更→/code-review、ドキュメントのレビュー→doc-review、実行時のパフォーマンス計測が必要な場合はweb-perf。
+allowed-tools: Read, Write, Grep, Glob, Bash(mkdir:*), Bash(find:*), Bash(ls:*), Bash(~/.claude/bin/herdr-delegate.sh:*), Bash(herdr:*)
 ---
 
 # コードベース包括的レビュー
@@ -10,7 +10,7 @@ allowed-tools: Read, Write, Grep, Glob, Bash(mkdir:*), Bash(find:*), Bash(ls:*)
 
 コードベース全体を6つの観点から並列でレビューし、発見した問題点を優先度付きのissueファイルとして記録する。
 
-本スキルの起動は、それ自体が「6観点の並列サブエージェントによるレビュー」の実行依頼である。
+本スキルの起動は、それ自体が「6観点の並列委譲によるレビュー」の実行依頼である。
 
 ## トリガー条件
 
@@ -68,34 +68,49 @@ find . -type f \( -name "*.ts" -o -name "*.tsx" -o -name "*.py" -o -name "*.md" 
   -not -path '*/node_modules/*' | wc -l
 ```
 
-### Phase 1: 並列サブエージェント実行
+### Phase 1: 6観点の並列委譲
 
-6つのサブエージェントを**同時に**起動する（Claude Code: Task ツールを1つのメッセージで6回呼び出す）。順次実行しない。並列サブエージェント機構が無い環境（Codex 等）では、6観点を同一テンプレートで**逐次実行**して代替する。
+各観点の担当は issue ファイルと観点サマリを**自分で書く**ため、herdr pane へ委譲する。経路の選択・モデルの選択・起動と結果の回収・失敗時の調査は @context/herdr-delegation.md が真実源（本スキルには複写しない）。Herdr 外の環境では同ファイルのフォールバック規定に従い、Claude Code では `subagent_type=general-purpose` で代替する（`Explore`はファイル書き込み不可でissueファイルを作成できないため）。並列機構が無い環境（Codex 等）では、6観点を同一テンプレートで**逐次実行**して代替する。
 
-- Claude Code では `subagent_type=general-purpose` を使用する（`Explore`はファイル書き込み不可でissueファイルを作成できないため）
-- 各サブエージェントに渡す情報: メモリディレクトリのフルパス / PJ CLAUDE.mdの内容 / 対象リポジトリのパス / 担当観点とレビュー基準 / Phase 0で取得したコードベース構造
+**指示書の組み立て（観点ごとに1ファイル）:**
 
-**プロンプトの組み立て:**
-
-1. `references/subagent-prompts.md` をReadし、共通プロンプトテンプレート（タスク1〜4）を取得する
+1. `references/subagent-prompts.md` をReadし、指示書テンプレート（タスク1〜5）を取得する
 2. `references/review-aspects.md` をReadし、各観点の詳細指示・優先度基準を取得する
-3. テンプレートの `## あなたの担当観点` に該当観点の内容を挿入し、6観点分のプロンプトを構築して並列spawnする
+3. テンプレートの `## あなたの担当観点` に該当観点の内容を挿入し、`{...}` を実値で埋めて、6観点分の指示書を `<メモリディレクトリ>/task-<観点略語>.md` に書き出す
+4. 指示書に埋める情報: メモリディレクトリの絶対パス / PJ CLAUDE.mdの内容 / 対象リポジトリの絶対パス / 担当観点とレビュー基準 / Phase 0で取得したコードベース構造 / `references/subagent-prompts.md` の絶対パス（成果物の形式を委譲先に読ませるため）
+5. **パスはすべて絶対パスで埋める**（委譲先は lead の会話履歴を共有しないため、相対パスの起点が伝わらない）
 
-タスク1〜4はすべて必須。`--skip-multimodel` が明示指定されない限りタスク3（agent cli並行レビュー）を省略しない（マルチモデル検証を欠くと検出の信頼度が下がるため）。観点別の詳細指示のみを渡すのは不十分で、テンプレート全体を渡すこと。
+**起動（6並列）:**
+
+- `--kind claude` を全観点に使う（外部CLIレビューは担当の内部でタスク3として呼ばれるため、pane 側で kind を分けない）
+- `--out` には観点サマリ `<メモリディレクトリ>/aspect-<観点略語>.md` を指定する（issue は0件になり得るので、完了判定に使えるのは観点サマリだけ）
+- 指示書・観点サマリ・state・結果JSON・ログの保存先は観点ごとに分ける
+
+タスク1〜5はすべて必須。`--skip-multimodel` が明示指定されない限りタスク3（agent cli並行レビュー）を省略しない（マルチモデル検証を欠くと検出の信頼度が下がるため）。観点別の詳細指示のみを渡すのは不十分で、テンプレート全体を渡すこと。
 
 ### Phase 2: 結果の集約
 
-サブエージェント完了後:
+委譲先の完了後:
 
-1. issuesディレクトリのファイルを集計
+1. 6観点の観点サマリを読み、担当観点・確認した範囲・issue件数を把握する
+
+```bash
+ls -la ${MEMORY_DIR}/memory/YYMMDD_codebase-review/aspect-*.md
+```
+
+観点サマリが無い観点は**未完了として扱う**（結果JSONの `status` と pane を確認する。失敗時の調査手順は @context/herdr-delegation.md）。
+
+2. issuesディレクトリのファイルを集計
 
 ```bash
 ls -la ${MEMORY_DIR}/issues/
 ```
 
-2. マルチモデル検証の統計を集計（各issueファイルから）
+3. 観点サマリの件数と実際のissueファイル数を突き合わせる（食い違いは書き漏れか、観点間の重複を統合した痕跡のどちらか。どちらかを確認してからサマリーに反映する）
 
-3. サマリーファイルを作成
+4. マルチモデル検証の統計を集計（各issueファイルから）
+
+5. サマリーファイルを作成
 
 ### Phase 3: サマリー作成
 
@@ -153,8 +168,10 @@ YYYY-MM-DD HH:MM
 ${MEMORY_DIR}/
 ├── memory/
 │   └── YYMMDD_codebase-review/
-│       ├── 05_log.md          # 作業ログ
-│       └── summary.md         # レビューサマリー
+│       ├── 05_log.md              # 作業ログ
+│       ├── task-<観点略語>.md      # 観点ごとの指示書（leadが生成）
+│       ├── aspect-<観点略語>.md    # 観点サマリ（委譲先が生成。issue 0件でも必ず1つ）
+│       └── summary.md             # レビューサマリー
 └── issues/                    # issueファイル（マルチモデル検証済み）
     ├── critical-*.md          # 各issueにマルチモデル検証結果を含む
     ├── major-*.md             # アルファベット順で優先度順にソート
@@ -176,15 +193,16 @@ ${MEMORY_DIR}/
 
 ## タスク管理機構による進捗表示（オプション・Claude Code）
 
-6観点のタスクをTaskCreateで作成すると、TaskListで各観点の進捗をリアルタイムに可視化できる（完了・未完了が一目で分かる）。サブエージェント完了後に `TaskUpdate(taskId, status: "completed", metadata: {issues_found: N})` で更新する。詳細: @context/task-tool-guide.md（Codex では plan 機構で代替）
+6観点のタスクをTaskCreateで作成すると、TaskListで各観点の進捗をリアルタイムに可視化できる（完了・未完了が一目で分かる）。委譲先の完了後に `TaskUpdate(taskId, status: "completed", metadata: {issues_found: N})` で更新する。詳細: @context/task-tool-guide.md（Codex では plan 機構で代替）
 
 ## 注意事項
 
-- サブエージェントは並列で起動し、各々は独立して動作する（他エージェントの結果を待たない）
+- 委譲先は並列で起動し、各々は独立して動作する（他観点の結果を待たない）
+- 問題が0件の観点でも観点サマリを必ず1つ書かせる（成果物が無いと完了判定ができないため）
 - issueファイルのタイトルは日本語で具体的に記述する
 - 同じ問題が複数観点に該当する場合、最も重要な観点で1つだけ作成する
 - 優先度critは本当に即時対応が必要な場合のみ使用する
 - コードベース全体を網羅的に確認する（一部だけ見て終わらせると担当観点の問題を見落とすため）
 - 問題発見時はcontext7/WebSearchでベストプラクティスを調査する（推測での改善案を避けるため）
 - agent cli呼び出しは `--skip-multimodel` が明示指定されない限り実行する（マルチモデル検証を欠くと検出の信頼度が下がるため）
-- サブエージェントにはタスク1〜4すべてを含む共通テンプレート全体を渡す（観点別の詳細指示のみでは網羅性・検証が不足するため）
+- 指示書にはタスク1〜5すべてを含むテンプレート全体を渡す（観点別の詳細指示のみでは網羅性・検証が不足するため）
