@@ -111,6 +111,7 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "opus",
   "hooks": {
     "SessionStart": [
       {
@@ -265,6 +266,18 @@
         "source": "git",
         "url": "https://github.com/anthropics/claude-plugins-official.git"
       }
+    },
+    "scp-jp-plugins": {
+      "source": {
+        "source": "github",
+        "repo": "SCP-JP/claude-plugins"
+      }
+    },
+    "scp-jp-plugins-staff": {
+      "source": {
+        "source": "github",
+        "repo": "SCP-JP/claude-plugins-staff"
+      }
     }
   },
   "outputStyle": "ukwhatn-style",
@@ -292,6 +305,5 @@
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true,
-  "model": "opus"
+  "skipAutoPermissionPrompt": true
 }
