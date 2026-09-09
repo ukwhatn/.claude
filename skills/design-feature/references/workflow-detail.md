@@ -258,9 +258,7 @@ CLI 判定・共通呼び出しテンプレートは @context/agent-cli-guide.md
 
 コマンドへの組み込み・`--resume` によるセッション継続は @context/agent-cli-guide.md「基本コマンド」に従う。
 
-- Action Required = 0
-- 同一指摘 2R 連続
-- 安全上限 5R
+打ち切り条件は @context/agent-cli-guide.md「レビューループの流れ」に従う（数値をここに複写しない）。**本スキルの成果物は設計文書なので、実装差分より上限が少ない。**
 
 ### 4.4 指摘の実コード裏取り（CRITICAL）
 

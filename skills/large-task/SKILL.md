@@ -117,7 +117,7 @@ ${MEMORY_DIR}/
 ### leadの判断基準
 - Action Required → 必ず修正（implementerに委譲）
 - Recommended/Minor → 必要性に基づいて判断
-- 打ち切り: Action Required = 0 / 同一指摘2R連続 / 安全上限5R
+- 打ち切り: @context/agent-cli-guide.md「レビューループの流れ」に従う（**レビュー対象が設計文書か実装差分かで上限が異なる**。数値をここに複写しない）
 
 ## タスク管理機構との統合（オプション）
 

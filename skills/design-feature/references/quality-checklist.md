@@ -211,7 +211,7 @@ AskUserQuestion で確定した設計判断は必ず記録する。
 - [ ] 状態変更は内部表現（フィールド / enum 値 / 流用する既存関数名）まで特定した
 - [ ] 新アクターの挙動は類似既存アクターの現状動作との対応表で説明した
 - [ ] 設計判断を 30_decisions.md または 99_history.md に記録した
-- [ ] agent review で Action Required = 0 を達成した（同一指摘 2R 連続 or 5R 安全上限で打ち切った場合は残課題を 05_log.md に記録）
+- [ ] agent review で Action Required = 0 を達成した（打ち切り条件は @context/agent-cli-guide.md「レビューループの流れ」。打ち切った場合は残課題を 05_log.md に記録）
 - [ ] ライティングが `/ukwhatn-writing` に準拠している
 - [ ] 完了報告にファイルパス・主要判断・残課題が含まれる
 - [ ] 残課題は「要調査」と書かず、具体的な次アクションとして書く
