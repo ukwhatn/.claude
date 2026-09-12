@@ -44,7 +44,6 @@ def connect():
         },
     })
     post({"jsonrpc": "2.0", "method": "notifications/initialized"}, session_id)
-    # initialize だけでは backend が生成されず CDP attach が起きないため、副作用のないツールを1回呼ぶ
     # initialize だけでは backend が生成されず CDP attach が起きないため、副作用のないツールを1回呼ぶ。
     # ここで返らない場合はサーバ側の CDP セッションが応答していないので、短めの timeout で失敗させる
     post({"jsonrpc": "2.0", "id": 2, "method": "tools/call",
