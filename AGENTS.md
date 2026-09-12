@@ -250,6 +250,8 @@ Chrome 拡張は複数 profile 同時接続をサポートするが、Connected 
 
 普段使いのブラウザを複数セッションから同時に操作する場合、**MCP サーバをセッションごとに起こさない**。stdio で起こすと、拡張ブリッジ方式では拡張が同時に1接続しか保持しないため後から繋いだセッションが先のセッションを切断し、CDP 直結方式では接続ごとにブラウザ側の承認ダイアログが出る。
 
+**新規PCでのセットアップは `bin/playwright-mcp-setup.sh` を実行するだけ**（冪等）。LaunchAgent の生成・配置、`~/.claude.json` の MCP 設定、node バージョンの確認までを行う。残る手動作業は、スクリプトが起動する自動化専用 Chrome へのログインだけ（OAuth フローは自動化できない）。
+
 構成は「サーバ1本を常駐させ、各セッションは HTTP クライアントとして接続する」。playwright-mcp の場合:
 
 - 常駐: `~/.claude/bin/playwright-mcp-server.sh`（LaunchAgent `com.ukwhatn.playwright-mcp`。ログ: `~/Library/Logs/playwright-mcp.log`）
