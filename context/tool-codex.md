@@ -16,9 +16,9 @@ AGENTS.md・skills・context 内の `@path` 参照は Claude Code の import 記
 
 ## 常駐相当ファイルの Read 指針
 
-Claude Code では @import で常駐する以下のファイルを、Codex では該当作業の前に Read する:
+Claude Code では AGENTS.md「Read when」で誘導される以下のファイルを、Codex でも同じ条件で Read する（AGENTS.md の Read when 一覧が真実源。ここには Codex 側で読み替えが要るものだけを挙げる）:
 
-- `~/.claude/context/workflow-rules.md` — **複雑タスク**（複数ファイル変更・調査+実装・長時間）の開始時に必ず（Phase 0-5 の本体）
+- `~/.claude/context/workflow-rules.md` — **複雑タスク**（AGENTS.md「作業フロー」の4条件）の開始時に必ず（Phase 0-5 の手順）
 - `~/.claude/context/memory-file-formats.md` — メモリディレクトリ（`.local/`）を初めて操作する前に
 - `~/.claude/context/cloudflare-development.md` — Cloudflare（wrangler / D1 等）作業の前に
 - `~/.claude/CLAUDE.local.md` — セッション開始時に存在すれば（マシン固有の注意）
@@ -32,7 +32,6 @@ Claude Code では @import で常駐する以下のファイルを、Codex で�
 | AskUserQuestion（選択肢提示質問） | 番号付き選択肢のテキスト質問で代替（推奨案を先頭に置き「（推奨）」を付す。1回最大4問の原則も同様） |
 | Edit / Write ツール | apply_patch（`cat >>` / heredoc 禁止の意図＝ファイル状態追跡の維持は同じ） |
 | EnterWorktree / ExitWorktree | `git worktree add <path> -b feature/<issue_num>-<title-kebab>` / `git worktree remove <path>` を直接実行（原則: `~/.claude/context/worktree-guide.md`） |
-| TaskCreate / TaskUpdate / TaskList | 組み込みの plan 機構で代替 |
 | Skill ツール / `/skill-name` | `$skill-name` の明示発動、または description による暗黙発動 |
 | サブエージェント委譲（Explore / general-purpose） | Herdr の pane 内で動いているなら pane 委譲（後述「委譲」）。pane 外では multi-agent 機構が利用可能ならそれを使用し、無ければ同じ手順を逐次実行 |
 | Agent Teams / Workflow ツール | 対応物なし。各スキルの「環境要件」節の代替手順（観点の逐次実行等）に従う |
@@ -50,5 +49,5 @@ Claude Code では @import で常駐する以下のファイルを、Codex で�
 
 ## Claude Code 専用ガイドの扱い
 
-- **Codex では読まない**: `context/tool-claude-code.md` / `context/task-tool-guide.md`（Claude Code 専用機構のガイドで、対応する代替は本ファイルのツール対応表に記載済み）
+- **Codex では読まない**: `context/tool-claude-code.md`（Claude Code 専用機構のガイドで、対応する代替は本ファイルのツール対応表に記載済み）
 - **参照された場合のみ読む**: `context/claude-customization-guide.md` は Claude Code 固有機構の解説を含むが、スキル（create-skill / instructions-audit / session-retro 等）が設計原則・rubric の真実源として参照する。**該当スキルの実行時は Codex でも参照セクションを読む**（常駐は不要）
