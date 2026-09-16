@@ -1,6 +1,6 @@
 ---
 name: directive-mining
-description: セッションログのユーザー発話を全件マイニングし、指示ファイルの修正提案を作る。訂正（やってしまったことを止める規則）と繰り返し指示の既定化（言われなくてもやる規則）の2系統で出す。使用タイミング (1)「私の指示を全部拾って指示を改善して」「毎回言っていることを勝手にやれるようにして」等の依頼時、(2) /directive-mining 実行時、(3) 数週間ぶりの .claude 棚卸しで実データから改善点を出したい時。境界: skill発火数・tool頻度・compaction回数などの定量集計は session-analytics、単一セッション内の知見の自律反映は session-retro、実データを見ない静的品質監査は instructions-audit、メモリディレクトリのキーワード検索は findmem。本スキルは提案の作成までを担い、指示ファイルへの適用は update-inst / session-retro に渡す。
+description: セッションログのユーザー発話を全件マイニングし、指示ファイルの修正提案を作る（訂正の規則化と、繰り返し指示の既定化の2系統）。「私の指示を全部拾って指示を改善して」「毎回言っていることを勝手にやれるようにして」等の依頼時、/directive-mining 実行時、実データから .claude の改善点を出したい時に使用。提案の作成までを担い、適用は update-inst / session-retro に渡す。境界: 定量集計は session-analytics、単一セッションの振り返りは session-retro、実データを見ない静的監査は instructions-audit。
 allowed-tools: Bash(python3:*), Bash(uv run:*), Read
 ---
 

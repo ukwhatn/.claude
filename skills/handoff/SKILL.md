@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: 現在のセッション内容を、別セッションのエージェントが引き継げるハンドオフ文書に圧縮し、メモリディレクトリの50_handoff.mdに書き出す。使用タイミング: (1) /handoff 実行時、(2) 複雑タスクのPhase完了・ユーザー承認待ち・compaction接近・セッション切替などの区切りで自律実行（workflow-rules.md「長時間タスクの区切り運用」）。境界: 過去メモリの検索はfindmem、セッション知見の指示ファイル反映はsession-retro。
+description: 現在のセッション内容を別セッションが引き継げるハンドオフ文書に圧縮し、メモリディレクトリの 50_handoff.md に書き出す。/handoff 実行時、複雑タスクの Phase 完了・承認待ち・compaction 接近・セッション切替の区切りで自律実行する。境界: 過去メモリの検索は findmem、知見の指示ファイル反映は session-retro。
 argument-hint: "次のセッションは何に使うか"
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: codebase-review
-description: コードベース包括的レビュー。6観点（perf/sec/test/arch/cq/docs）を herdr pane へ並列委譲して実行し、優先度付きissueファイルと観点サマリをメモリディレクトリに生成。使用タイミング: コードベース全体の監査・定期レビュー・リリース前品質確認の依頼時、/codebase-review実行時。境界: PR単位のレビュー→pr-review、自ブランチの提出前確認→self-review、ローカル未コミット変更→/code-review、ドキュメントのレビュー→doc-review、実行時のパフォーマンス計測が必要な場合はweb-perf。
+description: コードベース全体のレビュー・監査。perf/sec/test/arch/cq/docs の6観点を並列委譲し、優先度付き issue ファイルと観点サマリをメモリディレクトリに生成する。コードベース全体の監査・定期レビュー・リリース前品質確認の依頼時、/codebase-review 実行時に使用。境界: PR 単位は pr-review、自ブランチの提出前確認は self-review、文書は doc-review。
 allowed-tools: Read, Write, Grep, Glob, Bash(mkdir:*), Bash(find:*), Bash(ls:*), Bash(~/.claude/bin/herdr-delegate.sh:*), Bash(herdr:*)
 ---
 
@@ -191,9 +191,9 @@ ${MEMORY_DIR}/
 --skip-multimodel   agent cli並行レビューをスキップ（Claude Codeのみ）
 ```
 
-## タスク管理機構による進捗表示（オプション・Claude Code）
+## 進捗の追い方
 
-6観点のタスクをTaskCreateで作成すると、TaskListで各観点の進捗をリアルタイムに可視化できる（完了・未完了が一目で分かる）。委譲先の完了後に `TaskUpdate(taskId, status: "completed", metadata: {issues_found: N})` で更新する。詳細: @context/task-tool-guide.md（Codex では plan 機構で代替）
+6観点の進捗は、委譲の結果ファイルと 05_log.md の委譲記録で追う（起動時刻・成果物パス・完了の有無を観点ごとに1行）。
 
 ## 注意事項
 

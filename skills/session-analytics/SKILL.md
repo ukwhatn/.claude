@@ -1,6 +1,6 @@
 ---
 name: session-analytics
-description: 複数セッションを横断した利用傾向分析。~/.claude/projects/配下の全JSONLログを集計し、skill発火回数・tool使用頻度・ユーザーの軌道修正シグナル(中断・権限拒否・AskUserQuestionでのOther回答率)・compaction頻度・未発火skillを可視化してハーネス改善の示唆を出す。使用タイミング: (1) 「このPCでのセッション傾向を分析して」「skillの発火状況を教えて」「ハーネス改善の示唆が欲しい」等の依頼時、(2) 定期的な.claude設定の棚卸し時、(3) 新しいskill/ルール追加の効果を過去傾向と比較したい時。境界: ユーザー発話そのものの全件マイニングと既定化提案→directive-mining、単一セッション内の振り返りと指示ファイルへの自律反映→session-retro、過去メモリ/issueのキーワード検索→findmem、CLAUDE.md/skills/context自体の静的品質監査→instructions-audit。
+description: 複数セッション横断の利用傾向分析。全セッションログを集計し、skill 発火回数・tool 使用頻度・ユーザーの軌道修正シグナル・compaction 頻度・未発火 skill を可視化してハーネス改善の示唆を出す。「セッション傾向を分析して」「skill の発火状況を教えて」「ハーネス改善の示唆が欲しい」等の依頼時、.claude 設定の定期棚卸し時、新規 skill・ルールの効果を過去傾向と比較したい時に使用。境界: ユーザー発話の全件マイニングは directive-mining、単一セッションの振り返りは session-retro、指示ファイルの静的監査は instructions-audit。
 allowed-tools: Bash(uv run:*), Read
 ---
 

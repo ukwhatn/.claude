@@ -1,6 +1,6 @@
 ---
 name: design-feature
-description: 抽象的な要件・事業側の要求から要求を深掘りし、コードベース SSoT で既存実装整合性を確認した上で「実装マスタ（01_requirements_skeleton.md）」と「システム要件書（02_system_requirements.md）」を作成する。使用タイミング (1)「○○って機能を作りたい」「この要求を満たす機能を設計して」等の抽象要件提示時、(2) 既存機能の拡張・Phase 分割等の要件定義開始時、(3) `/design-feature ...` 実行時。境界: 要件確定後の実装計画書・PR分割の立案は plan-feature-prs、実装の分割・進捗管理は large-task、既存文書のレビューは doc-review。本スキルは新規要件の深掘りと文書化が目的。
+description: 抽象的な要件・事業側の要求を深掘りし、既存実装との整合を確認して実装マスタとシステム要件書を作成する。「こういう機能を作りたい」「この要求を満たす機能を設計して」等の抽象要件の提示時、既存機能の拡張や Phase 分割の要件定義開始時、/design-feature 実行時に使用。境界: 要件確定後の実装計画書・PR 分割は plan-feature-prs、実装の分割・進捗管理は large-task、既存文書のレビューは doc-review。
 ---
 
 # Design Feature
@@ -101,7 +101,7 @@ Phase 5: 02 抽出         → 01 から What だけ抽出して書き、完了�
 2. 既存メモリディレクトリ検索 → 同コンテキストなら再利用、新規なら `${MEMORY_DIR}/memory/YYMMDD_<context_name>/` 作成
 3. `05_log.md` を初期化 / 追記、ユーザー指示を逐語記録
 4. 関連する過去タスク・issue を `findmem` 相当で探索（@context/workflow-rules.md §1.0）
-5. タスク管理機構（Claude Code: TaskCreate、Codex: plan）で本ワークフローのタスクを構造化
+5. 本ワークフローのタスク一覧（Phase 1〜5）を 10_task.md に書く（Codex: plan 機構）
 6. **絶対パス固定**: 元 repo のメモリディレクトリ絶対パスを 05_log.md 冒頭に記録（worktree 運用時の事故防止）
 
 ### Phase 1: 要求深掘り

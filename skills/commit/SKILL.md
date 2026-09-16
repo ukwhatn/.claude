@@ -1,6 +1,6 @@
 ---
 name: commit
-description: 変更をコミット。`/commit`で実行、または「コミットして」「pushして」「コミットしてpushして」等の自然言語依頼時にも使用。`--push`引数（または「pushして」の依頼）でpushも実行。
+description: 変更をコミットする。/commit 実行時、「コミットして」「pushして」等の依頼時に使用。--push 引数または「pushして」の依頼で push も行う。
 allowed-tools: Bash(git:*)
 ---
 
@@ -18,6 +18,10 @@ allowed-tools: Bash(git:*)
 - 未コミットの変更がない状態で「pushして」と依頼された場合は、新規コミットを作らず既存コミットのpushのみ行う（`git status` で判定）
 
 ## 実行手順
+
+### 0. 直コミット可否の確認
+
+PJ `CLAUDE.md` / `CLAUDE.local.md` の記載を確認する。記載が無い、または記載と直近の履歴が食い違うなら `references/commit-policy.md` の手順で判定し、結果を永続化してから進む。チーム開発リポジトリで main / develop 直コミット不可なら作業ブランチへ切り替える。
 
 ### 1. 現在の状態確認
 

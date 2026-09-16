@@ -1,6 +1,6 @@
 ---
 name: update-inst
-description: user-level/PJ-levelの指示・スキルを個別修正する。使用タイミング: Claudeが間違いを犯した際の再発防止依頼時、/update-inst実行時、作業で得た運用知見をuser-level（AGENTS.md）/PJ-level（CLAUDE.md）・context・スキルに追記する依頼時。境界: 指示ファイル全体のベストプラクティス監査はinstructions-audit、セッション全体からの知見の自律的な洗い出し・反映はsession-retro、新規スキルの作成はcreate-skill。
+description: user-level / PJ-level の指示ファイル・スキルを個別に修正する。Claude の間違いの再発防止依頼時、/update-inst 実行時、作業で得た運用知見を AGENTS.md / CLAUDE.md・context・スキルに追記する依頼時に使用。境界: 指示ファイル全体の監査は instructions-audit、セッション全体からの知見の洗い出し・反映は session-retro、新規スキルは create-skill。
 ---
 
 # 指示更新スキル

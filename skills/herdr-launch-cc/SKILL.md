@@ -1,6 +1,6 @@
 ---
 name: herdr-launch-cc
-description: Herdrの指定workspaceに新しいtab（明示指定時はpane分割）を作り、fish -c "cc" でClaude Codeを起動してremote controlのセッションURLを取得・報告する。使用タイミング: (1) /herdr-launch-cc 実行時、(2) 「discordのworkspaceでccを立ち上げて」等、Herdr上でのClaude Code新規起動依頼時。境界: 既存pane・agentの確認や入力送信などの汎用Herdr操作は herdr スキル。HERDR_ENV=1 必須。
+description: Herdr の指定 workspace に新しい tab（指定時は pane 分割）を作って Claude Code を起動し、remote control のセッション URL を報告する。/herdr-launch-cc 実行時、「◯◯の workspace で cc を立ち上げて」等の Herdr 上での Claude Code 新規起動依頼時に使用。HERDR_ENV=1 必須。境界: 既存 pane・agent の確認や入力送信は herdr。
 ---
 
 # Herdr Launch CC

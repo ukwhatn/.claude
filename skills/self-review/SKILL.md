@@ -1,6 +1,6 @@
 ---
 name: self-review
-description: 自分の作業ブランチのPR提出前セルフレビュー（diff包括チェック）。使用タイミング: (1) 「セルフレビューして」「消し忘れないか確認して」「diffを徹底チェックして」「変更漏れ・削除漏れがないか見て」等の依頼時、(2) PR作成前の最終確認時。境界: 他者PR（番号/URL指定）のレビュー→pr-review、コードベース全体監査→codebase-review、文書レビュー→doc-review。
+description: 自分の作業ブランチの PR 提出前セルフレビュー（diff の包括チェック）。「セルフレビューして」「消し忘れがないか確認して」「diff を徹底チェックして」「変更漏れ・削除漏れを見て」等の依頼時、PR 作成前の最終確認時に使用。境界: 他者 PR のレビューは pr-review、コードベース全体は codebase-review、文書は doc-review。
 allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(rg:*)
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: large-task
-description: 大規模タスクを複数セッションに分割して実装するワークフロー。自動発火条件 - 以下のいずれかに該当する場合は自動的にこのスキルを使用すること。(1) 複数の独立した機能実装が含まれる、(2) ユーザーが「大規模」「複数日」「段階的に」等のキーワードを使用。目安（着手前の自己推定であり単独の発火条件にはしない）: ファイル変更5つ以上が見込まれる、調査だけで30分以上かかりそうな規模感。境界: 要件定義そのものは design-feature、PR単位の分割計画書の立案（epic配下のPRスタック設計）は plan-feature-prs（その計画書に基づく実装進行は本スキルで可）。
+description: 大規模タスクを複数セッションに分割して実装するワークフロー。複数の独立した機能実装を含む時、ユーザーが「大規模」「複数日」「段階的に」等の語を使った時に自動発火する（ファイル変更数や所要時間の自己推定は単独の発火条件にしない）。境界: 要件定義は design-feature、PR 分割計画書の立案は plan-feature-prs（その計画に基づく実装進行は本スキル）。
 ---
 
 # Large Task Workflow
@@ -119,14 +119,9 @@ ${MEMORY_DIR}/
 - Recommended/Minor → 必要性に基づいて判断
 - 打ち切り: @context/agent-cli-guide.md「レビューループの流れ」に従う（**レビュー対象が設計文書か実装差分かで上限が異なる**。数値をここに複写しない）
 
-## タスク管理機構との統合（オプション）
-
-タスク分割後、タスク管理機構で進捗管理を強化できる（Claude Code: TaskCreate/TaskUpdate/TaskList、Codex: plan 機構）。plan / implement それぞれの使用例は @context/task-tool-guide.md「使用場面」§2「large-task」を参照。00_plan.mdの状態更新と併用すること（置き換えではない）。
-
 ## 既存設定への参照
 
 - ワークフロー詳細: @context/workflow-rules.md
 - メモリファイル形式: @context/memory-file-formats.md
-- Taskツール活用: @context/task-tool-guide.md
 - agent cli: @context/agent-cli-guide.md
 - PJ固有設定: PJ CLAUDE.md

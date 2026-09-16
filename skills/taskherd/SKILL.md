@@ -1,6 +1,6 @@
 ---
 name: taskherd
-description: taskherd CLI（エージェントセッション・PR・チケットをタスク単位で束ねるローカル kanban）の操作。使用タイミング (1) 自分のセッションに紐づくボードのタスクの列を進める・note を残す時、(2) 作業中に新しいタスクが確定して起票する時、(3) ボード上のタスク一覧・状態を確認する時、(4) 依頼に taskherd・タスクボード・kanban の語がある時。境界: セッション内の作業ステップ管理（TaskCreate / TodoWrite）は対象外。pane・tab・agent そのものの操作は herdr、実装タスクのスキル連鎖の管理は task。board / picker の TUI 操作はユーザーの領域で、本スキルは CLI だけを扱う。
+description: taskherd CLI（セッション・PR・チケットをタスク単位で束ねるローカル kanban）の操作。自分のセッションに紐づくタスクの列を進める・note を残す時、新しいタスクを起票する時、ボードのタスク一覧・状態を確認する時、依頼に taskherd・タスクボード・kanban の語がある時に使用。CLI のみを扱い、board / picker の TUI 操作はユーザーの領域。境界: セッション内の作業ステップ管理は対象外、pane・tab・agent の操作は herdr、実装スキル連鎖の管理は task。
 allowed-tools: Bash(taskherd:*), Bash(herdr:*), Bash(jq:*)
 ---
 

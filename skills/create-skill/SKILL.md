@@ -1,6 +1,6 @@
 ---
 name: create-skill
-description: 既存設定と整合したスキルを新規作成。「スキルを作って」「この手順をスキル化して」等の依頼時、/create-skill実行時に使用。~/.claude/AGENTS.md（CLAUDE.mdは互換symlink）、context/*.md、既存スキルを自動参照し、重複・競合を避けたスキルを生成。境界: 既存スキル・指示ファイルの修正→update-inst、指示ファイル全体の監査→instructions-audit。
+description: スキルを新規作成する。「スキルを作って」「この手順をスキル化して」等の依頼時、/create-skill 実行時に使用。AGENTS.md・context・既存スキルと整合させ、重複・競合を避ける。境界: 既存スキル・指示ファイルの修正は update-inst、指示ファイル全体の監査は instructions-audit。
 ---
 
 # Create Skill

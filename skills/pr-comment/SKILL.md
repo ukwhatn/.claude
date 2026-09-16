@@ -1,6 +1,6 @@
 ---
 name: pr-comment
-description: PRの特定レビューコメント（discussion）への対応。使用タイミング: (1) PR URLに#discussion_r<id>を添えて「この指摘に対応して」と依頼された時、(2) PR番号+特定の指摘内容を示して対応を依頼された時。境界: PR全体のレビュー→pr-review、レビュー返信文の作成のみ→ukwhatn-writing。
+description: PR の特定レビューコメント（discussion）への対応（実装修正と返信）。PR URL に discussion の id を添えて「この指摘に対応して」と依頼された時、PR 番号と特定の指摘内容を示された時に使用。境界: PR 全体のレビューは pr-review、返信文の作成のみは ukwhatn-writing。
 ---
 
 # pr-comment - PRレビューコメント対応

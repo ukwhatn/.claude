@@ -46,7 +46,7 @@ EnterWorktree で worktree に入っても、メモリの読み書きは**必ず
 
 ### 0.3 タスク管理
 
-TaskCreate で本ワークフローのタスクを構造化:
+本ワークフローのタスクを 10_task.md に構造化する（Codex: plan 機構）:
 
 ```
 Task 1: Phase 1 要求深掘り
@@ -56,7 +56,7 @@ Task 4: Phase 4 agent review ループ
 Task 5: Phase 5 02 抽出 + 完了報告
 ```
 
-依存関係を `addBlockedBy` で連鎖させる。
+Task 2 は Task 1 と並列、Task 3 以降は前の Task の完了を待つ。
 
 ## Phase 1: 要求深掘り
 

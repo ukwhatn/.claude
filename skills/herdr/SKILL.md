@@ -1,6 +1,6 @@
 ---
 name: herdr
-description: "Control Herdr, a terminal multiplexer for coding agents, and the truth source for the herdr CLI itself: command syntax, ID conventions, and the agent status model (idle / working / blocked / done). Use when inspecting or controlling panes, tabs, workspaces, terminals, or commands, when starting an agent in another pane, or when communicating with an agent that runs in one. Boundary: whether and how to delegate work to a pane - the route, the agent kind and model, the instruction file, and how results come back - is governed by context/herdr-delegation.md and driven by bin/herdr-delegate.sh; this skill covers the CLI, not the delegation policy. Requires HERDR_ENV=1."
+description: Herdr（コーディングエージェント向けターミナルマルチプレクサ）の操作と、herdr CLI の構文・ID 規約・agent 状態モデル（idle / working / blocked / done）の真実源。pane・tab・workspace・terminal・command の確認や操作、別 pane での agent 起動、pane 上の agent との通信の時に使用。HERDR_ENV=1 必須。境界: pane へ委譲するかどうか・経路・モデル・指示書・結果回収の方針は context/herdr-delegation.md（本スキルは CLI のみ）。
 ---
 
 # Herdr

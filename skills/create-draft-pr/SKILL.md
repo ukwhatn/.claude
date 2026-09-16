@@ -1,6 +1,6 @@
 ---
 name: create-draft-pr
-description: PRを作成（原則Draft）。PRテンプレートを全セクション埋めつつ、対象repoの既存PRの実測値（MEMORY_DIR配下にキャッシュ）に分量を合わせ、AI特有の書きすぎを削る。使用タイミング: PR作成を依頼された時、実装が一段落しPR化する時、/create-draft-prで実行。引数にベースブランチを指定可能。境界: 直接gh pr createは実行せず本スキルを使う。特定レビューコメントへの対応はpr-comment、PRレビューはpr-review。
+description: PR を Draft で作成する。PR テンプレートを全セクション埋め、対象 repo の既存 PR の分量に合わせて書きすぎを削る。PR 作成の依頼時、実装が一段落して PR 化する時、/create-draft-pr 実行時に使用（gh pr create を直接実行しない）。引数でベースブランチを指定できる。境界: 個別レビューコメントへの対応は pr-comment。
 allowed-tools: Bash(git:*), Bash(gh:*), Read, Write
 ---
 

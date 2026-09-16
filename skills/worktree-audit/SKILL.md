@@ -1,6 +1,6 @@
 ---
 name: worktree-audit
-description: マシン上の git worktree とローカルブランチを横断で棚卸しし、マージ済みかを3段階で判定して安全に削除する。使用タイミング (1) 「worktreeを整理して」「マージ済みブランチを消して」「worktreeを全部リストして」等の依頼時、(2) worktree が増えすぎた時の定期棚卸し、(3) /worktree-audit 実行時。境界: 単一 worktree の作成・命名・片付け手順は context/worktree-guide.md、コミット前の diff 確認は self-review、コードベースの品質監査は codebase-review。
+description: マシン上の git worktree とローカルブランチを横断で棚卸しし、マージ済みかを判定して安全に削除する。「worktree を整理して」「マージ済みブランチを消して」「worktree を全部リストして」等の依頼時、/worktree-audit 実行時に使用。境界: 単一 worktree の作成・片付け手順は context/worktree-guide.md、コードベースの監査は codebase-review。
 allowed-tools: Bash, Read, Grep, Glob
 ---
 

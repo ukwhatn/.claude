@@ -1,6 +1,6 @@
 ---
 name: writing-code
-description: コードを書く時の実装原則（deep module設計・seam・テスタビリティ・シーム限定TDD・コメント規約・リーダブルコード）。プロダクションコードの新規実装・修正・機能追加・リファクタの開始時に常に使用。CSS・HTML・テーマ・テンプレート等のフロントエンド資産もプロダクションコードに含み、除外条件の「設定ファイルのみの変更」には当たらない（除外はトリビアルな1行修正と、lint/CI設定等の純粋な設定ファイルのみ）。TypeScript/Python/Goの言語別ガイドをreferencesに同梱。境界: バグ・エラーの原因調査はsystematic-debuggingが先（原因特定後の修正実装は本スキル）、提出前のdiff確認はself-review、要件定義はdesign-feature。
+description: コードを書く時の実装原則（deep module 設計・seam・テスタビリティ・シーム限定 TDD・コメント規約・リーダブルコード）。プロダクションコードの新規実装・修正・機能追加・リファクタの開始時に常に使用。CSS・HTML・テンプレート等のフロントエンド資産も対象。除外はトリビアルな1行修正と lint/CI 等の純粋な設定ファイルのみ。TypeScript/Python/Go の言語別ガイドを同梱。境界: バグ・エラーの原因調査は systematic-debugging が先、提出前の diff 確認は self-review。
 ---
 
 # Writing Code

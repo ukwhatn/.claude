@@ -1,6 +1,6 @@
 ---
 name: session-retro
-description: セッション振り返りによる指示ファイルの自律改善。現在のセッションで得た知見（ユーザーからの訂正・Claudeの間違い・発見した環境やPJ固有の落とし穴・繰り返された手動指示）を洗い出し、user-level（AGENTS.md）/project-level（CLAUDE.md）・context・スキルへの追加・修正を自律的に適用して報告する。「このセッションの学びを反映して」「振り返って指示を改善して」等の依頼時、/session-retro実行時、タスク完了時に知見の恒久化を求められた際に使用。境界: ユーザーが特定した単一の間違いの修正（承認付き）→update-inst、セッション内容によらないファイル品質の静的監査→instructions-audit、セッションの引き継ぎ文書化→handoff。
+description: 現在のセッションで得た知見（ユーザーの訂正・Claude の間違い・環境や PJ 固有の落とし穴・繰り返された手動指示）を洗い出し、AGENTS.md / PJ CLAUDE.md・context・スキルへ自律的に反映して報告する。「このセッションの学びを反映して」「振り返って指示を改善して」等の依頼時、/session-retro 実行時、タスク完了時に知見の恒久化を求められた時に使用。境界: ユーザーが特定した単一の間違いの修正は update-inst、セッション内容によらない静的監査は instructions-audit、引き継ぎ文書は handoff。
 ---
 
 # Session Retro

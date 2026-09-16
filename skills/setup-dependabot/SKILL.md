@@ -1,6 +1,7 @@
 ---
 name: setup-dependabot
-description: dependabot設定（.github/dependabot.yml）の新規作成・整備。リポジトリのlockfile・workflows等からecosystemを自動検出し、lockfileコンフリクトを回避するgroup設計とsecurity fast-trackを備えた設定を生成する。使用タイミング: (1) dependabot設定の作成・見直し・追加の依頼時、(2) /setup-dependabot 実行時。境界: Renovate設定は対象外。dependabotが作成したPRのレビュー・マージ対応は pr-review 等の通常フローで行う。
+description: dependabot 設定（.github/dependabot.yml）の新規作成・整備。リポジトリから ecosystem を自動検出し、lockfile コンフリクトを避ける group 設計と security fast-track を備えた設定を生成する。dependabot 設定の作成・見直し・追加の依頼時、/setup-dependabot 実行時に使用。境界: Renovate は対象外。dependabot が作った PR の対応は pr-review 等の通常フロー。
+disable-model-invocation: true
 ---
 
 # Setup Dependabot
