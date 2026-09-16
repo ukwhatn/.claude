@@ -249,9 +249,10 @@ Chrome 拡張は複数 profile 同時接続をサポートするが、Connected 
 - **特定手順** (mapping を確定させたい場合): 該当 Chrome の Chrome を再起動 → `list_connected_browsers` で connectedAt が更新された deviceId がその browser
 - 環境変数 (`CLAUDE_CHROME_BROWSER` 等) / `settings.json` での事前指定も未サポート
 - 通常運用は `switch_browser` で対象 Chrome の Connect ボタンを user が click する
+- **最初のタブを開く前に、どの Chrome を操作するかを確定させる**。接続済みの browser が1つに絞れているときはエラーが出ず、既定の browser で黙って操作が進むため、意図と違う Chrome を操作していることに気付けない。`list_connected_browsers` で接続中の deviceId を確認し、対象を `select_browser({deviceId})` で明示してから操作を始める
 - `computer` ツール等が「Multiple Chrome browsers are connected」エラーになったら、`list_connected_browsers` → `select_browser({deviceId})` で選ぶか、`switch_browser` に切り替える
 
-**Read when**: deviceId から実 Chrome を特定する必要が出たら `~/.claude/local/chrome-browser-mapping.md` を Read する（マシン固有の実値。`@`import していないため常駐しない。git 管理外で存在しない環境もある）。
+**Read when**: Claude in Chrome のツールを使う作業に着手する前に `~/.claude/local/chrome-browser-mapping.md` を Read する（マシン固有の実値。`@`import していないため常駐しない。git 管理外で存在しない環境もある）。**ユーザーは browser をマシン名・プロファイル名で指す**ので、名前 → deviceId の対応がこのファイルにしか無い。deviceId 側からの逆引きが要るときだけのファイルではない。
 
 ## ブラウザ操作MCP（複数セッションでの共有）
 
