@@ -77,7 +77,7 @@ CLAUDE.mdを読み、以下を把握:
 
 ### 5. 外部CLIによるレビュー（codex優先 / cursor fallback）
 
-別モデルの観点を追加する。CLI判定（codex優先／cursor fallback、両方使えなければ fable subagent）・コマンド形式（codexの`-c model_reasoning_effort`・cursorの`--trust`／`--output-format json`・jq抽出等）は @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」に従う。プロンプト本文は共通で以下を渡す:
+別モデルの観点を追加する。CLI判定（codex優先／cursor fallback、両方使えなければ fable subagent）・コマンド形式（codexの`-c model_reasoning_effort`・cursorの`--trust`／`--output-format json`・jq抽出等）は @context/agent-cli-guide.md「CLI の選択と fallback」「基本コマンド」に従う。プロンプト本文は共通で以下を渡す:
 
 ```
 gh pr diff <番号> を実行してPR #<番号> の変更内容をレビューしてください。

@@ -17,7 +17,9 @@ Chrome 拡張は複数 profile の同時接続をサポートするが、Connect
 
 普段使いのブラウザを複数セッションから同時に操作する場合、**MCP サーバをセッションごとに起こさない**。stdio で起こすと、拡張ブリッジ方式では拡張が同時に 1 接続しか保持しないため後から繋いだセッションが先のセッションを切断し、CDP 直結方式では接続ごとにブラウザ側の承認ダイアログが出る。
 
-**新規 PC でのセットアップは `bin/playwright-mcp-setup.sh` を実行するだけ**（冪等）。LaunchAgent の生成・配置、`~/.claude.json` の MCP 設定、node バージョンの確認までを行う。残る手動作業は、スクリプトが起動する自動化専用 Chrome へのログインだけ（OAuth フローは自動化できない）。
+**使うブラウザ経路は 3 つに限る**: Claude in Chrome（普段使いの Chrome を拡張経由で操作）、playwright（自動化専用 Chrome を常駐サーバ経由で操作）、chrome-devtools（同じ自動化専用 Chrome に CDP で繋いで計測）。普段使いの Chrome へ chrome-devtools-mcp を直接繋ぐ構成（`--autoConnect` 等）は置かない（下記「ユーザーが起動したブラウザへ繋ぐ方式は使わない」と同じ理由）。
+
+**新規 PC でのセットアップは `bin/playwright-mcp-setup.sh` を実行するだけ**（冪等）。LaunchAgent の生成・配置、CDP ポートを開ける playwright 設定の生成、`~/.claude.json` の `mcpServers.playwright`（HTTP）と `mcpServers.chrome-devtools`（`npx chrome-devtools-mcp --browserUrl http://127.0.0.1:<CDPポート>`）の設定、node バージョンの確認までを行う。残る手動作業は、スクリプトが起動する自動化専用 Chrome へのログインだけ（OAuth フローは自動化できない）。
 
 構成は「サーバ 1 本を常駐させ、各セッションは HTTP クライアントとして接続する」。playwright-mcp の場合:
 
@@ -43,4 +45,4 @@ Chrome 拡張は複数 profile の同時接続をサポートするが、Connect
 - 計測は chrome-devtools（performance trace と Core Web Vitals、Lighthouse、heap snapshot によるリーク調査、CPU・ネットワークのスロットリング）
 - navigate / click / snapshot / console / network 一覧はどちらでもできる。常用しているサーバ側で済ませる
 - chrome-devtools は stdio 専用で HTTP transport を持たないため、サーバ 1 本を複数セッションで共有できない（セッションごとにプロセスが立ち、同一エンドポイントに複数プロセスが群がると CDP セッションが競合する）。計測が必要になったときだけ使い、常用しない
-- **両者は同じ自動化ブラウザを共有できる**。ブラウザに `--remote-debugging-port` を開けておき、chrome-devtools は `--browserUrl` でそこへ繋ぐ。自動化用の user-data-dir は既定パス外なので古典的な remote debugging が使え、承認ダイアログも出ない（承認を要求するのはブラウザ内から有効化する新方式のみ）。引き換えに、そのポートは無認証で開くので、ログイン状態を持つ自動化ブラウザをローカルの任意プロセスが操作できる
+- **両者は同じ自動化ブラウザを共有する**（セットアップスクリプトの既定構成）。ブラウザに `--remote-debugging-port` を開けておき、chrome-devtools は `--browserUrl` でそこへ繋ぐ。自動化用の user-data-dir は既定パス外なので古典的な remote debugging が使え、承認ダイアログも出ない（承認を要求するのはブラウザ内から有効化する新方式のみ）。引き換えに、そのポートは無認証で開くので、ログイン状態を持つ自動化ブラウザをローカルの任意プロセスが操作できる

@@ -1,6 +1,6 @@
 ---
 name: plan-feature-prs
-description: 要件が確定した複数 PR 規模の機能開発（epic）を、並列調査と全体設計判断を経て PR スタックと実装セッション向け計画書に落とし込む。「実装計画を立てて」「PR 分割して」「計画書を作って」「タスク分割をして」等の依頼時、複数 PR 規模の実装着手前に使用。境界: 要件定義は design-feature、計画確定後の実装進行は large-task、単一 PR で済む規模は Phase 0-5 を直接適用。
+description: 要件が確定した複数 PR 規模の機能開発（epic）を、並列調査と全体設計判断を経て PR スタックと実装セッション向け計画書に落とし込む。「実装計画を立てて」「PR 分割して」「計画書を作って」「タスク分割をして」等の依頼時、複数 PR 規模の実装着手前に使用。計画確定後に「PR-X を実装して」と担当を指定された実装セッションでも使う。境界: 要件定義は design-feature、単一 PR で済む規模は Phase 0-5 を直接適用。
 ---
 
 # Plan Feature PRs
@@ -11,7 +11,7 @@ description: 要件が確定した複数 PR 規模の機能開発（epic）を�
 
 - **Phase 0-5（@context/workflow-rules.md）**: Phase 0〜2 の具体化。本スキルの成果物が Phase 2 の計画書に相当する
 - **メモリディレクトリ（@context/memory-file-formats.md)**: 既存構造を使用。`20_survey.md` / `30_plan.md` / `99_history.md` に加え `31_pr_briefs.md` を追加する
-- **/large-task**: 本スキルは計画立案まで。計画確定後の実装は、各実装セッションに「30_plan.md + 31_pr_briefs.md を読んで担当PRを詳細設計→実装」と渡す（進行管理を強化したい場合は /large-task implement と併用可）
+- **実装進行**: 計画確定後の各実装セッションは本ファイル末尾「実装セッションでの進め方」に従う
 - **/design-feature**: 要件自体が曖昧な場合は先に design-feature で要件書を作る。本スキルは要件書・デザイン・既存実装が揃った後を担当する
 
 ## 前提の確認（着手時）
@@ -86,6 +86,16 @@ description: 要件が確定した複数 PR 規模の機能開発（epic）を�
 ```
 
 計画確定後にユーザーから方針変更（E2E方針・スコープ変更等）があった場合は、30_plan.md / 31_pr_briefs.md / 99_history.md の3点に反映してから返答する（実装セッションは計画書しか読まないため、会話上の合意だけでは伝わらない）。
+
+## 実装セッションでの進め方
+
+担当 PR を指定されたセッションで行う。
+
+1. `30_plan.md` と `31_pr_briefs.md` を開き、担当 PR のブリーフを特定する。ブリーフの見出しを推測せず、ファイル内を検索して一致を確かめる
+2. ブリーフを入力に Phase 0-5（@context/workflow-rules.md）を適用する。PR 単位より細かい作業分割が要る場合は [references/task-template.md](references/task-template.md) の形式でタスクファイルを作る
+3. 完了したら `30_plan.md` の PR 状態を更新する。実装中に計画の前提が崩れたら、自分の PR で吸収せず 30_plan.md / 31_pr_briefs.md / 99_history.md に反映してから進める（他の実装セッションは計画書しか読まない）
+
+**完了基準**: 担当 PR の完了条件を満たし、30_plan.md の状態が実態と一致している。
 
 ## Gotchas
 

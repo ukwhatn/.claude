@@ -1,6 +1,6 @@
 ---
 name: instructions-audit
-description: CLAUDE.md / AGENTS.md・skills・context・rules 等の指示ファイルの静的監査。指示ファイルの「レビューして」「監査して」「スリム化して」等の依頼時、/instructions-audit 実行時に使用。rubric で削除候補・hook/deny 移管・skill 化/Read-when 化・description 強化の4分類の指摘を修正案付きで出す。user-level と project-level 両対応。境界: 指摘の適用や個別追記は update-inst、セッション知見の反映は session-retro、コードの監査は codebase-review。
+description: CLAUDE.md / AGENTS.md・skills・context・rules 等の指示ファイルの静的監査。指示ファイルの「レビューして」「監査して」「スリム化して」等の依頼時、/instructions-audit 実行時に使用。rubric で削除候補・hook/deny 移管・skill 化/Read-when 化・description 強化の4分類の指摘を修正案付きで出す。user-level と project-level 両対応。境界: 指摘の適用や個別追記は update-inst、セッション知見の反映は update-inst の retro モード、コードの監査は codebase-review。
 allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep:*)
 ---
 

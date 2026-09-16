@@ -1,6 +1,6 @@
 ---
 name: writing-code
-description: コードを書く時の実装原則（deep module 設計・seam・テスタビリティ・シーム限定 TDD・コメント規約・リーダブルコード）。プロダクションコードの新規実装・修正・機能追加・リファクタの開始時に常に使用。CSS・HTML・テンプレート等のフロントエンド資産も対象。除外はトリビアルな1行修正と lint/CI 等の純粋な設定ファイルのみ。TypeScript/Python/Go の言語別ガイドを同梱。境界: バグ・エラーの原因調査は systematic-debugging が先、提出前の diff 確認は self-review。
+description: コードを書く時の実装原則（deep module 設計・seam・テスタビリティ・シーム限定 TDD・コメント規約・リーダブルコード）。新しい module・関数・エンドポイント・画面の追加、DB への書き込み、認可・入力検証の追加、既存構造を変えるリファクタを含む実装の開始時に使用。CSS・HTML・テンプレート等のフロントエンド資産も対象。既存関数内の数行修正と lint/CI 等の設定ファイルでは使わない。TypeScript/Python/Go の言語別ガイドを同梱。境界: バグ・エラーの原因調査は systematic-debugging が先、提出前の diff 確認は self-review。
 ---
 
 # Writing Code

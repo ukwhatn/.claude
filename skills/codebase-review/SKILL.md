@@ -1,6 +1,6 @@
 ---
 name: codebase-review
-description: コードベース全体のレビュー・監査。perf/sec/test/arch/cq/docs の6観点を並列委譲し、優先度付き issue ファイルと観点サマリをメモリディレクトリに生成する。コードベース全体の監査・定期レビュー・リリース前品質確認の依頼時、/codebase-review 実行時に使用。境界: PR 単位は pr-review、自ブランチの提出前確認は self-review、文書は doc-review。
+description: コードベース全体のレビュー・監査。perf/sec/test/arch/cq/docs の6観点を並列委譲し、優先度付き issue ファイルと観点サマリをメモリディレクトリに生成する。コードベース全体の監査・定期レビュー・リリース前品質確認の依頼時、/codebase-review 実行時に使用。境界: PR 単位は pr-review、自ブランチの提出前確認は self-review。
 allowed-tools: Read, Write, Grep, Glob, Bash(mkdir:*), Bash(find:*), Bash(ls:*), Bash(~/.claude/bin/herdr-delegate.sh:*), Bash(herdr:*)
 ---
 

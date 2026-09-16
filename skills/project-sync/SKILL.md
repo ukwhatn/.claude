@@ -1,6 +1,6 @@
 ---
 name: project-sync
-description: PJ ドキュメントの同期。PJ CLAUDE.md の更新依頼、ドキュメント整理依頼、コード変更後の CLAUDE.md・README・API 仕様への反映依頼（npm script・環境変数・API 追加等）の時に使用。user-level 設定との整合性確認と不要ファイル削除も行う。境界: CLAUDE.md や .claude/ が未整備の新規 PJ は project-init。
+description: PJ ドキュメントの同期。PJ CLAUDE.md の更新依頼、ドキュメント整理依頼、コード変更後の CLAUDE.md・README・API 仕様への反映依頼（npm script・環境変数・API 追加等）の時に使用。user-level 設定との整合性確認も行う。境界: CLAUDE.md が未整備の新規 PJ は組み込みの /init。
 ---
 
 # PJドキュメント同期

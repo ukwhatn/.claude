@@ -1,5 +1,7 @@
 # gws MCP の運用ノート
 
+Read when: gws MCP の `drive_download_file` / `get_attachment` を呼ぶ前、または `get_message` の戻り値がファイルに退避されたとき（いずれも戻り値が数百 KB を超えてコンテキストを使い切る経路）。
+
 ## Google Drive から大きいファイルをローカルへ落とす
 
 gws MCP の `drive_download_file` は中身を **base64 にして戻り値で返す**ため、数百KBのPDFでもコンテキストを大きく消費する。メール添付用のファイルを取りに行くときは、MCP のトークンを流用して Drive API を直接叩く。

@@ -1,11 +1,11 @@
 ---
 name: design-feature
-description: 抽象的な要件・事業側の要求を深掘りし、既存実装との整合を確認して実装マスタとシステム要件書を作成する。「こういう機能を作りたい」「この要求を満たす機能を設計して」等の抽象要件の提示時、既存機能の拡張や Phase 分割の要件定義開始時、/design-feature 実行時に使用。境界: 要件確定後の実装計画書・PR 分割は plan-feature-prs、実装の分割・進捗管理は large-task、既存文書のレビューは doc-review。
+description: 抽象的な要件・事業側の要求を深掘りし、既存実装との整合を確認して実装マスタとシステム要件書を作成する。「こういう機能を作りたい」「この要求を満たす機能を設計して」等の抽象要件の提示時、既存機能の拡張や Phase 分割の要件定義開始時、/design-feature 実行時に使用。境界: 要件確定後の実装計画書・PR 分割と実装進行は plan-feature-prs。
 ---
 
 # Design Feature
 
-抽象的な要求から、実装可能な粒度の「実装マスタ（01）」と、非開発者の関係者向けの「システム要件書（02）」をペアで作るワークフロー。`large-task` 実装フェーズの上流にあたる設計工程を担う。
+抽象的な要求から、実装可能な粒度の「実装マスタ（01）」と、非開発者の関係者向けの「システム要件書（02）」をペアで作るワークフロー。`plan-feature-prs` の上流にあたる設計工程を担う。
 
 > 用語注記: 本スキルの「AskUserQuestion」はユーザーへの選択肢提示質問を指す（Claude Code: AskUserQuestion ツール。無い環境では番号付き選択肢のテキスト質問で代替）。「Explore agent」は読み取り専用の調査用サブエージェントを指す。
 
@@ -20,11 +20,11 @@ description: 抽象的な要件・事業側の要求を深掘りし、既存実�
 
 ## 既存設定との関係
 
-- **Phase 0-5（@context/workflow-rules.md）**: 本スキルは Phase 0-2（準備・調査・計画）を担う。Phase 3 以降の実装は `/large-task` 等に引き継ぐ
+- **Phase 0-5（@context/workflow-rules.md）**: 本スキルは Phase 0-2（準備・調査・計画）を担う。Phase 3 以降の実装は `/plan-feature-prs` 等に引き継ぐ
 - **メモリディレクトリ（@context/memory-file-formats.md）**: 既定保存先は `${MEMORY_DIR}/memory/YYMMDD_<context_name>/`
 - **agent review（@context/agent-cli-guide.md）**: 01 確定前の必須プロセス
 - **ライティング（`/ukwhatn-writing`）**: 文体・語彙ルールを全章で遵守
-- **`/large-task`（既存スキル）**: 本スキルが上流（設計）、`large-task` が下流（実装分割）。明確に分担
+- **`/plan-feature-prs`（既存スキル）**: 本スキルが上流（設計）、`plan-feature-prs` が下流（PR 分割・実装進行）。明確に分担
 
 ## ワークフロー（Phase 0-5）
 
@@ -135,7 +135,6 @@ AskUserQuestion で以下を **必ず確定** してから次に進む:
 - **Explore agent を並列 3-5 で起動**してファイル/関数のリストアップ（**経路は Agent tool**: `Explore` は書き込み不可で調査結果を返すだけなので、委譲の既定である herdr pane に当たらない。@context/herdr-delegation.md「経路の選択」）
 - **重要箇所は Read で直接確認する**（agent の判定をそのまま信じない）
 - context7 / WebSearch で公式仕様確認（必須）
-- 発見は `05_log.md` に逐次記録
 
 並列調査パターン: @references/workflow-detail.md §「Phase 2 並列調査パターン」
 
@@ -159,7 +158,7 @@ AskUserQuestion で以下を **必ず確定** してから次に進む:
    - Recommended → 必要性で判断、スキップ時は理由を 05_log.md に記録
    - Minor → スタイル差は許容
 3. `--resume <session_id>` で 2 回目以降継続
-4. 打ち切り条件は @context/agent-cli-guide.md「レビューループの流れ」に従う（数値をここに複写しない）。**本スキルの成果物（実装マスタ・システム要件書）は設計文書なので、実装差分より上限が少ない**
+4. 打ち切り条件は @context/agent-cli-guide.md「レビューループ」に従う（数値をここに複写しない）。**本スキルの成果物（実装マスタ・システム要件書）は設計文書なので、実装差分より上限が少ない**
 
 実コードでの裏取り: agent の指摘も鵜呑みにせず、修正前に Read で事実確認。`Phase 2 で追加する内容を「現状無いから差異」と誤判定する`パターンに注意。
 
@@ -191,11 +190,9 @@ AskUserQuestion で以下を **必ず確定** してから次に進む:
 
 | スキル | 役割 | 本スキルとの関係 |
 |--------|------|---|
-| `/large-task` | 大規模タスクの実装分割（Phase 3-5） | 本スキルが上流（設計）、`/large-task` が下流（実装） |
+| `/plan-feature-prs` | PR 分割と実装進行 | 本スキルが上流（設計）、`/plan-feature-prs` が下流（実装） |
 | `/codebase-review` | 既存コードの 6 観点並列レビュー | Phase 2 で部分的に活用可。本スキルは新機能設計が主目的 |
-| `/doc-review` | 既存ドキュメントのレビュー | 本スキルは新規作成。レビューは agent review CLI で代替 |
 | `/ukwhatn-writing` | 文体スキル | 本スキルはこれを内部で遵守 |
-| `/project-init` | プロジェクト初期化 | プロジェクト立ち上げ時。本スキルは機能単位 |
 
 ## 詳細参照
 

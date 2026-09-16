@@ -148,7 +148,7 @@ SDK 型定義 ≠ 実機制約。AI / 外部 API 系は実呼び出しで検証 
 
 ### 2.4 調査結果の記録
 
-`05_log.md` に逐次記録:
+結論に効く発見だけを `05_log.md` に記録:
 
 ```markdown
 **Phase 2 調査結果:**
@@ -231,7 +231,7 @@ Phase 2 調査または AskUserQuestion で必ず決め切る。残しそうに�
 
 ### 4.1 CLI 選択
 
-CLI 判定・共通呼び出しテンプレートは @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」を使う（codex 優先・cursor fallback、両方使えなければ fable subagent）。
+CLI 判定・共通呼び出しテンプレートは @context/agent-cli-guide.md「CLI の選択と fallback」「基本コマンド」を使う（codex 優先・cursor fallback、両方使えなければ fable subagent）。
 
 ### 4.2 初回プロンプト例
 
@@ -258,7 +258,7 @@ CLI 判定・共通呼び出しテンプレートは @context/agent-cli-guide.md
 
 コマンドへの組み込み・`--resume` によるセッション継続は @context/agent-cli-guide.md「基本コマンド」に従う。
 
-打ち切り条件は @context/agent-cli-guide.md「レビューループの流れ」に従う（数値をここに複写しない）。**本スキルの成果物は設計文書なので、実装差分より上限が少ない。**
+打ち切り条件は @context/agent-cli-guide.md「レビューループ」に従う（数値をここに複写しない）。**本スキルの成果物は設計文書なので、実装差分より上限が少ない。**
 
 ### 4.4 指摘の実コード裏取り（CRITICAL）
 

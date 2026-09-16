@@ -1,6 +1,6 @@
 ---
 name: handoff
-description: 現在のセッション内容を別セッションが引き継げるハンドオフ文書に圧縮し、メモリディレクトリの 50_handoff.md に書き出す。/handoff 実行時、複雑タスクの Phase 完了・承認待ち・compaction 接近・セッション切替の区切りで自律実行する。境界: 過去メモリの検索は findmem、知見の指示ファイル反映は session-retro。
+description: 現在のセッション内容を別セッションが引き継げるハンドオフ文書に圧縮し、メモリディレクトリの 50_handoff.md に書き出す。/handoff 実行時、ユーザーがセッションの切替・引き継ぎを明示した時、compaction が近い時に使用。境界: 過去メモリの検索は findmem、知見の指示ファイル反映は update-inst。
 argument-hint: "次のセッションは何に使うか"
 ---
 
@@ -44,8 +44,8 @@ argument-hint: "次のセッションは何に使うか"
 
 ## 既存設定との関係
 
-- **05_log.md（@context/memory-file-formats.md）**: 05_log.md は逐次の作業ログ（履歴）、50_handoff.md は再開用スナップショット（現在地）。役割が異なるため両方を維持する
-- **Phase 0-5（@context/workflow-rules.md）**: 独立。任意のタイミングで実行できるが、複雑タスク中なら実行した旨を 05_log.md に記録する
+- **05_log.md（@context/memory-file-formats.md）**: 05_log.md は transcript から復元できない記録（絶対パス・委譲・裁定）、50_handoff.md は再開用スナップショット（現在地）
+- **Phase 0-5（@context/workflow-rules.md）**: 独立。任意のタイミングで実行できる
 
 ## 既存設定への参照
 

@@ -54,7 +54,7 @@ SKILL.md 本文の Phase 1 でこのファイルをReadし、`## あなたの担
 ### 3. agent cliによる並行レビュー
 `--skip-multimodel` が明示指定されない限り実行する（別モデルとの突き合わせで検出漏れ・誤検出を減らすため）。
 
-外部CLI（codex優先／cursor fallback）で同じ観点のレビューを実行する。CLI判定・コマンド形式・jq抽出は @context/agent-cli-guide.md「使用するCLIの選択」「基本コマンド」に従う。外部CLIが両方使えない場合は自分で fable subagent を spawn せず、観点サマリの「マルチモデル検証」欄に未実施と理由を書いた上で lead に連絡する（連絡方法は本指示書冒頭のヘッダ。fallback の判断は lead が行う）。渡すプロンプト本文（共通）は以下:
+外部CLI（codex優先／cursor fallback）で同じ観点のレビューを実行する。CLI判定・コマンド形式・jq抽出は @context/agent-cli-guide.md「CLI の選択と fallback」「基本コマンド」に従う。外部CLIが両方使えない場合は自分で fable subagent を spawn せず、観点サマリの「マルチモデル検証」欄に未実施と理由を書いた上で lead に連絡する（連絡方法は本指示書冒頭のヘッダ。fallback の判断は lead が行う）。渡すプロンプト本文（共通）は以下:
 
     あなたは「{観点名}」の専門レビュアーです。
 

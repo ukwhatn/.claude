@@ -40,10 +40,9 @@ git clone <this-repo> ~/.claude
 | ファイル | Read するタイミング |
 |---|---|
 | `herdr-delegation.md` | 作業の委譲を検討した時点（経路・モデル・指示書・結果の回収） |
-| `code-review-checklist.md` | コード実装完了時・PR 提出前・レビュー実行前 |
+| `code-review-checklist.md` | PR 提出前・レビュー実行前 |
 | `agent-cli-guide.md` | 外部 CLI（codex / cursor）でレビューする前 |
 | `worktree-guide.md` | worktree の作成・片付け前 |
-| `task-tool-guide.md` | TaskCreate/TaskUpdate を複雑タスクで初めて使う時 |
 | `claude-customization-guide.md` | 指示ファイル・skills・hooks の設計・監査時 |
 | `tool-codex.md` | Codex として動作している場合（最初の作業前） |
 
@@ -51,7 +50,7 @@ git clone <this-repo> ~/.claude
 
 28 スキル。一覧と発動条件は各 `SKILL.md` の frontmatter を参照（Claude Code では `/help` で確認できる）。
 
-主要なもの: `commit` / `create-draft-pr`（コミット・PR）、`writing-code`（実装原則）、`systematic-debugging`（根本原因調査）、`self-review` / `pr-review` / `codebase-review` / `doc-review`（レビュー）、`design-feature`（要件定義）、`update-inst` / `instructions-audit` / `session-retro`（本リポジトリ自体の保守）。
+主要なもの: `commit` / `create-draft-pr`（コミット・PR）、`writing-code`（実装原則）、`systematic-debugging`（根本原因調査）、`self-review` / `pr-review` / `codebase-review`（レビュー）、`design-feature`（要件定義）、`update-inst` / `instructions-audit`（本リポジトリ自体の保守）。
 
 ## ワークフロー
 
@@ -76,7 +75,7 @@ Phase 0-5（準備 → 調査 → 計画 → 実装 → 品質確認 → 完了�
 
 ## プロジェクト設定
 
-新規プロジェクトでは `/project-init` を実行、または `templates/project/CLAUDE.md` をコピーする。
+新規プロジェクトでは 組み込みの `/init` を実行するか、`templates/project/CLAUDE.md` をコピーする。
 
 ## ライセンス
 

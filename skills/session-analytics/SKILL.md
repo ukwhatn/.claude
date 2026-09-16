@@ -1,17 +1,27 @@
 ---
 name: session-analytics
-description: 複数セッション横断の利用傾向分析。全セッションログを集計し、skill 発火回数・tool 使用頻度・ユーザーの軌道修正シグナル・compaction 頻度・未発火 skill を可視化してハーネス改善の示唆を出す。「セッション傾向を分析して」「skill の発火状況を教えて」「ハーネス改善の示唆が欲しい」等の依頼時、.claude 設定の定期棚卸し時、新規 skill・ルールの効果を過去傾向と比較したい時に使用。境界: ユーザー発話の全件マイニングは directive-mining、単一セッションの振り返りは session-retro、指示ファイルの静的監査は instructions-audit。
-allowed-tools: Bash(uv run:*), Read
+description: セッションログ（~/.claude/projects の jsonl）を横断分析する。集計モード（既定）は skill 発火・tool 頻度・軌道修正シグナル・compaction・未発火 skill を定量集計し、mining モードはユーザー発話を全件マイニングして訂正の規則化と繰り返し指示の既定化の提案を作る。手動起動専用。境界: 単一セッションの振り返りは update-inst、実データを見ない静的監査は instructions-audit。
+argument-hint: "[mining] [--since YYYY-MM-DD] [--project SUBSTR]"
+disable-model-invocation: true
+allowed-tools: Bash(uv run:*), Bash(python3:*), Read
 ---
 
 # Session Analytics
+
+## モード
+
+| 引数 | モード | 手順 |
+|---|---|---|
+| なし | 集計: カウンタを出して示唆を抽出する | 本ファイル |
+| `mining` | 発話マイニング: ユーザー発話を全件読み、指示ファイルの修正提案を作る | [references/directive-mining.md](references/directive-mining.md) を Read して従う |
+
+両方回すと、定量シグナル（中断・権限拒否の件数）と発話の内容を突き合わせられる。以下は集計モードの手順。
 
 `~/.claude/projects/**/*.jsonl`（Claude Codeの全セッション生ログ）を横断集計し、ハーネス（AGENTS.md/context/skills）の改善点を見つけるためのデータを提供する。
 
 ## 既存設定との関係
 
-- **session-retro**: 対象範囲が逆。session-retroは「今回1セッション」を振り返り指示ファイルへ自律反映する。本skillは「複数セッションの集計統計」を出すだけで、指示ファイルへの反映は行わない（示唆をユーザーに提示し、適用は`/update-inst`・`/session-retro`・`/instructions-audit`に委ねる）
-- **directive-mining**: データ源は同じだが、あちらはユーザー発話そのものを全件読んで「訂正」と「繰り返し指示の既定化」の提案を作る。本skillは発話を読まずカウンタだけを出す。両方回すと、定量シグナル（中断・権限拒否の件数）と発話の内容が突き合わせられる
+- **update-inst**: 本skillは統計と示唆を出すだけで、指示ファイルへの反映は行わない（適用は`/update-inst`・`/instructions-audit`に委ねる）
 - **findmem**: メモリディレクトリ(`.local/memory/`, `.local/issues/`)のテキスト検索。本skillはそれとは別データソース（生セッションログ）を扱う
 - **メモリディレクトリ**: 分析結果を保存する場合は@context/memory-file-formats.mdの既存構造（`${MEMORY_DIR}/memory/YYMMDD_<context>/`）に従う
 
@@ -62,9 +72,9 @@ uv run ~/.claude/skills/session-analytics/scripts/analyze_sessions.py [オプシ
 # 直近2週間・全プロジェクトのサマリ
 uv run ~/.claude/skills/session-analytics/scripts/analyze_sessions.py --since YYYY-MM-DD
 
-# recerqaプロジェクトに絞って詳細JSONも保存
+# 特定プロジェクトに絞って詳細JSONも保存
 uv run ~/.claude/skills/session-analytics/scripts/analyze_sessions.py \
-  --project recerqa --json-out /tmp/recerqa_analysis.json
+  --project <PJ名> --json-out <scratchpad>/analysis.json
 ```
 
 出力例（抜粋）:

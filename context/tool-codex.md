@@ -18,7 +18,7 @@ AGENTS.md・skills・context 内の `@path` 参照は Claude Code の import 記
 
 Claude Code では AGENTS.md「Read when」で誘導される以下のファイルを、Codex でも同じ条件で Read する（AGENTS.md の Read when 一覧が真実源。ここには Codex 側で読み替えが要るものだけを挙げる）:
 
-- `~/.claude/context/workflow-rules.md` — **複雑タスク**（AGENTS.md「作業フロー」の4条件）の開始時に必ず（Phase 0-5 の手順）
+- `~/.claude/context/workflow-rules.md` — AGENTS.md「作業フロー」の Phase 0-5 適用条件に該当したタスクの開始時に必ず（Phase 0-5 の手順）
 - `~/.claude/context/memory-file-formats.md` — メモリディレクトリ（`.local/`）を初めて操作する前に
 - `~/.claude/context/cloudflare-development.md` — Cloudflare（wrangler / D1 等）作業の前に
 - `~/.claude/CLAUDE.local.md` — セッション開始時に存在すれば（マシン固有の注意）
@@ -29,7 +29,7 @@ Claude Code では AGENTS.md「Read when」で誘導される以下のファイ�
 
 | 指示ファイル上の表記 | Codex での実現手段 |
 |---|---|
-| AskUserQuestion（選択肢提示質問） | 番号付き選択肢のテキスト質問で代替（推奨案を先頭に置き「（推奨）」を付す。1回最大4問の原則も同様） |
+| AskUserQuestion（選択肢提示質問） | 番号付き選択肢のテキスト質問で代替（推奨案を先頭に置き「（推奨）」を付す。論点ごとの分け方は AGENTS.md「ユーザーへの質問」に従う） |
 | Edit / Write ツール | apply_patch（`cat >>` / heredoc 禁止の意図＝ファイル状態追跡の維持は同じ） |
 | EnterWorktree / ExitWorktree | `git worktree add <path> -b feature/<issue_num>-<title-kebab>` / `git worktree remove <path>` を直接実行（原則: `~/.claude/context/worktree-guide.md`） |
 | Skill ツール / `/skill-name` | `$skill-name` の明示発動、または description による暗黙発動 |
@@ -37,7 +37,7 @@ Claude Code では AGENTS.md「Read when」で誘導される以下のファイ�
 | Agent Teams / Workflow ツール | 対応物なし。各スキルの「環境要件」節の代替手順（観点の逐次実行等）に従う |
 | WebSearch | Codex の web search 機能 |
 | context7 | MCP サーバー（未設定なら `~/.codex/config.toml` の `[mcp_servers.context7]` に追加して使用） |
-| 外部レビューCLI（agent review） | cursor（`agent`）を第1選択、無ければ claude（`claude -p`）。**codex 自身での再帰レビューは行わない**（別ベンダー bias 独立性のため。実行主体が Claude Code の場合の既定は codex 優先だが、実行主体が Codex のときは自分自身を選ばない。コマンド例: `~/.claude/context/agent-cli-guide.md` 冒頭の注記） |
+| 外部レビューCLI（agent review） | cursor（`agent`）を第1選択、無ければ claude（`claude -p`）。**codex 自身での再帰レビューは行わない**（別ベンダー bias 独立性のため。実行主体が Claude Code の場合の既定は codex 優先だが、実行主体が Codex のときは自分自身を選ばない。コマンド例: `~/.claude/context/agent-cli-guide-details.md`「実行主体が Codex の場合」） |
 
 ## 委譲
 
@@ -50,4 +50,4 @@ Claude Code では AGENTS.md「Read when」で誘導される以下のファイ�
 ## Claude Code 専用ガイドの扱い
 
 - **Codex では読まない**: `context/tool-claude-code.md`（Claude Code 専用機構のガイドで、対応する代替は本ファイルのツール対応表に記載済み）
-- **参照された場合のみ読む**: `context/claude-customization-guide.md` は Claude Code 固有機構の解説を含むが、スキル（create-skill / instructions-audit / session-retro 等）が設計原則・rubric の真実源として参照する。**該当スキルの実行時は Codex でも参照セクションを読む**（常駐は不要）
+- **参照された場合のみ読む**: `context/claude-customization-guide.md` は Claude Code 固有機構の解説を含むが、スキル（create-skill / instructions-audit / update-inst 等）が設計原則・rubric の真実源として参照する。**該当スキルの実行時は Codex でも参照セクションを読む**（常駐は不要）

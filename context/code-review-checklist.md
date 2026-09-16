@@ -6,7 +6,7 @@
 
 - **Read-when**: `pr-review` / `self-review` / `codebase-review` / `writing-code` から必要時に読む（常駐させない）
 - **範囲**: バックエンド API / フロントエンド SPA / LLM 統合 / 認証系すべてを横断
-- **使うタイミング**: PR 提出前、コード review 中、AR 相当の問題を疑った時、実装完了ゲート
+- **使うタイミング**: PR 提出前、コード review 中、AR 相当の問題を疑った時
 - **境界**: 抽象観点（perf/sec/test/arch/cq/docs）別のレビュー方針は `codebase-review` の `references/review-aspects.md`。本ファイルはその下層（具体パターン集）
 
 ## 目次
@@ -76,7 +76,8 @@
 ### ✅ Fail-safe error handling（OWASP A10:2025）
 
 - 認可判定が例外を throw した時は **fail closed**（deny）、fail open にしない
-- try/catch で握りつぶさない、認可失敗も throw を伝播
+- 認可に限らず、予期しない例外時は fail closed（機能を止める）。try/catch は最小範囲にし、握りつぶさない（認可失敗も throw を伝播）
+- Log の error は必ず context 付き（user_id / request_id）
 
 ### ❌ Anti-pattern
 
@@ -176,12 +177,6 @@
 - **追加した分岐が先行分岐と同じ条件で、到達しない**（`if (existing) return existing;` の後ろに、`existing` と同一条件で対象を探す無効化処理を置く型）。分岐を足したら「どの入力でここに来るか」を先行条件と突き合わせる
 - **分離レベル上そのチェックでは防げないのに「防いだ」とコメントする**（READ COMMITTED の check-then-act は同時実行を止めない。実際に効いているのは順次実行のケースか DB 制約。コメントは効く条件のほうに合わせる）
 - **原子的でない複合操作（本処理 → 監査記録・通知等の副次的な永続化）の途中失敗時に、呼び出し側へ「失敗」と一緒に更新前の状態を返す**。本処理はコミット済みなので UI が実態と食い違う。状態を返すなら実態を再取得する。共通ラッパー経由で計装している場合は、**ラッパー内の副作用の実行順序を実装で確認してから**返す値を決める
-
-### ✅ Fail-safe error handling（OWASP A10:2025）
-
-- try/catch は最小範囲、握りつぶさない
-- Log の error は必ず context 付き（user_id / request_id）
-- 予期しない例外時は fail closed（機能を止める）
 
 ---
 
@@ -344,10 +339,11 @@
 - **バグを修正した時、そのバグを再発させる input を回帰テストとして固定**（例: word diff の逆順は `xyz abc → wvu abc` で same segment ` abc` 保持、`本日は晴天 → 本日も晴天` で `本日`/`晴天` 保持）
 - CJK と ASCII 両方の境界ケース
 
-### ✅ 境界値の必須3点
+### ✅ 境界値
 
 - **0 / 上限ちょうど / 対象が自分自身** は、値を扱うロジックで必ずケース化する（0 と空を区別しない実装、境界の不等号ずれ、自己参照の拒否漏れは反復して発生する）
 - 併せて、負値・上限超過・初期表示時（値未変更のままの送信）も確認する。**変更イベントでしか走らないバリデーションは初期値に効かない**
+- 型ごとの典型値: `0` / 空文字 / 空配列 / `null` / `undefined` / `MAX_SAFE_INTEGER` / 極端に長い文字列。日付は timezone 境界 / DST / 閏年。数値は integer overflow / underflow / floating point 誤差
 
 ### ✅ Property-based testing の導入判断
 
@@ -359,12 +355,6 @@
 - 引数の前提（ソート順・単位・正規化済みか）を**引数名でしか表現していない**場合、単体テストは正しい前提でしか渡さないため契約違反を検出できない（例: `computeBoundary(itemsAscending)` に呼び出し側が降順配列を渡しても、単体テストは全通過する）
 - 呼び出し側を含む結合テストを 1 本置くか、型（branded type）で守る
 - **純粋関数の単体テストだけが厚く、外部 I/O・状態遷移の結合部が未テストの構成**は、テスト件数が多くても本番障害を止められない（設定値の誤り・契約違反はすべてこの層で出る）
-
-### ✅ 境界値
-
-- `0` / 空文字 / 空配列 / `null` / `undefined` / `MAX_SAFE_INTEGER` / 極端に長い文字列
-- 日付は timezone 境界 / DST / 閏年
-- 数値は integer overflow / underflow / floating point 誤差
 
 ### ❌ Anti-pattern
 

@@ -1,10 +1,5 @@
----
-name: directive-mining
-description: セッションログのユーザー発話を全件マイニングし、指示ファイルの修正提案を作る（訂正の規則化と、繰り返し指示の既定化の2系統）。「私の指示を全部拾って指示を改善して」「毎回言っていることを勝手にやれるようにして」等の依頼時、/directive-mining 実行時、実データから .claude の改善点を出したい時に使用。提案の作成までを担い、適用は update-inst / session-retro に渡す。境界: 定量集計は session-analytics、単一セッションの振り返りは session-retro、実データを見ない静的監査は instructions-audit。
-allowed-tools: Bash(python3:*), Bash(uv run:*), Read
----
 
-# Directive Mining
+# 発話マイニングモード（mining）
 
 `~/.claude/projects/**/*.jsonl` のユーザー発話を全件走査し、指示ファイル（AGENTS.md / context / skills / output style）の修正提案を作る。
 
@@ -17,8 +12,7 @@ allowed-tools: Bash(python3:*), Bash(uv run:*), Read
 
 ## 既存設定との関係
 
-- **session-analytics**: データ源は同じだが方法と出力が違う。あちらは skill 発火数・tool 頻度・中断数の定量集計。本スキルはユーザー発話そのものの全件マイニング。定量シグナルも欲しい場合は先に session-analytics を回して突き合わせる
-- **session-retro**: 単一セッションの知見を自律反映する。本スキルは複数セッション横断で提案を作るところまでで、適用はしない
+- **集計モード（SKILL.md 本体）**: データ源は同じ。定量シグナルも欲しい場合は先に集計モードを回して突き合わせる
 - **instructions-audit**: 指示ファイル自体の静的品質を rubric で見る。本スキルは実データ（ユーザーが何を言ったか）から見る
 - **Phase 0-5（@context/workflow-rules.md）**: 本スキルは調査タスクであり Phase 0-5 の適用対象外。分析結果を残す場合は @context/memory-file-formats.md の構造に従う
 
@@ -27,7 +21,7 @@ allowed-tools: Bash(python3:*), Bash(uv run:*), Read
 ### Step 1: 全件抽出と除外の会計
 
 ```bash
-python3 ~/.claude/skills/directive-mining/scripts/extract_user_turns.py \
+python3 ~/.claude/skills/session-analytics/scripts/extract_user_turns.py \
   --out <作業ディレクトリ>/user_turns.jsonl \
   --chunk-dir <作業ディレクトリ> \
   [--since YYYY-MM-DD] [--project SUBSTR]
@@ -42,7 +36,7 @@ python3 ~/.claude/skills/directive-mining/scripts/extract_user_turns.py \
 ### Step 2: 決定論的な頻度集計
 
 ```bash
-python3 ~/.claude/skills/directive-mining/scripts/count_directives.py \
+python3 ~/.claude/skills/session-analytics/scripts/count_directives.py \
   <作業ディレクトリ>/user_turns.jsonl
 ```
 
@@ -99,7 +93,7 @@ Step 2 の集計と grep で件数を検証し、**インシデント数**に直
 
 ### Step 6: 提案の作成と提示
 
-- 提案文面は**一般化した規則の形**で書く（実例・日付・固有名詞を含めない。@AGENTS.md「指示ファイルの書き方」）。引用と日付は提案書の根拠欄に置き、規則文面には持ち込まない
+- 提案文面は**一般化した規則の形**で書く（実例・日付・固有名詞を含めない。@context/claude-customization-guide.md「公開リポジトリに書く内容」）。引用と日付は提案書の根拠欄に置き、規則文面には持ち込まない
 - PJ 固有の既定値（そのリポジトリのブランチ戦略・ポート番号等）は user-level に書かない。PJ の `CLAUDE.md` に置く先として提示する
 - トレードオフがある項目は「判断が必要な点」を明記する。判断軸を書けないなら提案として出さない
 - kairan MCP が接続されている場合は、比較軸が3つ以上あるため HTML で publish する（@AGENTS.md「kairan MCP による情報提示・意思決定」）
@@ -126,7 +120,7 @@ Step 2 の集計と grep で件数を検証し、**インシデント数**に直
 ## 入出力例
 
 ```
-入力: /directive-mining --since 2026-07-01
+入力: /session-analytics mining --since 2026-07-01
 Step 1: user イベント 32,344件 → ユーザー発話 1,827件（除外内訳を会計表で提示）
 Step 2: 同一文言の反復（最多8回「実装内容と手動検証すべき画面や挙動…をレポートして」）
 Step 3: 3チャンクを並列で2レンズ分析

@@ -1,6 +1,6 @@
 ---
 name: taskherd
-description: taskherd CLI（セッション・PR・チケットをタスク単位で束ねるローカル kanban）の操作。自分のセッションに紐づくタスクの列を進める・note を残す時、新しいタスクを起票する時、ボードのタスク一覧・状態を確認する時、依頼に taskherd・タスクボード・kanban の語がある時に使用。CLI のみを扱い、board / picker の TUI 操作はユーザーの領域。境界: セッション内の作業ステップ管理は対象外、pane・tab・agent の操作は herdr、実装スキル連鎖の管理は task。
+description: taskherd CLI（セッション・PR・チケットをタスク単位で束ねるローカル kanban）の操作。自分のセッションに紐づくタスクの列を進める・note を残す時、新しいタスクを起票する時、ボードのタスク一覧・状態を確認する時、依頼に taskherd・タスクボード・kanban の語がある時に使用。CLI のみを扱い、board / picker の TUI 操作はユーザーの領域。境界: セッション内の作業ステップ管理は対象外、pane・tab・agent の操作は herdr。
 allowed-tools: Bash(taskherd:*), Bash(herdr:*), Bash(jq:*)
 ---
 
@@ -151,5 +151,4 @@ taskherd jump <ID> --json       # 紐づいたセッションへ移動する（�
 ## 既存設定との関係
 
 - **pane・tab・agent そのものの操作**: /herdr（本スキルは taskherd CLI だけを扱う）
-- **実装タスクのスキル連鎖の管理**: /task（本スキルはボード上の状態管理だけを扱う）
 - **作業ログ・調査記録**: @context/memory-file-formats.md（note と使い分ける）

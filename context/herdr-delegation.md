@@ -48,7 +48,7 @@ codex を起動する前に枠を確認する（`python3 ~/.claude/codex-usage.p
 | `agent_cli_unavailable` | `--kind` に対応する CLI が無い | **条件付き**（下記） |
 | `task_invalid` / `arg_invalid` / `python3_unavailable` | 呼び出し側の誤り | 直して再実行する |
 
-**フォールバックは、元のタスクが要求するモデル・ベンダーの条件を保てるときに限る。** `--kind codex` が別ベンダーによる外部レビューを目的にしているなら、Claude の Agent tool へ落とすと bias 独立性という品質ゲートを満たさないまま進むことになる。**外部レビュー用途では `context/agent-cli-guide.md` の fallback 規定（fable subagent で暫定・外部レビュー未完了として扱い、復旧後に裏取り）が優先する。**
+**フォールバックは、元のタスクが要求するモデル・ベンダーの条件を保てるときに限る。** `--kind codex` が別ベンダーによる外部レビューを目的にしているなら、Claude の Agent tool へ落とすと bias 独立性という品質ゲートを満たさないまま進むことになる。**外部レビュー用途では `context/agent-cli-guide.md` の fallback 規定（fable subagent で暫定。別ベンダーのレビューとはみなさず、不可逆な変更を含むときは復旧後に裏取り）が優先する。**
 
 ## ライフサイクル
 
@@ -82,7 +82,7 @@ codex を起動する前に枠を確認する（`python3 ~/.claude/codex-usage.p
 
 user-level 設定の変更は同じターン内で commit・push まで完了させる規定がある（`AGENTS.md`「コミット・ブランチ・PR」）。pane 委譲はターンをまたぐため、これと両立しない。
 
-**pane には草案をメモリディレクトリ（git 管理外）へ書かせ、lead が全文を確認してから追跡下のファイルへ適用し、そのターン内で commit・push する。** これは「委譲先の生成物をそのまま成果物にしない」規定（`AGENTS.md`「自律実行とサブエージェント活用」）とも一致する。
+**pane には草案をメモリディレクトリ（git 管理外）へ書かせ、lead が全文を確認してから追跡下のファイルへ適用し、そのターン内で commit・push する。** これは「委譲先の生成物をそのまま成果物にしない」規定（`AGENTS.md`「自律実行と委譲」）とも一致する。
 
 ## 指示書の書き方
 
