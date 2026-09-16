@@ -1,7 +1,6 @@
 {
   "cleanupPeriodDays": 365,
   "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5[1m]"
   },
   "attribution": {
@@ -95,19 +94,7 @@
       "Bash(wget:*)"
     ],
     "ask": [
-      "mcp__atlassian__add*",
-      "mcp__atlassian__archive*",
-      "mcp__atlassian__create*",
-      "mcp__atlassian__delete*",
-      "mcp__atlassian__edit*",
-      "mcp__atlassian__move*",
-      "mcp__atlassian__post*",
-      "mcp__atlassian__put*",
-      "mcp__atlassian__remove*",
-      "mcp__atlassian__set*",
-      "mcp__atlassian__transition*",
-      "mcp__atlassian__update*",
-      "mcp__Claude_in_Chrome__javascript_tool"
+      "mcp__claude-in-chrome__javascript_tool"
     ],
     "defaultMode": "auto"
   },
@@ -129,15 +116,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "if [ -x \"$HOME/.orca/agent-hooks/claude-hook.sh\" ]; then /bin/sh \"$HOME/.orca/agent-hooks/claude-hook.sh\"; fi",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
             "command": "if [ -x \"$HOME/.claude/hooks/taskherd-sync.py\" ]; then python3 \"$HOME/.claude/hooks/taskherd-sync.py\" prompt; fi",
             "timeout": 15
           }
@@ -145,15 +123,6 @@
       }
     ],
     "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x \"$HOME/.orca/agent-hooks/claude-hook.sh\" ]; then /bin/sh \"$HOME/.orca/agent-hooks/claude-hook.sh\"; fi",
-            "timeout": 10
-          }
-        ]
-      },
       {
         "hooks": [
           {
@@ -171,65 +140,6 @@
             "type": "command",
             "command": "if [ -x \"$HOME/.claude/hooks/taskherd-sync.py\" ]; then python3 \"$HOME/.claude/hooks/taskherd-sync.py\" stop; fi",
             "timeout": 30
-          }
-        ]
-      }
-    ],
-    "StopFailure": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x \"$HOME/.orca/agent-hooks/claude-hook.sh\" ]; then /bin/sh \"$HOME/.orca/agent-hooks/claude-hook.sh\"; fi",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x \"$HOME/.orca/agent-hooks/claude-hook.sh\" ]; then /bin/sh \"$HOME/.orca/agent-hooks/claude-hook.sh\"; fi",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PostToolUse": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x \"$HOME/.orca/agent-hooks/claude-hook.sh\" ]; then /bin/sh \"$HOME/.orca/agent-hooks/claude-hook.sh\"; fi",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PostToolUseFailure": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x \"$HOME/.orca/agent-hooks/claude-hook.sh\" ]; then /bin/sh \"$HOME/.orca/agent-hooks/claude-hook.sh\"; fi",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "PermissionRequest": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x \"$HOME/.orca/agent-hooks/claude-hook.sh\" ]; then /bin/sh \"$HOME/.orca/agent-hooks/claude-hook.sh\"; fi",
-            "timeout": 10
           }
         ]
       }
@@ -253,13 +163,6 @@
     "document-skills@anthropic-agent-skills": true
   },
   "extraKnownMarketplaces": {
-    "chrome-devtools-plugins": {
-      "source": {
-        "source": "github",
-        "repo": "ChromeDevTools/chrome-devtools-mcp"
-      },
-      "autoUpdate": true
-    },
     "claude-plugins-official": {
       "source": {
         "source": "git",
