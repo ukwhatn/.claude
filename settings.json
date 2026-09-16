@@ -293,7 +293,7 @@
       "effortLevel": "high"
     }
   },
-  "autoCompactWindow": 800000,
+  "autoCompactWindow": 450000,
   "promptSuggestionEnabled": false,
   "askUserQuestionTimeout": "never",
   "tui": "fullscreen",
