@@ -47,7 +47,7 @@ sed -n '/^\[\[columns\]\]/,/^$/p' "$(taskherd config path --json | jq -r .config
 
 | 状況 | 列の役割 | 標準的な id |
 |---|---|---|
-| 他人の PR・チケットのレビューを頼まれた | 受け口 | `review_req` |
+| 他人の PR・チケットのレビューを頼まれた | 受け口（終端は `done` / `wontfix` のみ） | `review_req` |
 | やると決まったが未着手 | 待ち | `todo` |
 | 方針・設計を詰めている | 計画 | `planning` |
 | 実装・調査を実際に進めている | 作業中 | `working` |
@@ -61,6 +61,8 @@ sed -n '/^\[\[columns\]\]/,/^$/p' "$(taskherd config path --json | jq -r .config
 **自律的に動かしてよいのは、自分のセッションに紐づくタスクだけ。** 他のタスクの列は、ユーザーの指示なしに変えない。
 
 **PR の状態に対応する列の前進は Stop hook（`hooks/taskherd-sync.py`）が自動で行う。** PR が Ready になれば review、merge されれば deploying へ、ターン終了時に前進する（前進方向のみ・終端列は触らない）。この2つを手で `move` しに行く必要はない。手で動かすのは hook が判断しない列（planning / working / wontfix 等）と、ユーザーから指示された移動だけ。
+
+**レビュー依頼の受け口（`review_req`）に入ったタスクは、`review_req` と終端列（`done` / `wontfix`）しか取らない。** 紐づいているのは他人の PR なので、それが ready でも merged でも自分の作業段階は進まない。レビューを投稿したら `done`、レビューせずに終わったと決めたら `wontfix` へ移す。中間列（`working` / `review` / `deploying`）へは動かさない（Stop hook も review_req のタスクは前進させない）。
 
 **紐づくタスクが無い状態で PR が open していれば、同 hook が Stop で自動起票する**（タイトルは PR のタイトル、列は draft なら working / ready なら review、PR URL を link、セッションを紐づけ）。同じ URL のタスクが既にあれば起票せずそれに紐づけるので、手で起票し直さない。
 

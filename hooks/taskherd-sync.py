@@ -7,6 +7,7 @@
 
 どちらのモードも、判断材料が揃わなければ黙って exit 0 する（hook でターンを壊さない）。
 列を戻す方向には動かさない。終端列（kind = terminal）に居るタスクは触らない。
+レビュー依頼の受け口（review_req）に居るタスクも触らない。
 """
 
 import hashlib
@@ -19,6 +20,7 @@ import time
 
 REFRESH_INTERVAL_SEC = 180  # PR の live 状態を取り直す最小間隔
 PR_LOOKUP_INTERVAL_SEC = 120  # 未起票セッションで gh に PR を問い合わせる最小間隔
+REVIEW_REQ_COLUMN = "review_req"  # 他人の PR のレビュー依頼の受け口。自動前進させない
 
 
 def run(args, timeout=20, cwd=None):
@@ -96,6 +98,11 @@ def linked_task(session_id):
 def desired_column(task_id, current, order, terminal):
     """PR の live 状態から進めたい列を返す（進めないなら None）。"""
     if current in terminal:
+        return None
+
+    # レビュー依頼の受け口に居るタスクは前進させない。リンク先は他人の PR で、
+    # ready / merged になっても自分の作業段階は進まないため（終端列へは手で移す）。
+    if current == REVIEW_REQ_COLUMN:
         return None
 
     # 期限を切って refresh する（毎ターン叩くと gh 呼び出しが積む）
