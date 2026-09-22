@@ -5,13 +5,13 @@ Read when: AGENTS.md「作業フロー」の Phase 0-5 適用条件に該当し�
 ## Phase 0: 準備
 
 1. PJ CLAUDE.md の `MEMORY_DIR` を確認（未定義なら `.local/`）
-2. メモリディレクトリを決める: `ls ${MEMORY_DIR}/memory/` で同一コンテキスト（同じ機能・同じバグ・同じ PJ の継続）のディレクトリを探し、あれば再利用する。無ければ `${MEMORY_DIR}/memory/YYMMDD_<context_name>/` を新規作成する（形式: `context/memory-file-formats.md`）
+2. メモリディレクトリを決める: `ls ${MEMORY_DIR}/memory/` で同一コンテキスト（同じ機能・同じバグ・同じ PJ の継続）のディレクトリを探し、あれば再利用する（引き継ぐのは経緯。未完了・次アクション欄は AGENTS.md「メモリ・issue ディレクトリ」に従って開き直す）。無ければ `${MEMORY_DIR}/memory/YYMMDD_<context_name>/` を新規作成する（形式: `context/memory-file-formats.md`）
 3. 05_log.md の冒頭にメモリディレクトリの絶対パスを書く
 4. `/findmem` で過去タスク・issue を検索する（変更対象ファイルが見えたらそのパスでも実行する）
 
 ## Phase 1: 調査
 
-1. 過去タスク・issue: `/findmem` のヒットを開いて読む。issue を解決するタスクなら該当 issue を必ず読む
+1. 過去タスク・issue: `/findmem` のヒットを開いて読む。issue を解決するタスクなら該当 issue を必ず読む（読み取るのは経緯と決定。状態欄は AGENTS.md「メモリ・issue ディレクトリ」に従って開き直す）
 2. 既存コードと議論経緯: 対象チケット・PR のスレッドとコメントを決着まで読む（解決済みコメント・構造化フィールドを含む）
 3. 公式仕様: 外部ライブラリ・SDK・ランタイムに依存する部分は context7 / 公式 docs で確認する。エラー修正で最初の修正が効かなければ `/systematic-debugging` に従う
 4. 実装方針: 複数選択肢があれば pros / cons を整理し、選択理由を 99_history.md に残す
