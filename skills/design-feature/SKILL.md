@@ -39,7 +39,7 @@ Phase 5: 02 抽出         → 01 から What だけ抽出して書き、完了�
 
 各 Phase の具体手順: @references/workflow-detail.md
 
-## 厳守ルール（CRITICAL）
+## 厳守ルール
 
 ### 1. コードベース SSoT
 - 既存実装に関する SSoT は**コードベース**。メモリディレクトリ内資料は outdated 可能性あり

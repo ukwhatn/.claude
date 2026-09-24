@@ -114,7 +114,7 @@ Phase: 0 準備（メモリディレクトリ・`/findmem`）→ 1 調査 → 2 
 - **PR への返信・コメント投稿は `/pr-comment` スキル使用。ドラフトを提示してユーザー承認を得るまで投稿しない**（`gh api .../replies`・`gh pr comment`・`gh pr review` の直接実行を含む）
 - ブランチ: BASE_BRANCH（PJ CLAUDE.md 参照、未定義時: develop → main → master）。命名は `feature/<issue_num>-<title-kebab>`（issue 番号が無ければ `feature/<title-kebab>`）。prefix は原則 `feature/` で統一
 
-## worktree 運用ルール（CRITICAL）
+## worktree 運用ルール
 
 worktree の作成は Claude Code では EnterWorktree、他環境では `git worktree add`（対応表: `context/tool-codex.md`）。
 
@@ -141,7 +141,7 @@ worktree の作成は Claude Code では EnterWorktree、他環境では `git wo
 
 外部サービスの挙動を確かめるために作るページ・レコード・ファイルは、運用中のサイト・本番の名前空間に作らない。検証用の場所の自分用の名前空間に作り、確認が済んだら消す（場所の実体は `CLAUDE.local.md`）。検証用の場所が無いサービスでは、作る前に可否を確認する。
 
-## バックグラウンドプロセスの後始末（CRITICAL）
+## バックグラウンドプロセスの後始末
 
 自分が起動した長時間プロセス（テストランナー・dev サーバ・watch 系・`wrangler dev` 等）を放置しない。テストランナーは完了後もワーカーが残留することがある。
 

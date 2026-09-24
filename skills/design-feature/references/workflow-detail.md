@@ -29,7 +29,7 @@ mkdir -p ${MEMORY_DIR}/memory/YYMMDD_<context_name>/
 
 context_name は kebab-case で短く（例: `<機能名>-spec`, `<画面名>-login`, `<機能名>-error`）。日付は **今日の日付**（システムプロンプトの Today から取得、例示の日付をコピーしない）。
 
-### 0.2 絶対パス固定（CRITICAL）
+### 0.2 絶対パス固定
 
 worktree 運用時の事故防止のため、05_log.md 冒頭に必ず記録:
 
@@ -124,7 +124,7 @@ Agent 5: テンプレート・命名規約・規約同意・通知メール
 
 各 agent への指示には「特定エントリの調査」と「対象カテゴリ全件の網羅確認」を分けて明記する。網羅確認を省くと一覧表の漏れに直結する（§2.5）。
 
-### 2.2 Agent 判定の検証（CRITICAL）
+### 2.2 Agent 判定の検証
 
 Explore agent の判定をそのまま信用しない:
 
@@ -159,7 +159,7 @@ SDK 型定義 ≠ 実機制約。AI / 外部 API 系は実呼び出しで検証 
 
 `20_implementation_notes.md` に詳細を別記してもよい（後で 01 を書くときの参照源）。
 
-### 2.5 一覧対象の網羅確認（CRITICAL）
+### 2.5 一覧対象の網羅確認
 
 01 / 02 に一覧表（Cloud Task / Scheduler / Webhook / API / メールテンプレート等）を載せる場合、定義箇所の SSoT ファイルを全件 grep してから作る:
 
@@ -260,7 +260,7 @@ CLI 判定・共通呼び出しテンプレートは @context/agent-cli-guide.md
 
 打ち切り条件は @context/agent-cli-guide.md「レビューループ」に従う（数値をここに複写しない）。**本スキルの成果物は設計文書なので、実装差分より上限が少ない。**
 
-### 4.4 指摘の実コード裏取り（CRITICAL）
+### 4.4 指摘の実コード裏取り
 
 agent の Action Required を反映する前に、Read で実コードを直接確認する:
 
