@@ -27,10 +27,13 @@ pane を選ぶ利点は3つ。レートリミットに当たっても pane 側�
 
 | 用途 | 指定 |
 |---|---|
-| 設計判断を含む実装・難所の切り分け | `--kind claude --model opus` |
-| パターンが確立した実装・調査・文書生成 | `--kind claude --model sonnet` |
-| 壁打ち・対話での検討 | `--kind claude --model fable` |
+| 設計判断を含む実装・文書生成 | `--kind claude --model opus`（effort は既定の medium） |
+| パターンが確立した実装・横展開（リネーム・既知パターンの適用） | `--kind claude --model opus --agent-arg --effort --agent-arg low` |
+| コードを書かない調査（ファイル探し・ログ / テスト出力の読み取り） | `--kind claude --model sonnet` |
+| 前例のない難所・監督しない長時間の実行・壁打ち | `--kind claude --model fable` |
 | 外部レビュー（別ベンダーの bias 独立性が要る） | `--kind codex` |
+
+Sonnet にはコードを書かせない。小さいモデルが読み違えると lead が誤った前提で進むため、結果の誤りに気づきやすい作業に限る。opus の medium で同じ問題に 2 回詰まったら、`--agent-arg --effort --agent-arg high` か fable で委譲し直す。
 
 codex を起動する前に枠を確認する（`python3 ~/.claude/codex-usage.py --refresh` → `--show`）。枯渇していれば `context/agent-cli-guide.md` の fallback 規定に従う。**枠に余裕があっても、Claude で足りる委譲に codex を使わない。**
 

@@ -18,6 +18,11 @@ AGENTS.md から @import され、Claude Code では毎セッション常駐す�
 - 並列で委譲しているときのコミットは `git add <file>` で対象を選別する（`git add -A` は他の委譲先が編集中のファイルを巻き込む）
 - **裁定を求められたら、判断材料が揃っている限りその場で決める**。保留してよいのは「何を待つのか」と「それが届いたら判断がどう変わるか」を書けるときだけ
 
+## モデルと effort
+
+- セッションのモデルと effort は起動時に決まる（fish の `cco` = Opus 5.5 / medium、`ccf` = Fable 5.1 / high、`ccs` = Sonnet 5 / high）。途中でモデル・effort を変えるとプロンプトキャッシュが無効になるので、`/model`・`/effort` の変更をセッションの途中で提案しない
+- Opus 5.5 で同じ問題に 2 回詰まったら、区切りで引き継ぎメモを残し、`ccf` の新セッションへ移ることを提案する
+
 ## Claude Code 固有ツールの注意
 
 - **Agent ツール**: 委譲の既定経路は pane（`bin/herdr-delegate.sh`）。Agent tool を使うのは、委譲先自身がファイルを書かない作業（`Explore` の探索・複数観点のレビュー報告・fresh な単発判定）と Herdr 外でのフォールバックに限る（`context/herdr-delegation.md`「経路の選択」「Herdr 外でのフォールバック」）

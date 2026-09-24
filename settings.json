@@ -1,7 +1,7 @@
 {
   "cleanupPeriodDays": 365,
   "env": {
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5[1m]"
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]"
   },
   "attribution": {
     "commit": "",
@@ -184,18 +184,6 @@
   },
   "outputStyle": "ukwhatn-style",
   "language": "日本語",
-  "effortLevel": "xhigh",
-  "modelSettings": {
-    "claude-opus-5": {
-      "effortLevel": "low"
-    },
-    "claude-fable-5-1": {
-      "effortLevel": "medium"
-    },
-    "claude-sonnet-5": {
-      "effortLevel": "high"
-    }
-  },
   "autoCompactWindow": 450000,
   "promptSuggestionEnabled": false,
   "askUserQuestionTimeout": "never",
@@ -214,5 +202,5 @@
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
   "skipAutoPermissionPrompt": true,
-  "model": "claude-fable-5-1[1m]"
+  "model": "claude-opus-5-5[1m]"
 }
