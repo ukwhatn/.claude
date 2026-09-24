@@ -45,23 +45,22 @@ function breakdownOf(messages: number | undefined): SessionContextBreakdown {
 
 const NOW = 1_000 * MINUTE_MS
 
-/**
- * The world beneath the mod: a clock at NOW, HOME, a conversation of
- * `messages` tokens (no Messages row when undefined), an AGENTS.md, the
- * session's state as a reload finds it (`lastAnswer`), and a core compaction
- * that records what it was told.
- */
 type WorldOptions = {
   /** The state a reload finds; unset when never written. */
   lastAnswer?: number | null
   /** AGENTS.md's text; null when the file cannot be read. */
   agentsMd?: string | null
-  /** Makes `$.session.usage` fail with this message. */
-  usageError?: string
+  /** Makes `$.session.usage` fail. */
+  isUsageFailing?: boolean
 }
 
+/**
+ * The world beneath the mod: a clock at NOW, HOME, a conversation of
+ * `messages` tokens (no Messages row when undefined), what `options` sets,
+ * and a core compaction that records what it was told.
+ */
 function worldOf(on: On, messages: number | undefined, options: WorldOptions = {}) {
-  const { lastAnswer, agentsMd = AGENTS_MD, usageError } = options
+  const { lastAnswer, agentsMd = AGENTS_MD, isUsageFailing = false } = options
   const tokens = FIXED_TOKENS + (messages ?? 0)
   const clock = mock.clock(on, { now: NOW })
   const compactions: SessionCompactInput[] = []
@@ -91,8 +90,8 @@ function worldOf(on: On, messages: number | undefined, options: WorldOptions = {
     return { value: agentsMd }
   })
   on('session.usage', ($, e) => {
-    if (usageError !== undefined) {
-      throw new Error(usageError)
+    if (isUsageFailing) {
+      throw new Error('usage unavailable')
     }
 
     return {
@@ -320,7 +319,7 @@ describe('register', () => {
   })
 
   test('a failure inside the idle compaction is said', async ($, on) => {
-    const world = worldOf(on, 70_000, { usageError: 'usage unavailable' })
+    const world = worldOf(on, 70_000, { isUsageFailing: true })
 
     await answer($, 't1')
     await world.clock.advance(50 * MINUTE_MS)
