@@ -56,7 +56,9 @@ export function register(on: On, options: PluginOptions): void {
   on('turn.complete', async ($, e, next) => {
     const result = await next(e)
 
-    if (e.agentId !== undefined) {
+    // A turn with no response (an API error, an interrupt before one) left
+    // the cache where the last response did.
+    if (e.agentId !== undefined || e.usage === undefined) {
       return result
     }
 
@@ -73,10 +75,20 @@ export function register(on: On, options: PluginOptions): void {
     }
 
     const section = await sectionOf($, settings.instructionsPath)
+    const result = await next(
+      section === undefined
+        ? e
+        : { ...e, instructions: joinedInstructions(section, e.instructions) },
+    )
 
-    return section === undefined
-      ? next(e)
-      : next({ ...e, instructions: joinedInstructions(section, e.instructions) })
+    // A precompute replaces nothing, so the idle stretch still stands.
+    if (e.trigger !== 'precompute' && result.messages !== undefined) {
+      idle.timer?.cancel()
+      idle.timer = undefined
+      await $.state.set(lastAnswer, null)
+    }
+
+    return result
   })
 }
 
@@ -94,7 +106,9 @@ function armIdle(
   idle.timer?.cancel()
   idle.timer = $.clock.after(delayMs, () => {
     idle.timer = undefined
-    void compactIfIdle($, settings, answeredAt)
+    void compactIfIdle($, settings, answeredAt).catch((error: unknown) => {
+      $.ui.log(`idle compaction failed: ${String(error)}`)
+    })
   })
 }
 
@@ -155,19 +169,15 @@ async function compactIfIdle(
 
   // Our own call skips our session.compact hook, so the section rides here.
   const section = await sectionOf($, settings.instructionsPath)
-  const result = await $.session
-    .compact(section === undefined ? undefined : { instructions: section })
-    .catch((error: unknown) => {
-      $.ui.log(`compaction failed: ${String(error)}`)
+  const result = await $.session.compact(
+    section === undefined ? undefined : { instructions: section },
+  )
 
-      return undefined
-    })
-
-  if (result?.skip !== undefined) {
+  if (result.skip !== undefined) {
     $.ui.log(`compaction skipped: ${result.skip}`)
   }
 
-  if (result?.messages !== undefined) {
+  if (result.messages !== undefined) {
     const sizes =
       result.tokensBefore !== undefined && result.tokensAfter !== undefined
         ? ` (${result.tokensBefore} → ${result.tokensAfter} tokens)`
@@ -181,16 +191,17 @@ async function compactIfIdle(
  * the manifest's default.
  */
 function settingsOf(options: PluginOptions): Settings {
-  const positive = (value: unknown, fallback: number): number =>
-    typeof value === 'number' && Number.isFinite(value) && value > 0
+  const atLeast = (min: number) => (value: unknown, fallback: number): number =>
+    typeof value === 'number' && Number.isFinite(value) && value >= min
       ? value
       : fallback
+  const positive = atLeast(Number.MIN_VALUE)
   const path = options.instructionsPath
 
   return {
     idleMs: positive(options.idleMinutes, 50) * MINUTE_MS,
     cutoffMs: positive(options.cutoffMinutes, 56) * MINUTE_MS,
-    minMessageTokens: positive(options.minMessageTokens, 30_000),
+    minMessageTokens: atLeast(0)(options.minMessageTokens, 30_000),
     instructionsPath: typeof path === 'string' ? path.trim() : '',
   }
 }
@@ -225,7 +236,19 @@ async function sectionOf(
 
   const text = await $.fs.read(path).catch(() => undefined)
 
-  return typeof text === 'string' ? compactInstructionsOf(text) : undefined
+  if (typeof text !== 'string') {
+    $.ui.log(`compact instructions skipped: ${path} could not be read`)
+
+    return undefined
+  }
+
+  const section = compactInstructionsOf(text)
+
+  if (section === undefined) {
+    $.ui.log(`compact instructions skipped: ${path} has no Compact Instructions section`)
+  }
+
+  return section
 }
 
 async function defaultPathOf($: EngineInterface): Promise<string | undefined> {

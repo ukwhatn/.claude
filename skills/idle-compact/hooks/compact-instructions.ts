@@ -1,7 +1,12 @@
 /**
- * The heading the section is found under, any level, any case.
+ * The heading the section is found under, any level, any case, indented up
+ * to three spaces as CommonMark allows.
  */
-const HEADING = /^(#{1,6})[ \t]+compact instructions[ \t]*#*[ \t]*$/i
+const HEADING = /^ {0,3}(#{1,6})[ \t]+compact instructions(?:[ \t]+#+)?[ \t]*$/i
+
+const ANY_HEADING = /^ {0,3}(#{1,6})(?:[ \t]|$)/
+
+const FENCE = /^ {0,3}(`{3,}|~{3,})/
 
 /**
  * The body of the first "Compact Instructions" section of a Markdown text:
@@ -16,22 +21,21 @@ const HEADING = /^(#{1,6})[ \t]+compact instructions[ \t]*#*[ \t]*$/i
 export function compactInstructionsOf(markdown: string): string | undefined {
   const lines = markdown.split(/\r?\n/)
   let level: number | undefined
-  let isInFence = false
+  let fence: string | undefined
   const body: string[] = []
 
   for (const line of lines) {
-    if (/^\s*(```|~~~)/.test(line)) {
-      isInFence = !isInFence
-    }
-
-    const heading = isInFence ? undefined : /^(#{1,6})[ \t]/.exec(line)
+    const isFenced = fence !== undefined
+    fence = fenceAfter(fence, line)
 
     if (level === undefined) {
-      const found = isInFence ? null : HEADING.exec(line)
+      const found = isFenced || fence !== undefined ? null : HEADING.exec(line)
       level = found?.[1]?.length
 
       continue
     }
+
+    const heading = isFenced || fence !== undefined ? null : ANY_HEADING.exec(line)
 
     if (heading?.[1] !== undefined && heading[1].length <= level) {
       break
@@ -43,6 +47,26 @@ export function compactInstructionsOf(markdown: string): string | undefined {
   const text = body.join('\n').trim()
 
   return text === '' ? undefined : text
+}
+
+/**
+ * The fence open after `line`: a fence closes only on a bare run of its own
+ * character at least as long as the one that opened it.
+ */
+function fenceAfter(open: string | undefined, line: string): string | undefined {
+  const run = FENCE.exec(line)?.[1]
+
+  if (open === undefined) {
+    return run
+  }
+
+  const closes =
+    run !== undefined &&
+    run[0] === open[0] &&
+    run.length >= open.length &&
+    line.trim() === run
+
+  return closes ? undefined : open
 }
 
 /**

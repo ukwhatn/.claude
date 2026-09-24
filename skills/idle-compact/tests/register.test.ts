@@ -51,7 +51,17 @@ const NOW = 1_000 * MINUTE_MS
  * session's state as a reload finds it (`lastAnswer`), and a core compaction
  * that records what it was told.
  */
-function worldOf(on: On, messages: number | undefined, lastAnswer?: number | null) {
+type WorldOptions = {
+  /** The state a reload finds; unset when never written. */
+  lastAnswer?: number | null
+  /** AGENTS.md's text; null when the file cannot be read. */
+  agentsMd?: string | null
+  /** Makes `$.session.usage` fail with this message. */
+  usageError?: string
+}
+
+function worldOf(on: On, messages: number | undefined, options: WorldOptions = {}) {
+  const { lastAnswer, agentsMd = AGENTS_MD, usageError } = options
   const tokens = FIXED_TOKENS + (messages ?? 0)
   const clock = mock.clock(on, { now: NOW })
   const compactions: SessionCompactInput[] = []
@@ -74,23 +84,29 @@ function worldOf(on: On, messages: number | undefined, lastAnswer?: number | nul
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', ($, e) => ({ text: e.answer }))
   on('fs.read', ($, e) => {
-    if (e.path !== '/work/me/.claude/AGENTS.md') {
+    if (e.path !== '/work/me/.claude/AGENTS.md' || agentsMd === null) {
       throw new Error(`ENOENT: ${e.path}`)
     }
 
-    return { value: AGENTS_MD }
+    return { value: agentsMd }
   })
-  on('session.usage', ($, e) => ({
-    value: {
-      startedAt: 0,
-      context: {
-        tokens,
-        window: 1_000_000,
-        ...(e.breakdown === undefined ? {} : { breakdown: breakdownOf(messages) }),
+  on('session.usage', ($, e) => {
+    if (usageError !== undefined) {
+      throw new Error(usageError)
+    }
+
+    return {
+      value: {
+        startedAt: 0,
+        context: {
+          tokens,
+          window: 1_000_000,
+          ...(e.breakdown === undefined ? {} : { breakdown: breakdownOf(messages) }),
+        },
+        rateLimits: [],
       },
-      rateLimits: [],
-    },
-  }))
+    }
+  })
   on('session.compact', ($, e) => {
     compactions.push(e)
 
@@ -109,6 +125,14 @@ async function reload($: Engine) {
   await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
 }
 
+const USAGE = {
+  input_tokens: 10,
+  output_tokens: 10,
+  cache_read_input_tokens: 100_000,
+  cache_creation_input_tokens: 0,
+  model: 'claude-opus-5-5',
+}
+
 async function answer($: Engine, turnId: string) {
   await $.turn.start({ text: 'hi', turnId })
   await $.turn.complete({
@@ -117,6 +141,7 @@ async function answer($: Engine, turnId: string) {
     isAborted: false,
     turnId,
     reason: 'answer',
+    usage: USAGE,
   })
 }
 
@@ -176,7 +201,7 @@ describe('register', () => {
   })
 
   test('a reload re-arms for the rest of the idle stretch', async ($, on) => {
-    const world = worldOf(on, 70_000, NOW - 20 * MINUTE_MS)
+    const world = worldOf(on, 70_000, { lastAnswer: NOW - 20 * MINUTE_MS })
 
     await reload($)
     await world.clock.advance(29 * MINUTE_MS)
@@ -191,7 +216,7 @@ describe('register', () => {
   })
 
   test('a reload past cutoffMinutes compacts nothing and says so', async ($, on) => {
-    const world = worldOf(on, 70_000, NOW - 57 * MINUTE_MS)
+    const world = worldOf(on, 70_000, { lastAnswer: NOW - 57 * MINUTE_MS })
 
     await reload($)
     await world.clock.advance(0)
@@ -234,6 +259,96 @@ describe('register', () => {
     expect(world.compactions).toEqual([])
     expect(world.lines).toEqual([
       'idle compaction skipped: the context breakdown has no Messages row',
+    ])
+  })
+
+  test('a turn that got no response arms nothing', async ($, on) => {
+    const world = worldOf(on, 70_000)
+
+    await $.turn.start({ text: 'hi', turnId: 't1' })
+    await $.turn.complete({
+      answer: '',
+      durationMs: 1,
+      isAborted: false,
+      turnId: 't1',
+      reason: 'error',
+    })
+    await world.clock.advance(60 * MINUTE_MS)
+
+    expect(world.compactions).toEqual([])
+  })
+
+  test('an interrupted turn that got a response arms the timer', async ($, on) => {
+    const world = worldOf(on, 70_000)
+
+    await $.turn.start({ text: 'hi', turnId: 't1' })
+    await $.turn.complete({
+      answer: '',
+      durationMs: 1,
+      isAborted: true,
+      turnId: 't1',
+      reason: 'aborted',
+      usage: USAGE,
+    })
+    await world.clock.advance(50 * MINUTE_MS)
+
+    expect(world.compactions.length).toBe(1)
+  })
+
+  test('a /compact while idle ends the idle stretch', async ($, on) => {
+    const world = worldOf(on, 70_000)
+
+    await answer($, 't1')
+    await world.clock.advance(10 * MINUTE_MS)
+    await $.session.compact({ trigger: 'manual', messages: SUMMARY })
+    await world.clock.advance(60 * MINUTE_MS)
+    await reload($)
+    await world.clock.advance(60 * MINUTE_MS)
+
+    expect(world.compactions.map(c => c.trigger)).toEqual(['manual'])
+    expect(world.lines).toEqual([])
+  })
+
+  test('a precompute leaves the idle stretch running', async ($, on) => {
+    const world = worldOf(on, 70_000)
+
+    await answer($, 't1')
+    await $.session.compact({ trigger: 'precompute', messages: SUMMARY })
+    await world.clock.advance(50 * MINUTE_MS)
+
+    expect(world.compactions.length).toBe(2)
+  })
+
+  test('a failure inside the idle compaction is said', async ($, on) => {
+    const world = worldOf(on, 70_000, { usageError: 'usage unavailable' })
+
+    await answer($, 't1')
+    await world.clock.advance(50 * MINUTE_MS)
+
+    expect(world.compactions).toEqual([])
+    expect(world.lines).toEqual([
+      expect.stringMatching(/^idle compaction failed: /),
+    ])
+  })
+
+  test('an instructions file without the section is said', async ($, on) => {
+    const world = worldOf(on, 70_000, { agentsMd: '# Global\n' })
+
+    await $.session.compact({ trigger: 'manual', messages: SUMMARY })
+
+    expect(world.compactions.map(c => c.instructions)).toEqual([undefined])
+    expect(world.lines).toEqual([
+      'compact instructions skipped: /work/me/.claude/AGENTS.md has no Compact Instructions section',
+    ])
+  })
+
+  test('an instructions file that cannot be read is said', async ($, on) => {
+    const world = worldOf(on, 70_000, { agentsMd: null })
+
+    await $.session.compact({ trigger: 'manual', messages: SUMMARY })
+
+    expect(world.lines).toEqual([
+      'compact instructions skipped: /work/me/.claude/AGENTS.md could not be read',
     ])
   })
 

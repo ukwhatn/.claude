@@ -12,21 +12,24 @@
       "title": "Idle minutes",
       "description": "Minutes after the last answer of the main conversation before it is compacted. Keep it under the prompt cache lifetime (an hour on a subscription).",
       "required": false,
-      "default": 50
+      "default": 50,
+      "min": 1
     },
     "cutoffMinutes": {
       "type": "number",
       "title": "Cutoff minutes",
-      "description": "Past this many minutes since the last answer the idle compaction is skipped: the timer fired late (sleep, a suspended process) and the cache has likely expired.",
+      "description": "Past this many minutes since the last answer the idle compaction is skipped: the timer fired late (sleep, a suspended process) and the cache has likely expired. Keep it above idleMinutes.",
       "required": false,
-      "default": 56
+      "default": 56,
+      "min": 1
     },
     "minMessageTokens": {
       "type": "number",
       "title": "Minimum message tokens",
       "description": "Conversations whose messages (the Messages row of /context, without the system prompt, tools and memory files a compaction keeps) are smaller than this are not compacted on idle.",
       "required": false,
-      "default": 30000
+      "default": 30000,
+      "min": 0
     },
     "instructionsPath": {
       "type": "string",
