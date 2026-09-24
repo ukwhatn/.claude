@@ -1,4 +1,4 @@
 {
-  "description": "A turn.complete hook arms one timer per answer of the main conversation; when it fires with no turn running, within cutoffMinutes and over minContextTokens, $.session.compact runs with the Compact Instructions section. A session.compact hook hands that section to every other compaction of the main conversation, joined before any instructions typed after /compact.",
+  "description": "A turn.complete hook arms one timer per answer of the main conversation; when it fires with no turn running, within cutoffMinutes and with messages over minMessageTokens, $.session.compact runs with the Compact Instructions section. A session.compact hook hands that section to every other compaction of the main conversation, joined before any instructions typed after /compact.",
   "modules": ["./register.ts"]
 }

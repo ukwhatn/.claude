@@ -1,4 +1,4 @@
-import type { On, SessionCompactInput } from 'claude-code'
+import type { On, SessionCompactInput, SessionContextBreakdown } from 'claude-code'
 import type { Engine } from 'claude-code/testing'
 import { describe, expect, mock, test, tier } from 'claude-code/testing'
 
@@ -19,11 +19,37 @@ const AGENTS_MD = [
   'not this',
 ].join('\n')
 
+const FIXED_TOKENS = 50_000
+
 /**
- * The world beneath the mod: a clock, HOME, a conversation of `tokens`, an
- * AGENTS.md, and a core compaction that records what it was told.
+ * The /context rows of a window whose conversation is `messages` tokens over
+ * a fixed part (system prompt, tools, memory files) of FIXED_TOKENS.
  */
-function worldOf(on: On, tokens: number) {
+function breakdownOf(messages: number | undefined): SessionContextBreakdown {
+  const row = (name: string, tokens: number) => ({
+    name,
+    tokens,
+    color: 'inactive',
+    isDeferred: false,
+    kind: 'used' as const,
+  })
+  const categories = [
+    row('System prompt', 3_000),
+    row('System tools', 20_000),
+    row('Memory files', FIXED_TOKENS - 23_000),
+    ...(messages === undefined ? [] : [row('Messages', messages)]),
+  ]
+
+  return { categories } as unknown as SessionContextBreakdown
+}
+
+/**
+ * The world beneath the mod: a clock, HOME, a conversation of `messages`
+ * tokens (no Messages row when undefined), an AGENTS.md, and a core
+ * compaction that records what it was told.
+ */
+function worldOf(on: On, messages: number | undefined) {
+  const tokens = FIXED_TOKENS + (messages ?? 0)
   const clock = mock.clock(on)
   const compactions: SessionCompactInput[] = []
   const lines: string[] = []
@@ -38,8 +64,15 @@ function worldOf(on: On, tokens: number) {
 
     return { value: AGENTS_MD }
   })
-  on('session.usage', () => ({
-    value: { context: { tokens, window: 1_000_000 }, rateLimits: [] },
+  on('session.usage', ($, e) => ({
+    value: {
+      context: {
+        tokens,
+        window: 1_000_000,
+        ...(e.breakdown === undefined ? {} : { breakdown: breakdownOf(messages) }),
+      },
+      rateLimits: [],
+    },
   }))
   on('session.compact', ($, e) => {
     compactions.push(e)
@@ -82,7 +115,7 @@ describe('register', () => {
       'Keep the running subagents and the plan path.',
     ])
     expect(world.lines).toEqual([
-      'compacted after 50 idle minutes (70000 → 8000 tokens)',
+      'compacted after 50 idle minutes (120000 → 8000 tokens)',
     ])
   })
 
@@ -97,13 +130,34 @@ describe('register', () => {
     expect(world.compactions).toEqual([])
   })
 
-  test('a conversation under minContextTokens is left alone', async ($, on) => {
+  test('a conversation under minMessageTokens is left alone', async ($, on) => {
     const world = worldOf(on, 29_999)
 
     await answer($, 't1')
     await world.clock.advance(51 * MINUTE_MS)
 
     expect(world.compactions).toEqual([])
+  })
+
+  test('a fixed part over minMessageTokens does not count toward it', async ($, on) => {
+    const world = worldOf(on, 1_000)
+
+    await answer($, 't1')
+    await world.clock.advance(51 * MINUTE_MS)
+
+    expect(world.compactions).toEqual([])
+  })
+
+  test('a breakdown without a Messages row compacts nothing and says so', async ($, on) => {
+    const world = worldOf(on, undefined)
+
+    await answer($, 't1')
+    await world.clock.advance(51 * MINUTE_MS)
+
+    expect(world.compactions).toEqual([])
+    expect(world.lines).toEqual([
+      'idle compaction skipped: the context breakdown has no Messages row',
+    ])
   })
 
   test('a subagent answer arms nothing', async ($, on) => {

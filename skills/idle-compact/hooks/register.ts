@@ -11,7 +11,7 @@ type Turns = {
 type Settings = {
   idleMs: number
   cutoffMs: number
-  minContextTokens: number
+  minMessageTokens: number
   instructionsPath: string
 }
 
@@ -23,7 +23,7 @@ type Settings = {
  * so an idle stretch compacts at most once.
  *
  * @param on the engine's registrar
- * @param options `idleMinutes`, `cutoffMinutes`, `minContextTokens`,
+ * @param options `idleMinutes`, `cutoffMinutes`, `minMessageTokens`,
  * `instructionsPath` as the manifest declares them
  */
 export function register(on: On, options: PluginOptions): void {
@@ -72,7 +72,7 @@ export function register(on: On, options: PluginOptions): void {
 
 /**
  * Compacts the main conversation when it is still idle: no turn running,
- * the timer not fired past the cutoff, the context over the minimum.
+ * the timer not fired past the cutoff, the conversation over the minimum.
  */
 async function compactIfIdle(
   $: EngineInterface,
@@ -90,9 +90,15 @@ async function compactIfIdle(
     return
   }
 
-  const { context } = await $.session.usage()
+  const messageTokens = await messageTokensOf($)
 
-  if ((context.tokens ?? 0) < settings.minContextTokens) {
+  if (messageTokens === undefined) {
+    $.ui.log('idle compaction skipped: the context breakdown has no Messages row')
+
+    return
+  }
+
+  if (messageTokens < settings.minMessageTokens) {
     return
   }
 
@@ -133,9 +139,23 @@ function settingsOf(options: PluginOptions): Settings {
   return {
     idleMs: positive(options.idleMinutes, 50) * MINUTE_MS,
     cutoffMs: positive(options.cutoffMinutes, 56) * MINUTE_MS,
-    minContextTokens: positive(options.minContextTokens, 30_000),
+    minMessageTokens: positive(options.minMessageTokens, 30_000),
     instructionsPath: typeof path === 'string' ? path.trim() : '',
   }
+}
+
+/**
+ * The conversation's tokens as /context's Messages row estimates them: the
+ * part a compaction shrinks, without the system prompt, tools and memory
+ * files it leaves in place.
+ */
+async function messageTokensOf($: EngineInterface): Promise<number | undefined> {
+  const { context } = await $.session.usage({ breakdown: 'summary' })
+
+  // The row name is the only mark: no ContextCategoryKind tells messages apart.
+  return context.breakdown?.categories.find(
+    row => row.kind === 'used' && row.name === 'Messages',
+  )?.tokens
 }
 
 /**
