@@ -1,7 +1,8 @@
 {
   "name": "idle-compact",
   "version": "0.1.0",
-  "description": "Compacts the main conversation once it has sat idle for idleMinutes, while the prompt cache is still warm, and hands every compaction of the main conversation (manual, auto, plugin, precompute) the Compact Instructions section of the user's AGENTS.md. Skips while a turn runs, below minMessageTokens of conversation, and past cutoffMinutes (a wake from sleep, when the cache has likely expired).",
+  "description": "Compacts the main conversation once it has sat idle for idleMinutes, while the prompt cache is still warm, and hands every compaction of the main conversation (manual, auto, plugin, precompute) the Compact Instructions section of the user's AGENTS.md. Skips while a turn runs, below minMessageTokens of conversation, and past cutoffMinutes (a wake from sleep, when the cache has likely expired), saying which in the transcript; a reload of the plugin keeps the pending idle stretch.",
+  "types": "./contract.d.ts",
   "author": {
     "name": "ukwhatn"
   },

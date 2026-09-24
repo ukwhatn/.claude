@@ -43,18 +43,34 @@ function breakdownOf(messages: number | undefined): SessionContextBreakdown {
   return { categories } as unknown as SessionContextBreakdown
 }
 
+const NOW = 1_000 * MINUTE_MS
+
 /**
- * The world beneath the mod: a clock, HOME, a conversation of `messages`
- * tokens (no Messages row when undefined), an AGENTS.md, and a core
- * compaction that records what it was told.
+ * The world beneath the mod: a clock at NOW, HOME, a conversation of
+ * `messages` tokens (no Messages row when undefined), an AGENTS.md, the
+ * session's state as a reload finds it (`lastAnswer`), and a core compaction
+ * that records what it was told.
  */
-function worldOf(on: On, messages: number | undefined) {
+function worldOf(on: On, messages: number | undefined, lastAnswer?: number | null) {
   const tokens = FIXED_TOKENS + (messages ?? 0)
-  const clock = mock.clock(on)
+  const clock = mock.clock(on, { now: NOW })
   const compactions: SessionCompactInput[] = []
   const lines: string[] = []
+  const state = { value: lastAnswer, version: lastAnswer === undefined ? 0 : 1 }
 
   mock.env(on, { HOME: '/work/me' })
+  on('session.start', ($, e) => ({ cwd: e.cwd }))
+  on('state.get', () => ({ value: { value: state.value, version: state.version } }))
+  on('state.set', ($, e) => {
+    if (e.ifVersion !== undefined && e.ifVersion !== state.version) {
+      return { value: { isSet: false, version: state.version } }
+    }
+
+    state.value = e.value as number | null
+    state.version += 1
+
+    return { value: { isSet: true, version: state.version } }
+  })
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
   on('turn.complete', ($, e) => ({ text: e.answer }))
   on('fs.read', ($, e) => {
@@ -66,6 +82,7 @@ function worldOf(on: On, messages: number | undefined) {
   })
   on('session.usage', ($, e) => ({
     value: {
+      startedAt: 0,
       context: {
         tokens,
         window: 1_000_000,
@@ -86,6 +103,10 @@ function worldOf(on: On, messages: number | undefined) {
   })
 
   return { clock, compactions, lines }
+}
+
+async function reload($: Engine) {
+  await $.session.start({ cwd: '/work', surface: 'terminal', isInteractive: true })
 }
 
 async function answer($: Engine, turnId: string) {
@@ -137,6 +158,9 @@ describe('register', () => {
     await world.clock.advance(51 * MINUTE_MS)
 
     expect(world.compactions).toEqual([])
+    expect(world.lines).toEqual([
+      'idle compaction skipped: 29999 message tokens, under minMessageTokens (30000)',
+    ])
   })
 
   test('a fixed part over minMessageTokens does not count toward it', async ($, on) => {
@@ -146,6 +170,59 @@ describe('register', () => {
     await world.clock.advance(51 * MINUTE_MS)
 
     expect(world.compactions).toEqual([])
+    expect(world.lines).toEqual([
+      'idle compaction skipped: 1000 message tokens, under minMessageTokens (30000)',
+    ])
+  })
+
+  test('a reload re-arms for the rest of the idle stretch', async ($, on) => {
+    const world = worldOf(on, 70_000, NOW - 20 * MINUTE_MS)
+
+    await reload($)
+    await world.clock.advance(29 * MINUTE_MS)
+
+    expect(world.compactions).toEqual([])
+
+    await world.clock.advance(1 * MINUTE_MS)
+
+    expect(world.lines).toEqual([
+      'compacted after 50 idle minutes (120000 → 8000 tokens)',
+    ])
+  })
+
+  test('a reload past cutoffMinutes compacts nothing and says so', async ($, on) => {
+    const world = worldOf(on, 70_000, NOW - 57 * MINUTE_MS)
+
+    await reload($)
+    await world.clock.advance(0)
+
+    expect(world.compactions).toEqual([])
+    expect(world.lines).toEqual([
+      'idle compaction skipped: 57 minutes since the last answer, past cutoffMinutes (56)',
+    ])
+  })
+
+  test('a reload after the stretch was tried arms nothing', async ($, on) => {
+    const world = worldOf(on, 70_000)
+
+    await answer($, 't1')
+    await world.clock.advance(50 * MINUTE_MS)
+    await reload($)
+    await world.clock.advance(60 * MINUTE_MS)
+
+    expect(world.compactions.length).toBe(1)
+  })
+
+  test('a reload while a turn runs arms nothing', async ($, on) => {
+    const world = worldOf(on, 70_000)
+
+    await answer($, 't1')
+    await $.turn.start({ text: 'more', turnId: 't2' })
+    await reload($)
+    await world.clock.advance(60 * MINUTE_MS)
+
+    expect(world.compactions).toEqual([])
+    expect(world.lines).toEqual([])
   })
 
   test('a breakdown without a Messages row compacts nothing and says so', async ($, on) => {

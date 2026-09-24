@@ -4,8 +4,10 @@ import { compactInstructionsOf, joinedInstructions } from './compact-instruction
 
 const MINUTE_MS = 60_000
 
-type Turns = {
-  isRunning: boolean
+const lastAnswer = { plugin: 'idle-compact', key: 'lastAnswer' } as const
+
+type Idle = {
+  timer: Timer | undefined
 }
 
 type Settings = {
@@ -20,7 +22,8 @@ type Settings = {
  * Instructions every compaction of it is handed.
  *
  * One timer per answer: a turn start cancels it, the next answer re-arms it,
- * so an idle stretch compacts at most once.
+ * so an idle stretch compacts at most once. The answer's time lives in
+ * `$.state`, so a reload of this module re-arms the timer for what is left.
  *
  * @param on the engine's registrar
  * @param options `idleMinutes`, `cutoffMinutes`, `minMessageTokens`,
@@ -28,13 +31,24 @@ type Settings = {
  */
 export function register(on: On, options: PluginOptions): void {
   const settings = settingsOf(options)
-  const turns: Turns = { isRunning: false }
-  let idleTimer: Timer | undefined
+  const idle: Idle = { timer: undefined }
 
-  on('turn.start', ($, e, next) => {
-    turns.isRunning = true
-    idleTimer?.cancel()
-    idleTimer = undefined
+  on('session.start', async ($, e, next) => {
+    const result = await next(e)
+    const { value: answeredAt } = await $.state.get(lastAnswer)
+
+    if (typeof answeredAt === 'number') {
+      const idleFor = (await $.clock.now()) - answeredAt
+      armIdle($, idle, settings, Math.max(0, settings.idleMs - idleFor), answeredAt)
+    }
+
+    return result
+  })
+
+  on('turn.start', async ($, e, next) => {
+    idle.timer?.cancel()
+    idle.timer = undefined
+    await $.state.set(lastAnswer, null)
 
     return next(e)
   })
@@ -46,13 +60,9 @@ export function register(on: On, options: PluginOptions): void {
       return result
     }
 
-    turns.isRunning = false
     const answeredAt = await $.clock.now()
-    idleTimer?.cancel()
-    idleTimer = $.clock.after(settings.idleMs, () => {
-      idleTimer = undefined
-      void compactIfIdle($, turns, settings, answeredAt)
-    })
+    await $.state.set(lastAnswer, answeredAt)
+    armIdle($, idle, settings, settings.idleMs, answeredAt)
 
     return result
   })
@@ -71,22 +81,59 @@ export function register(on: On, options: PluginOptions): void {
 }
 
 /**
- * Compacts the main conversation when it is still idle: no turn running,
- * the timer not fired past the cutoff, the conversation over the minimum.
+ * Replaces the pending idle timer with one that tries the stretch of the
+ * answer at `answeredAt` after `delayMs`.
+ */
+function armIdle(
+  $: EngineInterface,
+  idle: Idle,
+  settings: Settings,
+  delayMs: number,
+  answeredAt: number,
+): void {
+  idle.timer?.cancel()
+  idle.timer = $.clock.after(delayMs, () => {
+    idle.timer = undefined
+    void compactIfIdle($, settings, answeredAt)
+  })
+}
+
+/**
+ * Compacts the main conversation when it is still idle: no turn running
+ * since `answeredAt`, the timer not fired past the cutoff, the conversation
+ * over the minimum. Says why when it does not.
  */
 async function compactIfIdle(
   $: EngineInterface,
-  turns: Turns,
   settings: Settings,
   answeredAt: number,
 ): Promise<void> {
-  if (turns.isRunning) {
+  const held = await $.state.get(lastAnswer)
+
+  if (held.value !== answeredAt) {
+    if (held.value === null) {
+      $.ui.log('idle compaction skipped: a turn is running')
+    }
+
+    return
+  }
+
+  // Claimed before the usage read and the compaction: a reload while they run
+  // finds null and re-arms nothing.
+  const claim = await $.state.set(lastAnswer, null, { ifVersion: held.version })
+
+  if (!claim.isSet) {
     return
   }
 
   const idleFor = (await $.clock.now()) - answeredAt
+  const idleMinutes = Math.round(idleFor / MINUTE_MS)
 
   if (idleFor > settings.cutoffMs) {
+    $.ui.log(
+      `idle compaction skipped: ${idleMinutes} minutes since the last answer, past cutoffMinutes (${settings.cutoffMs / MINUTE_MS})`,
+    )
+
     return
   }
 
@@ -99,6 +146,10 @@ async function compactIfIdle(
   }
 
   if (messageTokens < settings.minMessageTokens) {
+    $.ui.log(
+      `idle compaction skipped: ${messageTokens} message tokens, under minMessageTokens (${settings.minMessageTokens})`,
+    )
+
     return
   }
 
@@ -121,7 +172,7 @@ async function compactIfIdle(
       result.tokensBefore !== undefined && result.tokensAfter !== undefined
         ? ` (${result.tokensBefore} → ${result.tokensAfter} tokens)`
         : ''
-    $.ui.log(`compacted after ${Math.round(idleFor / MINUTE_MS)} idle minutes${sizes}`)
+    $.ui.log(`compacted after ${idleMinutes} idle minutes${sizes}`)
   }
 }
 
