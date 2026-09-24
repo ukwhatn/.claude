@@ -1,0 +1,38 @@
+{
+  "name": "idle-compact",
+  "version": "0.1.0",
+  "description": "Compacts the main conversation once it has sat idle for idleMinutes, while the prompt cache is still warm, and hands every compaction of the main conversation (manual, auto, plugin, precompute) the Compact Instructions section of the user's AGENTS.md. Skips while a turn runs, below minContextTokens, and past cutoffMinutes (a wake from sleep, when the cache has likely expired).",
+  "author": {
+    "name": "ukwhatn"
+  },
+  "userConfig": {
+    "idleMinutes": {
+      "type": "number",
+      "title": "Idle minutes",
+      "description": "Minutes after the last answer of the main conversation before it is compacted. Keep it under the prompt cache lifetime (an hour on a subscription).",
+      "required": false,
+      "default": 50
+    },
+    "cutoffMinutes": {
+      "type": "number",
+      "title": "Cutoff minutes",
+      "description": "Past this many minutes since the last answer the idle compaction is skipped: the timer fired late (sleep, a suspended process) and the cache has likely expired.",
+      "required": false,
+      "default": 56
+    },
+    "minContextTokens": {
+      "type": "number",
+      "title": "Minimum context tokens",
+      "description": "Conversations smaller than this are not compacted on idle.",
+      "required": false,
+      "default": 30000
+    },
+    "instructionsPath": {
+      "type": "string",
+      "title": "Instructions file",
+      "description": "Markdown file whose Compact Instructions section is handed to every compaction. Empty: AGENTS.md in CLAUDE_CONFIG_DIR, else ~/.claude/AGENTS.md.",
+      "required": false,
+      "default": ""
+    }
+  }
+}

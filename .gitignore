@@ -26,3 +26,4 @@
 !/bin/**
 __pycache__/
 /skills/synced/
+/skills/idle-compact/types/

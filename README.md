@@ -52,6 +52,8 @@ git clone <this-repo> ~/.claude
 
 主要なもの: `commit` / `create-draft-pr`（コミット・PR）、`writing-code`（実装原則）、`systematic-debugging`（根本原因調査）、`self-review` / `pr-review` / `codebase-review`（レビュー）、`design-feature`（要件定義）、`update-inst` / `instructions-audit`（本リポジトリ自体の保守）。
 
+`skills/idle-compact/` はスキルではなく、function hooks で書いた Claude Code のプラグインで、`idle-compact@skills-dir` として自動で読み込まれる。役割は 2 つある。メイン会話を最後の応答から `idleMinutes`（既定 50 分）放置すると、プロンプトキャッシュが切れる前に compact する。また、どの compact にも `AGENTS.md` の「Compact Instructions」節を渡す。有効化には `settings.json` の `env` にある `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` が要る。オプションは `pluginConfigs["idle-compact@skills-dir"].options` で変える。テストは `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test skills/idle-compact`、型チェックはセッションで `/plugin-types skills/idle-compact/types` を実行してから `tsc -p skills/idle-compact/tsconfig.json` で行う（`types/` は git 管理外）。
+
 ## ワークフロー
 
 Phase 0-5（準備 → 調査 → 計画 → 実装 → 品質確認 → 完了報告）。適用条件と各 Phase の内容は `AGENTS.md`「作業フロー」および `context/workflow-rules.md` を参照。

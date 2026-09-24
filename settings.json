@@ -1,7 +1,8 @@
 {
   "cleanupPeriodDays": 365,
   "env": {
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]"
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]",
+    "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
   },
   "attribution": {
     "commit": "",
