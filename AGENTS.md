@@ -63,7 +63,6 @@ Phase: 0 準備（メモリディレクトリ・`/findmem`）→ 1 調査 → 2 
 - **作業の委譲を決めた時点**: `context/herdr-delegation.md`（経路・モデル・指示書・結果の回収・後片付け）
 - **外部レビュー実行前**: `context/agent-cli-guide.md`（CLI 選択・コマンド形式・打ち切り条件・ハーネスから起動すると空振りする条件）
 - **PR 提出前・レビュー実行前**: `context/code-review-checklist.md`
-- **ユーザーからミスの指摘を受けたら**: `context/mistake-procedure.md`。読む前に1つだけ行う: 送信済みの誤報のうち放置すると他者が誤った行動を取るものは訂正を1件送る
 - **大量ページの `gh api` 取得・PR の状態棚卸し・多バイト文字列の集計の前**: `context/github-cli-notes.md`
 - **AGENTS.md・context・skills・hooks を編集・設計・監査する前**: `context/claude-customization-guide.md`（公開リポジトリに書いてよい内容の規則を含む）
 - **工数・所要期間・スケジュールの見積を回答・記載する前（計画書・PR 分割に見積欄を設ける場合を含む）**: `context/estimation.md`
