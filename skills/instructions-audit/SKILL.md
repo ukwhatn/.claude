@@ -20,7 +20,7 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 ## 既存設定との関係
 
 - **rubricの真実源**: @context/claude-customization-guide.md §7（本スキルはrubricを重複記載しない）
-- **Phase 0-5（@context/workflow-rules.md）**: 独立（監査は単発タスク。指摘の適用が複雑タスク化する場合のみPhase 0-5に乗せる）
+- **Phase 0-5（@context/workflow-rules.md）**: 独立（監査は単発タスク。指摘の適用が複雑タスク化する場合のみPhase 0-5を適用する）
 
 ## ワークフロー
 

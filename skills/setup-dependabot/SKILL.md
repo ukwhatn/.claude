@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Setup Dependabot
 
-リポジトリを走査して package ecosystem を検出し、コンフリクトしにくい dependabot.yml を生成する。設計の核は「**version-updates は ecosystem ごとに1PRに集約、security-updates は別グループで即時**」。
+リポジトリを走査して package ecosystem を検出し、コンフリクトしにくい dependabot.yml を生成する。設計の基本方針は「**version-updates は ecosystem ごとに1PRに集約、security-updates は別グループで即時**」。
 
 ## ワークフロー
 
@@ -40,7 +40,7 @@ workspaces/モノレポ（bun/npm workspaces、uv workspace 等）の場合は�
 1. **target-branch**: PJ CLAUDE.md の `BASE_BRANCH` → なければ default branch
 2. **assignees**: 個人リポジトリなら repo owner。組織リポジトリで担当者が自明でない場合は AskUserQuestion で確認する
 3. **schedule**: weekly をデフォルトとする。変更希望が示されていない限り確認不要
-4. **cooldown**: `default-days: 3` / `semver-patch-days: 1` をデフォルトとする（リリース直後の不具合踏み抜き回避と patch の速い取り込みの両立）
+4. **cooldown**: `default-days: 3` / `semver-patch-days: 1` をデフォルトとする（リリース直後の不具合の取り込み回避と patch の速い取り込みの両立）
 
 **完了基準**: 全 entry 分の target-branch / assignees / schedule / cooldown が確定し、ユーザー確認が必要な項目は AskUserQuestion 済み。
 
@@ -99,7 +99,7 @@ group 名は `<ecosystem>-all` / `<ecosystem>-security` の形式で ecosystem �
 
 - **`target-branch` に default branch 以外を指定すると、その entry は version-updates のみに適用される**（security-updates は default branch 向けにデフォルト設定で作成される）。default 以外を指定する必要が出た場合は公式 docs で最新挙動を確認してから設定する
 - **`reviewers` キーは deprecated**。レビュアー指定は CODEOWNERS で行い、dependabot.yml では `assignees` を使う
-- **共有 lockfile の group 分割は事故る**: bun/npm workspaces で group をパッケージ別に分けると、同一 weekly run の複数PRが同じ lockfile を触ってコンフリクトし、大量のPRを手で解決する羽目になる。version-updates は必ず1グループに集約する。react/react-dom 等のランタイム揃えも同一PR内の同時 bump で自動的に達成される
+- **共有 lockfile の group 分割はコンフリクトを起こす**: bun/npm workspaces で group をパッケージ別に分けると、同一 weekly run の複数PRが同じ lockfile を触ってコンフリクトし、大量のPRを手で解決する羽目になる。version-updates は必ず1グループに集約する。react/react-dom 等のランタイム揃えも同一PR内の同時 bump で自動的に達成される
 - **`github-actions` の directory は `"/"`**（`.github/workflows` を指定しない。`"/"` で自動検出される）
 - `cooldown` は比較的新しいキー。エディタの schema 警告が出ても有効（サポート状況が疑わしい場合は公式 docs で確認する）
 

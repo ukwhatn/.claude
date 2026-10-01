@@ -4,7 +4,7 @@
 
 `git diff origin/main...HEAD` は **merge-base から HEAD への差分**、つまりブランチが加えた変更を丸ごと出す。squash マージで base に取り込まれていても出力は 1 行も減らない。
 
-「大量のファイル・行数の差分が残っている」→「未マージ」と読むのは誤り。この誤読は、完全にマージ済みのブランチを「作業中・削除不可」と誤って報告させる。
+「大量のファイル・行数の差分が残っている」→「未マージ」と読むのは誤り。この誤読をすると、完全にマージ済みのブランチを「作業中・削除不可」と誤って報告する。
 
 反映の有無を見るのは two-dot 比較。
 
@@ -34,7 +34,7 @@ git diff --name-status HEAD "$mc" -- $(cat /tmp/f.txt | tr '\n' ' ')
 
 ## 2. squash マージは `--merged` で検出できない
 
-squash / rebase マージはコミットが潰れて別 SHA になるため、`git branch --merged` にも `merge-base --is-ancestor` にも引っかからない。**squash マージ運用のリポジトリでは worktree の相当数がこれに該当し、祖先判定だけなら全部「未マージ」に見える**。
+squash / rebase マージはコミットが作り直されて別 SHA になるため、`git branch --merged` でも `merge-base --is-ancestor` でも検出されない。**squash マージ運用のリポジトリでは worktree の相当数がこれに該当し、祖先判定だけなら全部「未マージ」に見える**。
 
 PR state を引くのが唯一の確実な検出手段。
 
@@ -46,11 +46,11 @@ gh pr list --head "$br" --state all --json number,state,headRefOid
 
 複数の feature ブランチを `git merge` で束ねた統合ブランチは、次の全てに該当して「未マージ」に見え続ける。
 
-- PR を作っていない → PR state が空振り
+- PR を作っていない → PR state の検索結果が空
 - 内容は別 PR として squash マージされた → SHA も patch-id も base に無い
 - マージコミットの塊 → 祖先判定は原理的に通らない
 
-**判定は §1 の two-dot 比較で行う。** この形のブランチは大量の「未反映」行数を見せながら、実際は完全にマージ済みであることがある。
+**判定は §1 の two-dot 比較で行う。** この形のブランチは大量の「未反映」行数が出ていても、実際は完全にマージ済みであることがある。
 
 分割 PR を出した後で一本化してマージし直した場合、分割側の PR は `CLOSED`（マージせず破棄）になる。`CLOSED_PR` を機械的に「内容が base に無い」と扱わないこと。一本化先の PR を探す。
 
@@ -75,7 +75,7 @@ git diff --stat <sha> origin/main -- $(git show --name-only --format="" <sha> | 
 
 ## 5. `git worktree remove` が孤立ディレクトリを残す
 
-remove がディレクトリ削除に失敗しても、git 側のメタデータ（`.git/worktrees/<name>`）は先に消えることがある。その後 `git worktree prune` を打つと登録だけが消え、**git 管理外のディレクトリが丸ごと残る**。`git worktree list` には出ないので気づきにくい。
+remove がディレクトリ削除に失敗しても、git 側のメタデータ（`.git/worktrees/<name>`）は先に消えることがある。その後 `git worktree prune` を実行すると登録だけが消え、**git 管理外のディレクトリが丸ごと残る**。`git worktree list` には出ないので気づきにくい。
 
 削除後は worktree 置き場を実際に `ls` して確認する。残っていた場合、`.git` ファイルの gitdir 先が既に存在しないため `git status` すら取れない。削除前スナップショットの dirty / untracked が 0 だったことを確認してから `rm -rf` する。
 
@@ -89,4 +89,4 @@ audit が `MERGED_ANCESTOR` と出しているなら削除して問題ない。�
 
 調査で `cd` した worktree を削除すると、シェルの cwd が消えて `getcwd: cannot access parent directories` になる。以降のコマンドが軒並み失敗する。
 
-調査は `git -C <path>` で行い `cd` しない。踏んでしまったら `cd` で有効なディレクトリに戻る。
+調査は `git -C <path>` で行い `cd` しない。この状態になったら `cd` で有効なディレクトリに戻る。

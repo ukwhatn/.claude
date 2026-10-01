@@ -74,7 +74,7 @@ rebaseがconflictで停止した場合は `git rebase --abort` で元に戻し�
 
 ### 6. push 後の確認（--push の場合のみ）
 
-push したブランチに PR があれば、**CI の結果と conflict の有無を確認してから報告する**。走行中なら完了まで監視する。落ちている・conflict がある場合は、指摘を待たず原因調査に入る。
+push したブランチに PR があれば、**CI の結果と conflict の有無を確認してから報告する**。走行中なら完了まで監視する。失敗している・conflict がある場合は、指摘を待たず原因調査に入る。
 
 ```bash
 gh pr view --json number,mergeable,mergeStateStatus,statusCheckRollup 2>/dev/null

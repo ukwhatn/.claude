@@ -14,7 +14,7 @@ allowed-tools: Bash(taskherd:*), Bash(herdr:*), Bash(jq:*)
 command -v taskherd
 ```
 
-見つからなければ、その旨を伝えて止まる。パスを推測して直接バイナリを叩かない。
+見つからなければ、その旨を伝えて止まる。パスを推測して直接バイナリを実行しない。
 
 `session link` / `start` / `jump` は herdr サーバに問い合わせるため、herdr が動いていない環境では失敗する。`--current` はさらに `HERDR_PANE_ID` を必要とするので、herdr の pane の中からしか使えない。
 
@@ -27,7 +27,7 @@ command -v taskherd
 | 成功 | stdout に単一の JSON オブジェクト、stderr は空、exit 0 |
 | 失敗 | stderr に `{"error": ..., "hint": ...}`、stdout は空、exit は非 0 |
 
-- `--json` では一切対話しない。入力が要る状況はエラーで落ちる。`rm` は `--yes`、`note` は `--set` か `--append` が必須
+- `--json` では一切対話しない。入力が要る状況はエラーで終了する。`rm` は `--yes`、`note` は `--set` か `--append` が必須
 - `hint` を必ず読む。無効な列 id を渡したときは有効な id の一覧が `hint` に入る
 - **例外は `start`**。途中で止まっても結果を stdout に出して exit が非 0 になる。成否は exit code ではなく `stage`（`started` → `waited` → `linked` → `prompted`）と `linked` / `prompt_sent` で判定する
 
@@ -142,9 +142,9 @@ taskherd jump <ID> --json       # 紐づいたセッションへ移動する（�
 
 ## Gotchas
 
-- **`--json` を省くと `note` と `rm` が対話に入る。** エージェントから叩くときは必ず付ける
+- **`--json` を省くと `note` と `rm` が対話に入る。** エージェントから実行するときは必ず付ける
 - **`start` は exit code だけで成否を判断しない**（stdout の `stage` を読む）
-- **`show` の live 状態はキャッシュ**（config の `cache_ttl_minutes`）。最新が要るなら `taskherd refresh <ID> --json` を先に叩く
+- **`show` の live 状態はキャッシュ**（config の `cache_ttl_minutes`）。最新が要るなら `taskherd refresh <ID> --json` を先に実行する
 - **タスク id は削除しても再利用されない**（`next_id` は単調増加）。一度得た id は安定した handle として使える
 - **`taskherd board` をエージェントから起動しない。** TUI はユーザーが開くもので、非対話の実行では無意味に pane を占有する
 

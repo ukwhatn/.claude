@@ -67,7 +67,7 @@ waitがタイムアウト（exit 1）したら、`herdr pane get <pane_id>` と 
 remote controlはデフォルト有効（有効時はステータスバー右端に `/rc` インジケータが表示される）。
 
 1. `herdr pane read <pane_id> --source visible --lines 40` でステータスバー右端の `/rc` インジケータを確認する。表示があれば有効化済み
-2. `/rc` を送信し、URL行の出現を待つ（有効化済みならステータスモーダルが開き、未有効なら有効化されて「is active」行が出る。どちらも下記matchにかかる）:
+2. `/rc` を送信し、URL行の出現を待つ（有効化済みならステータスモーダルが開き、未有効なら有効化されて「is active」行が出る。どちらも下記matchに一致する）:
 
 ```bash
 herdr pane run <pane_id> "/rc"
@@ -87,7 +87,7 @@ workspace（label + ID）・新pane_id・remote controlのセッションURLを�
 ## Gotchas
 
 - `/rc` はClaude Code側で `/remote-control` に展開されて実行される
-- `herdr pane run` はテキストとEnterを一括送信する。起動直後のTUIに送ると失われるため、必ず `idle` を待ってから送る
+- `herdr pane run` はテキストとEnterを一括送信する。起動直後のTUIに送るとテキストが失われるため、必ず `idle` を待ってから送る
 - bare `herdr` はTUIをattach/起動するため実行しない（discoveryはコマンドグループ出力で行う）
 - 応答画面に「N MCP servers need authentication」警告が出ることがある。起動自体は成功なので、報告に含めるだけでよい
 - remote controlの有効/無効はステータスバー右端の `/rc` インジケータで判定する。デフォルト有効なので、通常 `/rc` 送信は「有効化」ではなくURL表示のステータスモーダルを開く操作になる

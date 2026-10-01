@@ -9,7 +9,7 @@ allowed-tools: Bash, Read, Grep, Glob
 
 複数リポジトリにまたがる worktree とブランチを棚卸しし、削除可否を判定する。
 
-**この skill の核心は「マージ済みの判定を1手法で済ませないこと」。** `git branch --merged` だけで判断すると、squash マージされたブランチが軒並み「未マージ」に見え、掃除できないまま溜まる。逆に three-dot diff の行数を根拠にすると、マージ済みのブランチを「未反映」と誤って報告する。
+**この skill の核心は「マージ済みの判定を1手法で済ませないこと」。** `git branch --merged` だけで判断すると、squash マージされたブランチが軒並み「未マージ」に見え、削除できないまま残る。逆に three-dot diff の行数を根拠にすると、マージ済みのブランチを「未反映」と誤って報告する。
 
 ## ワークフロー
 
@@ -34,7 +34,7 @@ column -t -s $'\t' /tmp/audit.tsv
 
 ### 2. 分類
 
-verdict をそのまま3群に畳む。
+verdict をそのまま3群に分ける。
 
 | 群 | verdict | 扱い |
 |---|---|---|
@@ -50,7 +50,7 @@ verdict をそのまま3群に畳む。
 
 ここを飛ばすと誤って消すか、逆に消せるものを残す。判定方法は references/gotchas.md に集約してある。**要判断の行が1件でもあれば必ず読むこと。**
 
-要点だけ先に言うと、`git diff base...HEAD`（three-dot）の行数は反映有無の証拠にならない。実際に確認するのは次のいずれか。
+`git diff base...HEAD`（three-dot）の行数は反映有無の証拠にならない。実際に確認するのは次のいずれか。
 
 ```bash
 # ブランチが触ったファイルだけを base と実比較する（差分ゼロなら反映済み）
@@ -85,7 +85,7 @@ git -C "$wt" ls-files --others --exclude-standard > "$BK/$name.untracked.txt"
 git -C "$repo" rev-parse "refs/heads/$br" >> "$BK/deleted-branches-sha.tsv"
 ```
 
-削除の順序は worktree → ブランチ。worktree が生きているブランチは削除できない。
+削除の順序は worktree → ブランチ。worktree が残っているブランチは削除できない。
 
 ```bash
 git -C "$repo" worktree remove "$wt"        # dirty なら --force
@@ -116,11 +116,11 @@ git -C "$repo" branch
 
 1. **祖先判定** — `git rev-list --count "$base..$ref"` が 0。merge commit で取り込まれたものはここで確定する
 2. **PR state** — 非該当を `gh pr list --head "$br" --state all` に通す。squash / rebase マージはコミット SHA が base に存在しないため、ここでしか検出できない
-3. **PR head 一致** — MERGED でも、PR 作成後にローカルで積んだコミットが残っていることがある。`headRefOid` とローカル HEAD を比較し、不一致なら `HEAD_MISMATCH` として要判断へ落とす
+3. **PR head 一致** — MERGED でも、PR 作成後にローカルで積んだコミットが残っていることがある。`headRefOid` とローカル HEAD を比較し、不一致なら `HEAD_MISMATCH` として要判断に分類する
 
 ## Gotchas
 
-判定を誤らせる既知の罠は references/gotchas.md に集約してある。とくに次のどれかに当たったら読む。
+判定を誤らせる既知のケースは references/gotchas.md に集約してある。とくに次のどれかに当たったら読む。
 
 - three-dot diff の行数を根拠にしようとした時
 - `NO_PR` の統合ブランチ（マージコミットの塊）が出た時
