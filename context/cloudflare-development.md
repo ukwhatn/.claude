@@ -16,6 +16,7 @@ Read when: Cloudflare（wrangler / Workers / D1 / R2）を触る前。
 ## wrangler / D1の落とし穴（実機検証済み）
 
 - **wranglerがタイムアウト系エラー（7429 storage timeout等）を返しても、D1側では処理が完遂していることがある**。長時間DDL（大規模CREATE INDEX等）は、sqlite_master・d1_migrations・実クエリで実態を確認してから失敗と断定する
+- **本番D1を止めないため、運用中のDBに `wrangler d1 export --remote` を実行しない**。exportの実行中は同じDBへの他のリクエストがすべてブロックされ、アプリが応答不能になる（公式docs「Import and export data」: "A running export will block other database requests."）。本番データの集計は、期間・件数を絞った `d1 execute --remote` のSELECTを直列に投げて行う。委譲の指示書にもexportを手段として書かない
 - `wrangler d1 export` は100KB超のINSERT文を吐くが、D1のSQL文長上限は100KBのためそのままimportできない（エラーを出さずに失敗したように見える）。大行はチャンク分割INSERT ＋連結UPDATEが必要
 - `wrangler d1 export` のCREATE TABLE順はFK依存順でない。FK有効なD1へ直接importせず、migrations適用後にdata-onlyで投入する
 - `wrangler deployments list` は最新が**末尾**（先頭ではない）
