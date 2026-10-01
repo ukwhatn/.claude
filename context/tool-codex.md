@@ -43,7 +43,7 @@ Claude Code では AGENTS.md「Read when」で誘導される以下のファイ�
 
 `bin/herdr-delegate.sh` は herdr CLI を叩くシェルスクリプトなので、Codex からも同じ引数で呼べる。規則は `~/.claude/context/herdr-delegation.md` が真実源で、委譲すると決めた時点で Read する。ここに書くのは Codex 固有の差分だけ。
 
-- **Herdr の pane 内で動いているかで分岐する**（`HERDR_ENV=1` かどうか）。pane 内なら pane 委譲を使う。pane 外ではスクリプトが `not_in_herdr` を返し、Codex には Agent tool が無いので、上のツール対応表に従って逐次実行に落ちる
+- **Herdr の pane 内で動いているかで分岐する**（`HERDR_ENV=1` かどうか）。pane 内なら pane 委譲を使う。pane 外ではスクリプトが `not_in_herdr` を返し、Codex には Agent tool が無いので、上のツール対応表に従って逐次実行で進める
 - **`--lead-name` は渡さない**。Codex は Claude Code の ListAgents に現れないため、この名前を渡すと委譲先が届かない宛先へ問い合わせることになる。省略すれば、委譲先へは pane 経由の連絡方法だけが案内される
 - **委譲先とのやり取りは `herdr agent prompt <name> "<メッセージ>"` で行う**（Codex には SendMessage が無い）。往復が予想される委譲は tab を残す
 

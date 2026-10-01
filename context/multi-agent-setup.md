@@ -37,7 +37,7 @@ Codex の走査パスは `~/.codex/skills/` + `~/.agents/skills/` + `<repo>/.age
 
 skill ごとに `~/.codex/skills/<name>` → `~/.claude/skills/<name>` を張る方式は**ドリフトする**。`.claude/skills` 側でスキルを削除・追加しても Codex 側が追従しないため。
 
-個別 symlink 方式を放置すると、**削除済み skill への壊れリンク**と**後から追加した skill の未リンク**が混在した半壊状態になる。`~/.agents/skills` へのディレクトリ symlink 1本にすれば追従する。
+個別 symlink 方式を放置すると、**削除済み skill への壊れリンク**と**後から追加した skill の未リンク**が混在し、一部の skill だけが使える状態になる。`~/.agents/skills` へのディレクトリ symlink 1本にすれば追従する。
 
 `~/.codex/skills/.system` は Codex 同梱スキル（`imagegen` / `openai-docs` / `plugin-creator` / `review-agent` / `skill-creator` / `skill-installer`）。**触らない**。ディレクトリ丸ごと symlink にできないのはこれが理由。
 
@@ -90,17 +90,17 @@ codex exec --sandbox read-only --skip-git-repo-check < /dev/null \
 
 ## plugin 化しない判断（複数回検討、いずれも見送り）
 
-- plugin は **`CLAUDE.md` / `settings.json` を配布できない**。同期の主戦場は `AGENTS.md` と `context/` なので、plugin 化すると経路が「plugin 自動更新」と「git」の2本に割れた上で、最も頻繁に編集するファイルは git 側に残る
+- plugin は **`CLAUDE.md` / `settings.json` を配布できない**。同期の主な対象は `AGENTS.md` と `context/` なので、plugin 化すると経路が「plugin 自動更新」と「git」の2本に分かれた上で、最も頻繁に編集するファイルは git 側に残る
 - plugin skill は**名前空間付き**（`/commit` → `/ns:commit`）。指示ファイル内の skill 名参照は **116箇所**あり、全書き換えが必要
 - marketplace 方式は実体が `plugins/cache/<mp>/<plugin>/<version>/` に入るため、**更新のたびに symlink 先が変わる**
 - 結論: 個人運用では symlink が優位。**他人に配布する必要が出たら再検討する**
-- 外部由来で自分が編集しない skill（Cloudflare 系等）は公式 marketplace の plugin に寄せる、という線引きは有効
+- 外部由来で自分が編集しない skill（Cloudflare 系等）は公式 marketplace の plugin で導入する、という区分は有効
 
 ## 実機検証で確定している事実（推測しない）
 
 - **`codex exec` にはグローバル指示がフル注入される**（Codex 自身にコンテキストを列挙させて確認できる）。このため Codex をレビュアーとして呼ぶと lead 用の外部レビュー規約を読んで**別 CLI へ再委託する**。役割分岐を `AGENTS.md` と `context/agent-cli-guide.md` に規定して解消済み
 - **`~/.agents/skills` 経由で skill が読める**（`~/.codex/skills` に存在しない skill が Codex から見えることで確認できる）
-- **AGENTS.md には byte 上限がある。** `project_doc_max_bytes` というキーが実在し、超過分は「project doc exceeds remaining budget; truncating」で**警告なく切られる**（公式 docs は default 値を書いていない）。26KB では全文が注入されたが、**48KB では末尾が切られることを実測で確認している**（`codex 0.145.0`。検証コマンドが返す「最後のセクション見出し」が AGENTS.md の実際の末尾より手前になる）。切られた分は Codex から見えないまま動くので、**AGENTS.md を伸ばしたら必ず上記「セットアップの検証」で末尾セクションが返るかを確認する**。切れていたら、`~/.codex/config.toml` に `project_doc_max_bytes` を明示して上限を上げるか、内容を `context/` へ移して AGENTS.md を縮める
+- **AGENTS.md には byte 上限がある。** `project_doc_max_bytes` というキーが実在し、超過分は「project doc exceeds remaining budget; truncating」で**警告なく切られる**（公式 docs は default 値を書いていない）。26KB では全文が注入されたが、**48KB では末尾が切られることを実測で確認している**（`codex 0.145.0`。検証コマンドが返す「最後のセクション見出し」が AGENTS.md の実際の末尾より手前になる）。切られた分を Codex は読まないまま動作するので、**AGENTS.md を伸ばしたら必ず上記「セットアップの検証」で末尾セクションが返るかを確認する**。切れていたら、`~/.codex/config.toml` に `project_doc_max_bytes` を明示して上限を上げるか、内容を `context/` へ移して AGENTS.md を縮める
 - **配布経路が未設定でも Codex は正常に起動する**（`~/.codex/AGENTS.md` 不在・`~/.agents/` 不在・`config.toml` に fallback なし、のいずれでもエラーにならない）ため、1台だけ設定が抜けていても気付けない。**セットアップ手順を変えたら全PCで上記の検証コマンドを流す**
 - `--ignore-rules` は execpolicy `.rules` 用で、AGENTS.md の読込抑制ではない
 - Codex にも plugin marketplace 機構はあるが Claude Code とは**別形式**（`~/.codex/config.toml` の `[marketplaces.*]`）

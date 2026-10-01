@@ -40,7 +40,7 @@ agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-m
 | `--output-format json` | session_id の取得に必須。**`stream-json` はバッファリングでハングし得るので使わない** |
 | `--resume <session_id>` | セッション継続 |
 
-- effort 表記はモデル系列で揺れる（gpt-5.6-sol 系・gpt-5.4 以前・claude 系は `medium` / `xhigh`、gpt-5.5 系の xhigh 相当のみ `extra-high`）
+- effort 表記はモデル系列で異なる（gpt-5.6-sol 系・gpt-5.4 以前・claude 系は `medium` / `xhigh`、gpt-5.5 系の xhigh 相当のみ `extra-high`）
 - JSON 出力は `{"type":"result","subtype":"success","is_error":false,"result":"...","session_id":"..."}` の形
 - `-p` モードではスキル（`/commit` 等）は使えない
 

@@ -58,8 +58,8 @@ baseRef は `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.md の `BASE
 以下のエラーパターンが頻出する。いずれも「今どのworktree状態にいるか」の見失いが原因。
 
 - **`Already in a worktree session`**: 既にEnterWorktree済みのセッションで再度EnterWorktreeしようとした。新規worktreeが必要なら先にExitWorktree（またはpathを渡して切替）する
-- **`No-op: there is no active EnterWorktree session to exit`**: ExitWorktreeが対応するセッションを見失っている（compaction後に多い）。実行前に`git worktree list`で実際の状態を確認してから判断する
-- **`Worktree has N commits. Removing will discard this work permanently`**: ExitWorktreeはコミット済み作業の破棄に安全装置がかかる。`git log`でコミット有無を確認し、残す場合は`action: "keep"`相当、破棄してよいとユーザーに確認済みの場合のみ`discard_changes: true`を明示する
+- **`No-op: there is no active EnterWorktree session to exit`**: ExitWorktreeが対応するセッションを特定できていない（compaction後に多い）。実行前に`git worktree list`で実際の状態を確認してから判断する
+- **`Worktree has N commits. Removing will discard this work permanently`**: ExitWorktreeはコミット済み作業があるとworktreeの削除を止める。`git log`でコミット有無を確認し、残す場合は`action: "keep"`相当、破棄してよいとユーザーに確認済みの場合のみ`discard_changes: true`を明示する
 - **compaction対策**: 現在worktree内にいるか・そのpath/ブランチ名はcompactionで失われやすい状態情報。長時間タスクではcompaction前に05_log.mdへ明記する（AGENTS.mdのCompact Instructions参照）
 
 ## 並列 bg session の指針

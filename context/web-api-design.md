@@ -101,7 +101,7 @@ IETF draft は失効済み（2026-08 時点 rev 07・Expired）。Stripe 実装�
 1. RFC Editor（rfc-editor.org）— 発行済み RFC があるか
 2. IETF Datatracker — 標準化進行中か（Web API 周辺の集約地は httpapi WG）。draft は rev とステータス（Active/Expired）を必ず確認する
 3. 大手 API の現物（GitHub / Stripe）— デファクトの実装
-4. 設計ガイド: Google AIP（番号付きルール集・体系性）、Zalando RESTful API Guidelines（理由の説明が厚い）
+4. 設計ガイド: Google AIP（番号付きルール集・体系性）、Zalando RESTful API Guidelines（理由の説明が詳しい）
 
 ## 鮮度の注意
 

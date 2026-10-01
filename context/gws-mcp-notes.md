@@ -14,7 +14,7 @@ python3 ~/.claude/bin/gws-drive-dl.py <account> <out_dir> "<file_id>:<保存名>
 - access token が切れていれば `refresh_token` で自動更新し、トークンファイルへ書き戻す
 - MCP のインストール先は `GWS_MCP_DIR` で上書き可（既定 `~/workspace/mcp/google-workspace-mcp`）
 
-**トークンファイル（`data/tokens/*.json`）の中身を標準出力に出さないこと。** 構造を確認するときもキー名と文字数に留める。`client_secret` は35文字程度なので、「長い値だけ伏せる」実装では素通りする。
+**トークンファイル（`data/tokens/*.json`）の中身を標準出力に出さないこと。** 構造を確認するときもキー名と文字数に留める。`client_secret` は35文字程度なので、「長い値だけ伏せる」実装では伏せられずに出力される。
 
 file_id は Drive の URL から取る: `https://drive.google.com/file/d/<FILE_ID>/view` / `https://drive.google.com/open?id=<FILE_ID>`
 
@@ -30,7 +30,7 @@ python3 ~/.claude/bin/gws-gmail-att-dl.py <account> <out_dir> <message_id> [<mes
 - 保存名は `<message_id>_<添付のファイル名>`。1メッセージ内の全添付を再帰的に拾う
 - トークンの読み込みと更新は `gws-drive-dl.py` の実装を import して共有している
 
-**注文書・請求書のような業務書類の添付は、拡張子を見て決め打ちしない。** PDF に見える書類が HTML で届くことがあり、その場合はタグを落としてテキスト化してから読む。
+**注文書・請求書のような業務書類の添付は、拡張子を見て決め打ちしない。** PDF に見える書類が HTML で届くことがあり、その場合はタグを除去してテキスト化してから読む。
 
 ## メール本文が戻り値の上限を超えるとき
 
