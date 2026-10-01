@@ -99,6 +99,7 @@
     ],
     "defaultMode": "auto"
   },
+  "model": "claude-opus-5-5[1m]",
   "hooks": {
     "SessionStart": [
       {
@@ -192,7 +193,7 @@
   "autoMemoryEnabled": false,
   "skipDangerousModePermissionPrompt": true,
   "skipWorkflowUsageWarning": true,
-  "theme": "auto",
+  "theme": "light",
   "editorMode": "normal",
   "preferredNotifChannel": "auto",
   "autoCompactEnabled": true,
@@ -202,6 +203,5 @@
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true,
-  "model": "claude-opus-5-5[1m]"
+  "skipAutoPermissionPrompt": true
 }
