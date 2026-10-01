@@ -7,24 +7,24 @@ description: 抽象的な要件・事業側の要求を深掘りし、既存実�
 
 抽象的な要求から、実装可能な粒度の「実装マスタ（01）」と、非開発者の関係者向けの「システム要件書（02）」をペアで作るワークフロー。`plan-feature-prs` の上流にあたる設計工程を担う。
 
-> 用語注記: 本スキルの「AskUserQuestion」はユーザーへの選択肢提示質問を指す（Claude Code: AskUserQuestion ツール。無い環境では番号付き選択肢のテキスト質問で代替）。「Explore agent」は読み取り専用の調査用サブエージェントを指す。
+> 用語注記: 本スキルの「AskUserQuestion」はユーザーへの選択肢提示質問を指す（Claude Code: AskUserQuestionツール。無い環境では番号付き選択肢のテキスト質問で代替）。「Explore agent」は読み取り専用の調査用サブエージェントを指す。
 
 ## 出力物
 
 | ファイル | 内容 | 読み手 |
 |---------|------|-------|
-| `01_requirements_skeleton.md` | 実装マスタ。What + How。DB スキーマ / API / Usecase / ガード / 影響範囲 / 設計理由 | 実装担当 |
-| `02_system_requirements.md` | システム要件書。What のみ。Why は注記程度 | 企画・事業側 / 連携先 / サポート担当 |
+| `01_requirements_skeleton.md` | 実装マスタ。What + How。DBスキーマ / API / Usecase / ガード / 影響範囲 / 設計理由 | 実装担当 |
+| `02_system_requirements.md` | システム要件書。Whatのみ。Whyは注記程度 | 企画・事業側 / 連携先 / サポート担当 |
 
-01 と 02 は同一プロジェクトを **2 種類の読み手向けに書き分けた文書**。01 を SSoT として 02 を抽出する関係。
+01と02は同一プロジェクトを **2種類の読み手向けに書き分けた文書**。01をSSoTとして02を抽出する関係。
 
 ## 既存設定との関係
 
-- **Phase 0-5（@context/workflow-rules.md）**: 本スキルは Phase 0-2（準備・調査・計画）を担う。Phase 3 以降の実装は `/plan-feature-prs` 等に引き継ぐ
+- **Phase 0-5（@context/workflow-rules.md）**: 本スキルはPhase 0-2（準備・調査・計画）を担う。Phase 3以降の実装は `/plan-feature-prs` 等に引き継ぐ
 - **メモリディレクトリ（@context/memory-file-formats.md）**: 既定保存先は `${MEMORY_DIR}/memory/YYMMDD_<context_name>/`
-- **agent review（@context/agent-cli-guide.md）**: 01 確定前の必須プロセス
+- **agent review（@context/agent-cli-guide.md）**: 01確定前の必須プロセス
 - **ライティング（`/ukwhatn-writing`）**: 文体・語彙ルールを全章で遵守
-- **`/plan-feature-prs`（既存スキル）**: 本スキルが上流（設計）、`plan-feature-prs` が下流（PR 分割・実装進行）。明確に分担
+- **`/plan-feature-prs`（既存スキル）**: 本スキルが上流（設計）、`plan-feature-prs` が下流（PR分割・実装進行）。明確に分担
 
 ## ワークフロー（Phase 0-5）
 
@@ -37,76 +37,76 @@ Phase 4: agent review   → 外部CLI で Action Required 0 まで反映
 Phase 5: 02 抽出         → 01 から What だけ抽出して書き、完了報告
 ```
 
-各 Phase の具体手順: @references/workflow-detail.md
+各Phaseの具体手順: @references/workflow-detail.md
 
 ## 厳守ルール
 
-### 1. コードベース SSoT
-- 既存実装に関する SSoT は**コードベース**。メモリディレクトリ内資料は outdated 可能性あり
+### 1. コードベースSSoT
+- 既存実装に関するSSoTは**コードベース**。メモリディレクトリ内資料はoutdated可能性あり
 - ドキュメントに事実を書く前に必ず実コードで裏取り
-- Explore agent の判断もそのまま信用せず、重要箇所は Read で再確認する
-- 公式仕様は context7 / WebSearch で確認
+- Explore agentの判断もそのまま信用せず、重要箇所はReadで再確認する
+- 公式仕様はcontext7 / WebSearchで確認
 
 ### 2. 禁止フレーズ
-以下を 01 / 02 のいずれにも書かない:
+以下を01 / 02のいずれにも書かない:
 
 要調査 / TBD / TODO / 要確認 / 要検討 / 追って確認 / 別途決定 / 要相談 / 場合によっては / 必要に応じて
 
-→ 書きたくなったら **Phase 2 で情報を揃える** か **AskUserQuestion で確定** する。チェックリスト: @references/quality-checklist.md
+→ 書きたくなったら **Phase 2で情報を揃える** か **AskUserQuestionで確定** する。チェックリスト: @references/quality-checklist.md
 
-### 3. 設計判断は AskUserQuestion
+### 3. 設計判断はAskUserQuestion
 - 複数案で迷う、スケジュール・金額・対外コミュニケーションが絡む、既存パターンから外れる、スコープ縮小判断 — いずれも勝手に決めない
 - 採用案 + 不採用案 + 理由をセットで `30_decisions.md` または `99_history.md` に記録
 
 ### 4. ライティング（`/ukwhatn-writing`）
 - 常体・簡潔・端的・宣言形
-- AI 翻訳調禁止（「〜することが可能」→「〜できる」、「実施する/対応する」の乱用回避）
+- AI翻訳調禁止（「〜することが可能」→「〜できる」、「実施する/対応する」の乱用回避）
 - 専門用語は原語 + `` `code` `` 表記
 - 推測はぼかし、断定は事実のみ
 - 自明な前置きを削る
 
 ### 5. 既存パターン踏襲
 - プロジェクトの既存規約・命名・レイヤー構成から自己判断で逸脱しない
-- 逸脱が必要なら必ず AskUserQuestion
+- 逸脱が必要なら必ずAskUserQuestion
 
 ### 6. 識別子・用語は正式名称
-- システム上の識別子（Cloud Task キュー名 / Scheduler ジョブ名 / enum 値 / procedure 名）は実装から抽出した正式名称で書く。独自の通称・意訳を作らない
-- 外部システムの操作は先方の正式 API 名で表現（例: 「カード失効」ではなく「解約（`AM01AE14-解約登録API`）」）
+- システム上の識別子（Cloud Taskキュー名 / Schedulerジョブ名 / enum値 / procedure名）は実装から抽出した正式名称で書く。独自の通称・意訳を作らない
+- 外部システムの操作は先方の正式API名で表現（例: 「カード失効」ではなく「解約（`AM01AE14-解約登録API`）」）
 - データ項目は既存スキーマのフィールドと対応させる。スキーマに無い概念語（「表示名」等）を導入しない
 
-### 7. 一覧は SSoT 全件 grep で網羅
-- Cloud Task / Scheduler / Webhook / API 等の一覧表は、定義箇所（routers / domain 等の SSoT ファイル）を全件 grep してから作る
-- 部分列挙なら「一部抜粋」と明記。grep 検証コマンドと件数を 05_log.md に記録
+### 7. 一覧はSSoT全件grepで網羅
+- Cloud Task / Scheduler / Webhook / API等の一覧表は、定義箇所（routers / domain等のSSoTファイル）を全件grepしてから作る
+- 部分列挙なら「一部抜粋」と明記。grep検証コマンドと件数を05_log.mdに記録
 
 ### 8. 可能な限り既存実装を踏襲できるよう網羅的に調査
-- 新アクター（例: 降格者）の挙動は、類似既存アクター（例: 退会者）の現状動作を実コードで網羅的に調査し、追従させるのが原則。対応表を 01 に書く
-- 既存実装のガード漏れ・不統一に見えるものを「バグ」「統一修正対象」と独断評価しない。意図的設計の可能性を AskUserQuestion で確認
+- 新アクター（例: 降格者）の挙動は、類似既存アクター（例: 退会者）の現状動作を実コードで網羅的に調査し、追従させるのが原則。対応表を01に書く
+- 既存実装のガード漏れ・不統一に見えるものを「バグ」「統一修正対象」と独断評価しない。意図的設計の可能性をAskUserQuestionで確認
 - 既存挙動の変更・広範囲リファクタをスコープに含めない。必要性を感じたら「後続フェーズ」として分離提示
 
 ### 9. 状態変更は内部表現まで特定
-- 「無効化」「失効」等の状態変更は、どのフィールド・enum 値で記録するかまで 01 で特定（例: `kycStatus = "reapplication"`）
-- 既存関数を流用できるかをまず確認し、流用できる場合は 01 に関数名を明記（例: `invalidateKycStatus` / `reissueMkp` 流用）。02 では「既存処理を流用」程度に言及
+- 「無効化」「失効」等の状態変更は、どのフィールド・enum値で記録するかまで01で特定（例: `kycStatus = "reapplication"`）
+- 既存関数を流用できるかをまず確認し、流用できる場合は01に関数名を明記（例: `invalidateKycStatus` / `reissueMkp` 流用）。02では「既存処理を流用」程度に言及
 
 ### 10. 要件の語彙で設計を組み立てない
 
 - 互換・移行・外部連携・規制対応など外部制約を満たす機能でも、成果物は自システムの第一級機能として設計・命名する
-- 制約は仕様（fixtures・規範ルール・契約文書）として自立させ、制約元（旧システム・相手システム・規格書）の語彙・構造を設計書の骨格や実装の識別子にしない。制約元への言及は仕様書・ADR の背景節のみに置く
-- 01 完成前に「章立て・用語が制約元との対応を骨格にしていないか」を確認する（対応表は根拠資料として分離し、01 本文は自システムの語彙で書く）
+- 制約は仕様（fixtures・規範ルール・契約文書）として自立させ、制約元（旧システム・相手システム・規格書）の語彙・構造を設計書の骨格や実装の識別子にしない。制約元への言及は仕様書・ADRの背景節のみに置く
+- 01完成前に「章立て・用語が制約元との対応を骨格にしていないか」を確認する（対応表は根拠資料として分離し、01本文は自システムの語彙で書く）
 
-## Phase 別の要点
+## Phase別の要点
 
 ### Phase 0: 準備
 
 1. `MEMORY_DIR` 確認（未定義なら `.local/`）
 2. 既存メモリディレクトリ検索 → 同コンテキストなら再利用、新規なら `${MEMORY_DIR}/memory/YYMMDD_<context_name>/` 作成
 3. `05_log.md` を初期化 / 追記、ユーザー指示を逐語記録
-4. 関連する過去タスク・issue を `findmem` 相当で探索（@context/workflow-rules.md §1.0）
-5. 本ワークフローのタスク一覧（Phase 1〜5）を 10_task.md に書く（Codex: plan 機構）
-6. **絶対パス固定**: 元 repo のメモリディレクトリ絶対パスを 05_log.md 冒頭に記録（worktree 運用時にメモリの書き込み先を誤らないため）
+4. 関連する過去タスク・issueを `findmem` 相当で探索（@context/workflow-rules.md §1.0）
+5. 本ワークフローのタスク一覧（Phase 1〜5）を10_task.mdに書く（Codex: plan機構）
+6. **絶対パス固定**: 元repoのメモリディレクトリ絶対パスを05_log.md冒頭に記録（worktree運用時にメモリの書き込み先を誤らないため）
 
 ### Phase 1: 要求深掘り
 
-AskUserQuestion で以下を **必ず確定** してから次に進む:
+AskUserQuestionで以下を **必ず確定** してから次に進む:
 
 1. **目的・解決したい問題**: なぜ作るのか
 2. **対象ユーザー / アクター**: 誰が使うか、誰が影響を受けるか（運用者 / 連携先 / エンドユーザー）
@@ -114,92 +114,92 @@ AskUserQuestion で以下を **必ず確定** してから次に進む:
 4. **既存機能との関係**: 新規 / 拡張 / 置換 / 共存
 5. **制約**: スケジュール、依存サービス、法的制約、運用制約
 6. **成果物の保存先**: デフォルトは `${MEMORY_DIR}/memory/YYMMDD_<context_name>/`、指定があれば従う
-7. **Phase 1 既知バグの取り込み有無**: 機能追加と同時に既知バグを修正するか
+7. **Phase 1既知バグの取り込み有無**: 機能追加と同時に既知バグを修正するか
 
-依頼文から一意に読み取れる項目は、推定した内容を明示した上で進めてよい。実際に解釈が分岐しうる項目（スコープ境界・対外影響・スケジュール・金額）のみ AskUserQuestion で確定する。
+依頼文から一意に読み取れる項目は、推定した内容を明示した上で進めてよい。実際に解釈が分岐しうる項目（スコープ境界・対外影響・スケジュール・金額）のみAskUserQuestionで確定する。
 
-質問の粒度・テンプレート: @references/workflow-detail.md §「Phase 1 質問テンプレート」
+質問の粒度・テンプレート: @references/workflow-detail.md §「Phase 1質問テンプレート」
 
-### Phase 2: 既存実装調査（SSoT 確認）
+### Phase 2: 既存実装調査（SSoT確認）
 
 調査観点:
 - 対象機能に関連する既存コードの場所・パターン
-- データモデル（DB スキーマ、Domain 型）
-- 既存 API / Usecase / Service / Repository / Adapter
+- データモデル（DBスキーマ、Domain型）
+- 既存API / Usecase / Service / Repository / Adapter
 - 既存ガード・エラーパターン
 - 命名規約・テンプレート・規約同意・通知メールの既存実装
-- Cloud Task / Scheduler / Webhook の関連エンドポイント
-- 影響範囲（同類画面・同類 procedure）
+- Cloud Task / Scheduler / Webhookの関連エンドポイント
+- 影響範囲（同類画面・同類procedure）
 
 調査手段:
-- **Explore agent を並列 3-5 で起動**してファイル/関数のリストアップ（**経路は Agent tool**: `Explore` は書き込み不可で調査結果を返すだけなので、委譲の既定である herdr pane に当たらない。@context/herdr-delegation.md「経路の選択」）
-- **重要箇所は Read で直接確認する**（agent の判定をそのまま信じない）
-- context7 / WebSearch で公式仕様確認（必須）
+- **Explore agentを並列3-5で起動**してファイル/関数のリストアップ（**経路はAgent tool**: `Explore` は書き込み不可で調査結果を返すだけなので、委譲の既定であるherdr paneに当たらない。@context/herdr-delegation.md「経路の選択」）
+- **重要箇所はReadで直接確認する**（agentの判定をそのまま信じない）
+- context7 / WebSearchで公式仕様確認（必須）
 
-並列調査パターン: @references/workflow-detail.md §「Phase 2 並列調査パターン」
+並列調査パターン: @references/workflow-detail.md §「Phase 2並列調査パターン」
 
-### Phase 3: 01 ドラフト作成
+### Phase 3: 01ドラフト作成
 
-実装可能な粒度で What + How を書く。章構成はプロジェクト次第で調整可。
+実装可能な粒度でWhat + Howを書く。章構成はプロジェクト次第で調整可。
 
-詳細テンプレート: @references/doc-templates.md §「01 実装マスタ」
+詳細テンプレート: @references/doc-templates.md §「01実装マスタ」
 
 #### 並列化（ユーザー指示時のみ）
 
-ユーザーが `ultracode` の語を使った、または並列化を明示的に指示した場合のみ Workflow で章別並列ドラフト → 統合する。自己判断（「大規模だから」等）では起動しない。並列パターン: @references/workflow-detail.md §「並列化」
+ユーザーが `ultracode` の語を使った、または並列化を明示的に指示した場合のみWorkflowで章別並列ドラフト → 統合する。自己判断（「大規模だから」等）では起動しない。並列パターン: @references/workflow-detail.md §「並列化」
 
-### Phase 4: agent review ループ
+### Phase 4: agent reviewループ
 
-@context/agent-cli-guide.md に従う:
+@context/agent-cli-guide.mdに従う:
 
-1. 初回: codex CLI（fallback: cursor agent → fable subagent）で 01 をレビュー
-2. Severity 別判断:
+1. 初回: codex CLI（fallback: cursor agent → fable subagent）で01をレビュー
+2. Severity別判断:
    - Action Required → 必ず修正
-   - Recommended → 必要性で判断、スキップ時は理由を 05_log.md に記録
+   - Recommended → 必要性で判断、スキップ時は理由を05_log.mdに記録
    - Minor → スタイル差は許容
-3. `--resume <session_id>` で 2 回目以降継続
+3. `--resume <session_id>` で2回目以降継続
 4. 打ち切り条件は @context/agent-cli-guide.md「レビューループ」に従う（数値をここに複写しない）。**本スキルの成果物（実装マスタ・システム要件書）は設計文書なので、実装差分より上限が少ない**
 
-実コードでの裏取り: agent の指摘も鵜呑みにせず、修正前に Read で事実確認。`Phase 2 で追加する内容を「現状無いから差異」と誤判定する`パターンに注意。
+実コードでの裏取り: agentの指摘も鵜呑みにせず、修正前にReadで事実確認。`Phase 2 で追加する内容を「現状無いから差異」と誤判定する`パターンに注意。
 
-### Phase 5: 02 抽出 + 完了報告
+### Phase 5: 02抽出 + 完了報告
 
-#### 02 抽出ルール
+#### 02抽出ルール
 
-01 から **What のみ** を抽出して `02_system_requirements.md` を書く。
+01から **Whatのみ** を抽出して `02_system_requirements.md` を書く。
 
 | 書く | 書かない |
 |------|---------|
 | 機能の存在・挙動・入出力 | クラス名・関数名・ファイルパス・行番号 |
-| 状態遷移・分岐条件 | Usecase / Service / Repository / Adapter の構造 |
-| API レスポンス・scope / claim 名 | DB のテーブル名・カラム名（最小限可、ただし極力避ける） |
-| 画面遷移の概要 | Procedure / queue key / DI 構造 |
+| 状態遷移・分岐条件 | Usecase / Service / Repository / Adapterの構造 |
+| APIレスポンス・scope / claim名 | DBのテーブル名・カラム名（最小限可、ただし極力避ける） |
+| 画面遷移の概要 | Procedure / queue key / DI構造 |
 | エラーコード（仕様レベル） | エラーメッセージキー・ステータスマッピング詳細 |
-| Why は注記程度（1-2 行、「※」「→」） | Why の詳細な設計理由 |
+| Whyは注記程度（1-2行、「※」「→」） | Whyの詳細な設計理由 |
 
-形式: 既存フェーズのシステム要件書と同等（章番号 + 箇条書き多用 + サブセクション X.Y / X.Y.Z + 表は最小限）。テンプレ: @references/doc-templates.md §「02 システム要件書」
+形式: 既存フェーズのシステム要件書と同等（章番号 + 箇条書き多用 + サブセクションX.Y / X.Y.Z + 表は最小限）。テンプレ: @references/doc-templates.md §「02システム要件書」
 
 #### 完了報告
 
 1. 作成ファイルのフルパス
 2. 主要設計判断のサマリ
-3. agent review ループの結果（Round 数・Action Required 件数）
+3. agent reviewループの結果（Round数・Action Required件数）
 4. 残課題（あれば。ただし「要調査」は禁止 — 残課題は具体的に書く）
 
 ## 既存スキルとの違い
 
 | スキル | 役割 | 本スキルとの関係 |
 |--------|------|---|
-| `/plan-feature-prs` | PR 分割と実装進行 | 本スキルが上流（設計）、`/plan-feature-prs` が下流（実装） |
-| `/codebase-review` | 既存コードの 6 観点並列レビュー | Phase 2 で部分的に活用可。本スキルは新機能設計が主目的 |
+| `/plan-feature-prs` | PR分割と実装進行 | 本スキルが上流（設計）、`/plan-feature-prs` が下流（実装） |
+| `/codebase-review` | 既存コードの6観点並列レビュー | Phase 2で部分的に活用可。本スキルは新機能設計が主目的 |
 | `/ukwhatn-writing` | 文体スキル | 本スキルはこれを内部で遵守 |
 
 ## 詳細参照
 
-- @references/workflow-detail.md — Phase 別の具体手順、質問テンプレ、並列化パターン
-- @references/doc-templates.md — 01 / 02 のテンプレート構造とサンプル
+- @references/workflow-detail.md — Phase別の具体手順、質問テンプレ、並列化パターン
+- @references/doc-templates.md — 01 / 02のテンプレート構造とサンプル
 - @references/quality-checklist.md — 禁止フレーズ・整合性チェック・完了基準
 
 ## チェックリスト（完了前に確認）
 
-完了基準は @references/quality-checklist.md §「完了基準」に集約（禁止フレーズ・grep 網羅確認・agent review 等の全項目）。
+完了基準は @references/quality-checklist.md §「完了基準」に集約（禁止フレーズ・grep網羅確認・agent review等の全項目）。

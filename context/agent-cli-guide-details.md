@@ -1,18 +1,18 @@
-# agent cli 使用ガイド（詳細: cursor・Codex 主体・pane・reviewer 分離・モデル）
+# agent cli使用ガイド（詳細: cursor・Codex主体・pane・reviewer分離・モデル）
 
-Read when: `context/agent-cli-guide.md` 冒頭の条件に該当したとき（cursor で実行する / 実行主体が Codex / pane でループを回す / reviewer を別 agent に分ける / モデルを既定から変える）。プロンプト本文・打ち切り条件・Severity 判断・注意事項は本体が真実源で、ここには書かない。
+Read when: `context/agent-cli-guide.md` 冒頭の条件に該当したとき（cursorで実行する / 実行主体がCodex / paneでループを回す / reviewerを別agentに分ける / モデルを既定から変える）。プロンプト本文・打ち切り条件・Severity判断・注意事項は本体が真実源で、ここには書かない。
 
 ## 目次
 
-- 実行主体が Codex の場合
+- 実行主体がCodexの場合
 - cursor（`agent` / `cursor-agent`）
-- pane でループを回す
-- reviewer を別 agent に分ける（Claude Code）
+- paneでループを回す
+- reviewerを別agentに分ける（Claude Code）
 - モデル選択
 
-## 実行主体が Codex の場合
+## 実行主体がCodexの場合
 
-外部レビュー CLI は cursor（`agent`）または claude を使い、codex 自身での再帰レビューは行わない（別ベンダーの bias 独立性が目的のため）。
+外部レビューCLIはcursor（`agent`）またはclaudeを使い、codex自身での再帰レビューは行わない（別ベンダーのbias独立性が目的のため）。
 
 ```bash
 # 初回
@@ -23,7 +23,7 @@ claude -p "<プロンプト>" --resume <session_id> --output-format json | jq -r
 
 ## cursor（`agent` / `cursor-agent`）
 
-codex が無い環境の fallback。コマンド名は環境で違うので `CURSOR_CLI="$(command -v cursor-agent || command -v agent)"` で解決し、以下の `agent` を読み替える。
+codexが無い環境のfallback。コマンド名は環境で違うので `CURSOR_CLI="$(command -v cursor-agent || command -v agent)"` で解決し、以下の `agent` を読み替える。
 
 ```bash
 # 初回（session_id を取得）
@@ -35,31 +35,31 @@ agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-m
 | オプション | 説明 |
 |---|---|
 | `-p, --print` | 非対話モード |
-| `--trust` | **必須**。省略するとワークスペース信頼の対話確認が出て non-interactive で失敗する |
-| `--model <model>` | effort / speed を名前に含む合成 slug（例: `gpt-5.6-sol-medium`）。実在は `agent --list-models` で確認し、無ければ一覧で最も近い gpt-5.6-sol 系を使う |
-| `--output-format json` | session_id の取得に必須。**`stream-json` はバッファリングでハングし得るので使わない** |
+| `--trust` | **必須**。省略するとワークスペース信頼の対話確認が出てnon-interactiveで失敗する |
+| `--model <model>` | effort / speedを名前に含む合成slug（例: `gpt-5.6-sol-medium`）。実在は `agent --list-models` で確認し、無ければ一覧で最も近いgpt-5.6-sol系を使う |
+| `--output-format json` | session_idの取得に必須。**`stream-json` はバッファリングでハングし得るので使わない** |
 | `--resume <session_id>` | セッション継続 |
 
-- effort 表記はモデル系列で異なる（gpt-5.6-sol 系・gpt-5.4 以前・claude 系は `medium` / `xhigh`、gpt-5.5 系の xhigh 相当のみ `extra-high`）
-- JSON 出力は `{"type":"result","subtype":"success","is_error":false,"result":"...","session_id":"..."}` の形
+- effort表記はモデル系列で異なる（gpt-5.6-sol系・gpt-5.4以前・claude系は `medium` / `xhigh`、gpt-5.5系のxhigh相当のみ `extra-high`）
+- JSON出力は `{"type":"result","subtype":"success","is_error":false,"result":"...","session_id":"..."}` の形
 - `-p` モードではスキル（`/commit` 等）は使えない
 
-## pane でループを回す
+## paneでループを回す
 
-`codex exec` 直叩きは1〜2ラウンドで終える単発レビュー向け。**ラウンドが長引く見込み・進捗を画面で追いたい・指摘と修正のやり取りを lead のコンテキストから分離したい**ときは pane に切り替える（経路選択の一般原則は `context/herdr-delegation.md`「経路の選択」）。
+`codex exec` 直叩きは1〜2ラウンドで終える単発レビュー向け。**ラウンドが長引く見込み・進捗を画面で追いたい・指摘と修正のやり取りをleadのコンテキストから分離したい**ときはpaneに切り替える（経路選択の一般原則は `context/herdr-delegation.md`「経路の選択」）。
 
-1. `bin/herdr-delegate.sh --kind codex --keep` で起動する。**`--keep` は必須**（無いと完了時に tab が閉じ、次のラウンドを送れない）
+1. `bin/herdr-delegate.sh --kind codex --keep` で起動する。**`--keep` は必須**（無いと完了時にtabが閉じ、次のラウンドを送れない）
 2. 初回の指示書に本体「プロンプト」の本文をそのまま渡す
 3. 2ラウンド目以降は `herdr agent prompt <name> "<次のプロンプト>"` で同じセッションへ送る（`--resume` 不要）
 4. 各ラウンドの結果は別パスに出させ、収束したら `herdr tab close <tab_id>` で閉じる
 
-codex は Claude Code のセッションではないため `SendMessage` は届かない。追加指示も `herdr agent prompt` で送る。モデル・枠の節約の判断軸は `context/herdr-delegation.md`「モデルの選択」。
+codexはClaude Codeのセッションではないため `SendMessage` は届かない。追加指示も `herdr agent prompt` で送る。モデル・枠の節約の判断軸は `context/herdr-delegation.md`「モデルの選択」。
 
-## reviewer を別 agent に分ける（Claude Code）
+## reviewerを別agentに分ける（Claude Code）
 
-Herdr 環境（`HERDR_ENV=1`）では前節の pane が既定。本節は Herdr 外、または reviewer を Claude Code 側の agent に残したい場合に使う。`name` を付けて spawn し、`SendMessage` で連携する。
+Herdr環境（`HERDR_ENV=1`）では前節のpaneが既定。本節はHerdr外、またはreviewerをClaude Code側のagentに残したい場合に使う。`name` を付けてspawnし、`SendMessage` で連携する。
 
-spawn 指示テンプレート:
+spawn指示テンプレート:
 
 ```
 あなたはこのセッションの reviewer です。
@@ -71,7 +71,7 @@ spawn 指示テンプレート:
 4. 同ガイド「レビューループ」の打ち切り条件を満たすまで繰り返す
 ```
 
-reviewer は計画レビューから実装レビューまで存続させてよい。CLI のセッションは Phase ごとに新規に作るが、reviewer 自体は再利用してコードベースの理解を保つ。
+reviewerは計画レビューから実装レビューまで存続させてよい。CLIのセッションはPhaseごとに新規に作るが、reviewer自体は再利用してコードベースの理解を保つ。
 
 ## モデル選択
 
@@ -79,7 +79,7 @@ reviewer は計画レビューから実装レビューまで存続させてよ�
 |---|---|---|
 | codex | `--model gpt-5.6-sol -c model_reasoning_effort="medium"` | レビュー標準 |
 | codex | `--model gpt-5.4` | 軽量・低コストの簡易チェック |
-| cursor | `--model gpt-5.6-sol-medium`（合成 slug） | fallback 時の標準 |
-| fable subagent | `Agent(model: "fable")` | 外部 CLI が両方使えないときの暫定（同一ベンダー） |
+| cursor | `--model gpt-5.6-sol-medium`（合成slug） | fallback時の標準 |
+| fable subagent | `Agent(model: "fable")` | 外部CLIが両方使えないときの暫定（同一ベンダー） |
 
-codex はモデル slug と reasoning effort を別に指定し、cursor は effort を slug に含める。両者を混同しない。
+codexはモデルslugとreasoning effortを別に指定し、cursorはeffortをslugに含める。両者を混同しない。

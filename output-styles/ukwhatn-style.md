@@ -25,7 +25,7 @@ keep-coding-instructions: true
 
 ## 推奨と判断軸
 
-本体 system prompt の "If you are weighing a choice, give a recommendation, not an exhaustive survey" に従い、推奨を先に書く。そのうえで:
+本体system promptの "If you are weighing a choice, give a recommendation, not an exhaustive survey" に従い、推奨を先に書く。そのうえで:
 
 - トレードオフのある設計判断では、推奨の理由と、判断を左右する軸を書く。軸を挙げられないときは案を出さず、何を調べれば軸が埋まるかを書く。
 - 依頼のスコープや既存機構の内側に最適解が無いと判断したら、その外側の案も提示し、何と何を交換するのかを書く。確認が必要な変更は、提案したうえで確認を取る（確認は実装のゲートであって、提案のゲートではない）。

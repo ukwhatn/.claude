@@ -1,6 +1,6 @@
-# GitHub の書き分け
+# GitHubの書き分け
 
-PR概要欄 / レビュー指摘 / レビュー返信 の3つ。共通して **絵文字・感嘆符は控えめ（指摘時はほぼ無し）**、技術用語は原語＋ `inline code`、件数・パス・ハッシュは具体で書く。**AI を使って書いた旨の開示（「AIと共同で」「Generated with 〜」等）は入れない。**
+PR概要欄 / レビュー指摘 / レビュー返信 の3つ。共通して **絵文字・感嘆符は控えめ（指摘時はほぼ無し）**、技術用語は原語＋ `inline code`、件数・パス・ハッシュは具体で書く。**AIを使って書いた旨の開示（「AIと共同で」「Generated with 〜」等）は入れない。**
 
 ---
 
@@ -41,7 +41,7 @@ PR概要欄 / レビュー指摘 / レビュー返信 の3つ。共通して **�
 - **軽微PR**: `## やったこと` を数行、`## やらなかったこと` は「特になし」、`## レビュー時チェック` は **「特にありません（普通にレビューしてください）」**。
 - **大規模PR**: カテゴリ別見出し＋件数併記（`### セキュリティ修正（8件）`）、冒頭に総数集計（`全73件（critical 4, major 22, minor 34, trivial 13）`）。`| カテゴリ | 件数 | 対応 |` の表で整理。
 - **OSS/外部repo**: 英語見出し（`## Summary` / `## Test plan`）＋箇条書きのみの簡素版に切替。
-- **運用注意・PoC警告**: 冒頭に GitHub alert。
+- **運用注意・PoC警告**: 冒頭にGitHub alert。
   ```
   > [!IMPORTANT]
   > developマージ後、terraform applyを各環境に対して実行します
@@ -69,19 +69,19 @@ dependabot PR #288（dev-dependencies group in /batch）で `ty` が `>=0.0.40` 
 
 | 本文に書くこと | 型 |
 |---|---|
-| どれが必須でどれが nits か | `<ファイル名> へのコメントのみcritical寄りの質問になります、それ以外はnitsです` |
+| どれが必須でどれがnitsか | `<ファイル名> へのコメントのみcritical寄りの質問になります、それ以外はnitsです` |
 | 必須対応の名指し | `<ファイル>:L<行> の部分だけ必須対応（確実に落ちるので）です` |
-| 指摘はあるが approve する旨 | `一点だけコメント入れてますが、全体LGTMです` / `気になったところにコメント入れましたが、今のままでも問題ないと思います` / `すべて軽微な指摘なのでapproveします！` |
+| 指摘はあるがapproveする旨 | `一点だけコメント入れてますが、全体LGTMです` / `気になったところにコメント入れましたが、今のままでも問題ないと思います` / `すべて軽微な指摘なのでapproveします！` |
 | 自信度の留保 | `あとはドキュメント見た限りのコメントなので、間違っているかもしれません 🙏` |
-| approve の付帯条件 | `conflictだけ解消いただければLGTMです` / `内容LGTMです、Conflict解消のみお願いします` |
+| approveの付帯条件 | `conflictだけ解消いただければLGTMです` / `内容LGTMです、Conflict解消のみお願いします` |
 | 再レビュー時の進捗 | `対応ありがとうございます。前回の指摘は全て確認しました。…N件コメントしています` |
 | 指摘対応の裁量を返す | `内容的には問題ありませんでした。指摘対応するかはおまかせします。` |
 
 本文に指摘内容の要約・観点別の見出し・「統合サマリ」表の類を置かない（行コメントと重複するだけ）。**本文に書くことが無いなら本文なしで行コメントだけ投稿する。**
 
-### 2-1. 指摘なしの approve
+### 2-1. 指摘なしのapprove
 
-Meowmoji で `LGTM✅` を綴る画像5枚だけを本文にするのが定番。
+Meowmojiで `LGTM✅` を綴る画像5枚だけを本文にするのが定番。
 
 ```html
 <img src="https://gh-pages.whatn.uk/blob-emojis/download/Meowmoji%20Signs/meowl.png" width="30"><img src="https://gh-pages.whatn.uk/blob-emojis/download/Meowmoji%20Signs/meowg.png" width="30"><img src="https://gh-pages.whatn.uk/blob-emojis/download/Meowmoji%20Signs/meowt.png" width="30"><img src="https://gh-pages.whatn.uk/blob-emojis/download/Meowmoji%20Signs/meowm.png" width="30"><img src="https://gh-pages.whatn.uk/blob-emojis/download/Meowmoji%20Signs/meowgreentick.png" width="30">
@@ -193,7 +193,7 @@ https://github.com/<org>/<repo>/pull/<n>/commits/<sha> で対応しました、�
 ### 3-4. 受領・次アクション宣言
 - `ありがとうございます！念の為update branchしてからマージします`
 - close/保留判断（短く逃げ道付き）: `一度closeします、必要であればreopen / recreateしてください`
-- close は理由1行で: `急ぎのhotfixは不要そうなので一旦close` / `<後続フェーズ>で回収する close`
+- closeは理由1行で: `急ぎのhotfixは不要そうなので一旦close` / `<後続フェーズ>で回収する close`
 - 謝罪は感嘆符 + 🙇: `修正漏れです！<判断>したので削除しました` / `すみません！<経緯>` / `申し訳ありません、<観点>が完全に抜けていたので<対応>`
 - 他人のスレッドへの割り込みは `横からすみません 🙇` で入る
 
@@ -201,7 +201,7 @@ https://github.com/<org>/<repo>/pull/<n>/commits/<sha> で対応しました、�
 - `@メンション` は独立行で先頭に置く
 - 相手の発言は `>` で引いてから答える（引用→回答を論点ごとに繰り返す）
 - 余談は `(aside)`、自分向け備忘は `memo:`、残作業は `TODO:` + チェックボックス
-- bot / CI の呼び出しは1行だけ投げる（`/review` / `/devin review` / `@<review-bot> re-review` / `@dependabot <subcommand>`）
+- bot / CIの呼び出しは1行だけ投げる（`/review` / `/devin review` / `@<review-bot> re-review` / `@dependabot <subcommand>`）
 
 ### 3-6. 自発的な作業報告は構造化
 **指摘への返信ではなく、自分から出す報告（dependabot一括対応等）のみ**。見出し＋番号＋表。`**問題**:` → `**対応**:` → `**TODO**:` のラベル太字で因果を整理。
@@ -221,7 +221,7 @@ https://github.com/<org>/<repo>/pull/<n>/commits/<sha> で対応しました、�
 
 ---
 
-## markdown の癖
+## markdownの癖
 - インラインコードを多用（パス・関数・変数・設定値・コマンドは必ず `` ` `` で囲む）
 - 短い注記はラベルを角括弧/コロンで先頭に置く（`[minor]` `[nits]` `[just comment]` `trivial:` `memo:` `(aside)`）
 - 全角スペース `　` を読点の代わりに使う（レビュー指摘・裁定メモの両方で出る）

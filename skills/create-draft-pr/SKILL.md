@@ -57,7 +57,7 @@ cat ${MEMORY_DIR}/context/pr-conventions.md 2>/dev/null   # MEMORY_DIR未定義�
 grep -n "pr-conventions\|PR 分量" CLAUDE.local.md 2>/dev/null
 ```
 
-あればそこに書かれた上限・セクション別目安・定型フレーズをそのまま使い、4-2 を飛ばす。ただし**実測日が半年以上前**、または**テンプレート自体が変わっている**場合は再実測して上書きする。
+あればそこに書かれた上限・セクション別目安・定型フレーズをそのまま使い、4-2を飛ばす。ただし**実測日が半年以上前**、または**テンプレート自体が変わっている**場合は再実測して上書きする。
 
 #### 4-2. キャッシュがなければ実測して書き出す
 
@@ -69,7 +69,7 @@ gh pr list --state merged --limit 40 --json changedFiles,body,author \
 
 そのうえで**今回と同規模（変更ファイル数が近い）のPR 2〜3件を実際に読み**、粒度と長さをそれに揃える。author別に差がある場合は、レビュアー層に受け入れられている多数派に合わせる。
 
-測った結果は `${MEMORY_DIR}/context/pr-conventions.md` に次の形で残す（`.local/` は global gitignore 済みでコミット不要。CLAUDE.local.md に直書きでもよい）:
+測った結果は `${MEMORY_DIR}/context/pr-conventions.md` に次の形で残す（`.local/` はglobal gitignore済みでコミット不要。CLAUDE.local.mdに直書きでもよい）:
 
 ```markdown
 # PR 分量規約（実測キャッシュ）
@@ -140,7 +140,7 @@ PRが少ない・新規repo等でキャッシュも実測もできない場合:
 
 文体は `/ukwhatn-writing` のGitHub向けガイド（PR概要欄）に従う。箇条書きは体言止め・常体、地の文は敬体。パス・関数・設定値・コマンドは `` ` `` で囲む。事実は断定、推測・提案だけぼかす。
 
-**チェックリストは事実を確認してから `[x]`**（依存追加・スキーマ変更・環境変数・migration の有無をdiffで確認する。虚偽チェック禁止）。補足を書くのは2ケースだけ:
+**チェックリストは事実を確認してから `[x]`**（依存追加・スキーマ変更・環境変数・migrationの有無をdiffで確認する。虚偽チェック禁止）。補足を書くのは2ケースだけ:
 
 - `[ ]` のまま残すとき（理由と後追いの合意を1行）
 - 該当ありでレビュアーが判断に迷うとき（1行）
@@ -155,7 +155,7 @@ PRが少ない・新規repo等でキャッシュも実測もできない場合:
 |---|---|
 | 実装の設計判断・採用理由の解説段落 | 判断を仰ぐものだけ「レビュー時チェック」相当に1行 |
 | トレードオフ・将来の代替実装案（「必要になれば〜に切替可能」） | 書かない。指摘されたら返信で書く |
-| テスト実行結果の数値羅列（「N suites / M tests green」） | 「関連テスト green を確認」1行、または実行コマンド1行 |
+| テスト実行結果の数値羅列（「N suites / M tests green」） | 「関連テストgreenを確認」1行、または実行コマンド1行 |
 | やったこと各項目にぶら下げた2〜4行の解説 | 1項目1行。非自明な1点だけネスト1行 |
 | チェックリスト各項目への長い根拠説明 | `[x]` のみ（例外は手順5の2ケース） |
 | 「〜することが可能です」「〜に関しまして」等の硬い言い回し | 「〜できます」「〜について」 |
@@ -177,23 +177,23 @@ gh pr create --draft \
 ```
 
 **CRITICAL**: `--assignee @me` を必ず付ける（未アサインのPRはレビュー担当・追跡の割り当てが漏れるため）。
-`--no-draft` 引数が指定された場合のみ `--draft` を外す。reviewer が CODEOWNERS 等で自動付与されるrepoでは `--reviewer` を指定しない。別ディレクトリ・worktreeから実行するときは `--repo <owner>/<repo>` を付ける。
+`--no-draft` 引数が指定された場合のみ `--draft` を外す。reviewerがCODEOWNERS等で自動付与されるrepoでは `--reviewer` を指定しない。別ディレクトリ・worktreeから実行するときは `--repo <owner>/<repo>` を付ける。
 
-**完了基準**: `gh pr view <n> --json isDraft,assignees,baseRefName` で Draft / assignee / base を確認できている。
+**完了基準**: `gh pr view <n> --json isDraft,assignees,baseRefName` でDraft / assignee / baseを確認できている。
 
-### 8. CI と conflict の確認
+### 8. CIとconflictの確認
 
-**CI の結果と conflict の有無を自分で確認してから報告する**。走行中なら完了まで監視する。失敗している・conflict がある場合は、指摘を待たず原因調査に入る。
+**CIの結果とconflictの有無を自分で確認してから報告する**。走行中なら完了まで監視する。失敗している・conflictがある場合は、指摘を待たず原因調査に入る。
 
 ```bash
 gh pr view <n> --json mergeable,mergeStateStatus,statusCheckRollup
 ```
 
-**完了基準**: CI が結論（success / failure）に達しており、`mergeable` を確認済み。走行中のまま報告していない。
+**完了基準**: CIが結論（success / failure）に達しており、`mergeable` を確認済み。走行中のまま報告していない。
 
 ### 9. 結果の報告
 
-PRのURL、base、Draftか、本文の文字数（予算に対して）、CI と conflict の状態を1〜3行で報告する。
+PRのURL、base、Draftか、本文の文字数（予算に対して）、CIとconflictの状態を1〜3行で報告する。
 
 ---
 
@@ -203,7 +203,7 @@ PRのURL、base、Draftか、本文の文字数（予算に対して）、CI と
 - **スタックPR**（他PRをベースにする）: 概要直後にblockquoteでベースPRと、分けた理由を1行
 - **複数repoにまたがる変更**: 概要直後に相手側PRを相互リンクし、マージ順・デプロイ順の前後関係があれば1行添える
 - **テンプレートのないrepo**: 概要 / やったこと / 影響範囲 の3見出し程度に留める
-- **運用作業を伴うPR**（マージ後に手動適用が必要等）: 冒頭に GitHub alert で明示する
+- **運用作業を伴うPR**（マージ後に手動適用が必要等）: 冒頭にGitHub alertで明示する
   ```
   > [!IMPORTANT]
   > マージ後に <適用作業> を実施します

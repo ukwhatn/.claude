@@ -43,9 +43,9 @@ description: スキルを新規作成する。「スキルを作って」「こ�
 - `~/.claude/skills/*/SKILL.md` のfrontmatter（name, description）を取得
 - 重複・競合がないか確認
 
-### Step 3: Skill vs Command vs CLAUDE.md 判定
+### Step 3: Skill vs Command vs CLAUDE.md判定
 
-@context/claude-customization-guide.md に従い判定:
+@context/claude-customization-guide.mdに従い判定:
 
 | 選択 | 条件 |
 |------|------|
@@ -113,7 +113,7 @@ user-level（`~/.claude/skills/`）に作成した場合は、そのターン内
 
 project-level（`<project>/.claude/skills/`）に作成した場合は、実装開始前ゲートの「直コミット可否の判定」（@context/workflow-rules.md）に従う。
 
-## SKILL.md テンプレート
+## SKILL.mdテンプレート
 
 ```yaml
 ---
@@ -146,7 +146,7 @@ description: <何をするか>。<いつ使うか>。使用タイミング: (1) 
 
 ## スキル設計原則（予測可能性）
 
-スキルの存在意義は、確率的なシステムから決定性を引き出すこと。根本の価値は**予測可能性**——毎回同じ出力ではなく、毎回同じ**プロセス**を踏ませること。以下はすべてその手段（出典: mattpocock/skills の writing-great-skills を本環境向けに要約）。
+スキルの存在意義は、確率的なシステムから決定性を引き出すこと。根本の価値は**予測可能性**——毎回同じ出力ではなく、毎回同じ**プロセス**を踏ませること。以下はすべてその手段（出典: mattpocock/skillsのwriting-great-skillsを本環境向けに要約）。
 
 ### invocationの選択
 
@@ -184,8 +184,8 @@ description: <何をするか>。<いつ使うか>。使用タイミング: (1) 
 
 ## チェックリスト
 
-- [ ] ~/.claude/AGENTS.md を読んだか
-- [ ] ~/.claude/context/claude-customization-guide.md を確認したか
+- [ ] ~/.claude/AGENTS.mdを読んだか
+- [ ] ~/.claude/context/claude-customization-guide.mdを確認したか
 - [ ] 既存スキル一覧を確認したか
 - [ ] Skill/CLAUDE.md追記の判定をしたか
 - [ ] descriptionに「何を」「いつ」「使わない条件（境界）」が含まれるか（model-invokedの場合）
@@ -194,7 +194,7 @@ description: <何をするか>。<いつ使うか>。使用タイミング: (1) 
 - [ ] 各ステップにチェック可能な完了基準があるか
 - [ ] no-op行（デフォルト挙動を変えない行）がないか
 - [ ] SKILL.mdは500行以下か
-- [ ] @context/xxx.md 形式で参照を記載したか
+- [ ] @context/xxx.md形式で参照を記載したか
 - [ ] read-onlyスキルならallowed-tools（事前承認）を付与したか
 - [ ] 新フロントマター（disallowed-tools, disable-model-invocation等）を検討したか
 - [ ] Gotchas（既知の注意点）・入出力例の追加を検討したか

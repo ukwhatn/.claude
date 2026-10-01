@@ -28,9 +28,9 @@ systematic-debuggingの各フェーズから参照される3技法。
 任意の固定時間待ち（sleep / setTimeout N秒）は、遅い環境で失敗し、速い環境で時間を浪費する。**時間ではなく条件を待つ**。
 
 - 「Nms待つ」を「条件Xが真になるまでポーリング（上限付き）」に置き換える
-- テストフレームワーク・ライブラリの待機プリミティブ（waitFor / Eventually 等）を優先する
+- テストフレームワーク・ライブラリの待機プリミティブ（waitFor / Eventually等）を優先する
 - 上限到達時は「何の条件が満たされなかったか」が分かるメッセージで失敗させる
 
 ---
 
-出典: obra/superpowers（MIT License）の root-cause-tracing / defense-in-depth / condition-based-waiting を要約翻案。詳細はリポジトリルートの NOTICE.md を参照。
+出典: obra/superpowers（MIT License）のroot-cause-tracing / defense-in-depth / condition-based-waitingを要約翻案。詳細はリポジトリルートのNOTICE.mdを参照。

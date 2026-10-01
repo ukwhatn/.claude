@@ -33,7 +33,7 @@ gh pr view <番号> --json title,body,author,headRefName,baseRefName,files
 gh pr diff <番号>
 ```
 
-### 2. checkout / worktree の判断
+### 2. checkout / worktreeの判断
 
 | ケース | 対応 |
 |-------|------|
@@ -60,24 +60,24 @@ CLAUDE.mdを読み、以下を把握:
 1. ファイル全体を読む（diffだけでなく）
 2. 既存パターンとの整合性を確認
 3. 問題点を特定
-4. **削除・リネームの残存確認（必須）**: diffで削除・リネームされた識別子（メソッド名・クラス名・定数・env key・docker service名・キュー名・設定キー等）を `git grep` / `rg` で**PR headのツリー全体**から検索する（checkout済みならそのツリー、未checkoutなら Step 2 の `git grep <pattern> FETCH_HEAD` 方式）。検索対象にはコードだけでなく config / docker-compose / .env / CI定義 / docs を含める。残存があればCriticalに昇格（過去実績: diffのみの確認でdocker-compose 2ファイルのキュー定義残存を見落とし）
+4. **削除・リネームの残存確認（必須）**: diffで削除・リネームされた識別子（メソッド名・クラス名・定数・env key・docker service名・キュー名・設定キー等）を `git grep` / `rg` で**PR headのツリー全体**から検索する（checkout済みならそのツリー、未checkoutならStep 2の `git grep <pattern> FETCH_HEAD` 方式）。検索対象にはコードだけでなくconfig / docker-compose / .env / CI定義 / docsを含める。残存があればCriticalに昇格（過去実績: diffのみの確認でdocker-compose 2ファイルのキュー定義残存を見落とし）
 
-### 4.5 棄却と投稿前の裏取り
+### 4.5棄却と投稿前の裏取り
 
 指摘を並べた直後に、投稿・報告する前に2段通す。
 
-**1. 棄却**: `~/.claude/context/code-review-checklist.md` §16 の類型に該当するものを除外する。特に「退行でないもの」「diff の外」「PR本文がスコープ外と明示しているもの」「既存 precedent と同形で悪化しないもの」「直しても部分的にしか消えないもの」は、**事実として正しくても出さない**。逆に「退行」と「PR本文が保留している判断の前提を一次ソースで確定させたもの」は必ず出す。
+**1. 棄却**: `~/.claude/context/code-review-checklist.md` §16の類型に該当するものを除外する。特に「退行でないもの」「diffの外」「PR本文がスコープ外と明示しているもの」「既存precedentと同形で悪化しないもの」「直しても部分的にしか消えないもの」は、**事実として正しくても出さない**。逆に「退行」と「PR本文が保留している判断の前提を一次ソースで確定させたもの」は必ず出す。
 
 **2. 裏取り**: 残した指摘の根拠を一次情報で確認する。
 
-- **ライブラリ・ランタイム・DB の挙動に依存する主張は、型定義・公式ドキュメント・一般論で終わらせず実機で1回確かめる**（ローカルDB・最小スクリプト）。上限値・エラー発生条件・デフォルト挙動はここで反証されることがある
+- **ライブラリ・ランタイム・DBの挙動に依存する主張は、型定義・公式ドキュメント・一般論で終わらせず実機で1回確かめる**（ローカルDB・最小スクリプト）。上限値・エラー発生条件・デフォルト挙動はここで反証されることがある
 - **数値を伴う主張は実測値にする**（メモリ・件数・所要時間）。見積もりで書かない
 - 確かめられなかったものは断定せず `〜ではないかと思います（おそらく）` の表現に弱める。弱められないなら指摘そのものを取り下げる
 - 設定値・タイムアウト・上限は該当リポジトリの実設定を読んで確認する（フレームワークの既定値を前提にしない）
 
 ### 5. 外部CLIによるレビュー（codex優先 / cursor fallback）
 
-別モデルの観点を追加する。CLI判定（codex優先／cursor fallback、両方使えなければ fable subagent）・コマンド形式（codexの`-c model_reasoning_effort`・cursorの`--trust`／`--output-format json`・jq抽出等）は @context/agent-cli-guide.md「CLI の選択と fallback」「基本コマンド」に従う。プロンプト本文は共通で以下を渡す:
+別モデルの観点を追加する。CLI判定（codex優先／cursor fallback、両方使えなければfable subagent）・コマンド形式（codexの`-c model_reasoning_effort`・cursorの`--trust`／`--output-format json`・jq抽出等）は @context/agent-cli-guide.md「CLIの選択とfallback」「基本コマンド」に従う。プロンプト本文は共通で以下を渡す:
 
 ```
 gh pr diff <番号> を実行してPR #<番号> の変更内容をレビューしてください。
@@ -95,7 +95,7 @@ PR情報:
 
 ### 6. 結果の統合
 
-**Critical/High/Medium が0件のときは、コメントのドラフトを作らず approve だけを提示する**（文面が必要なら明示の依頼を待つ）。GitHub のレビュー手順が「pending review → コメント追加 → submit」であっても、指摘がないなら承認だけで完結させる。
+**Critical/High/Mediumが0件のときは、コメントのドラフトを作らずapproveだけを提示する**（文面が必要なら明示の依頼を待つ）。GitHubのレビュー手順が「pending review → コメント追加 → submit」であっても、指摘がないなら承認だけで完結させる。
 
 以下のレポート形式は**ユーザーへの提示用**。GitHubへ投稿するときはこの形をそのまま貼らず、`skills/ukwhatn-writing/references/github.md`「2-0. レビュー本文と行コメントの役割分担」に従って、指摘を行コメントに割り、本文は交通整理1〜2文（または本文なし）にとどめる。
 

@@ -15,7 +15,7 @@
 
 Interface（呼び出し側が知るべき全て）のうち、可能な限り多くを型で表現する。型で表現された不変条件は、コメントと違いコンパイラが常時検証する。
 
-**不正な状態を表現不可能にする。** boolean flagの組合せより discriminated union:
+**不正な状態を表現不可能にする。** boolean flagの組合せよりdiscriminated union:
 
 ```typescript
 // BAD: isLoading && hasError という不正な組合せが表現できてしまう
@@ -43,7 +43,7 @@ type OrderId = string & { readonly __brand: "OrderId" };
 - `any` を使わない。外部境界からの未知の値は `unknown` で受け、型ガード・スキーマ検証（PJ採用のzod等）でnarrowingする
 - プロダクションコードで `as` による型アサーションを原則使わない。実態と異なる型を宣言すると、下流の推論がすべてその型を前提に進み、コンパイラの検証が無効になる。値の構築で型を満たすか、型ガードで絞る。正当な例外（branded typeのfactory・型ガードの内部実装・ライブラリ型の既知の不備）では、assertionをその関数の内側に閉じ込め、公開interfaceに漏らさない
 - オブジェクトリテラルが型に適合するかの検証は `satisfies` を使う（型を広げずに検証でき、推論も保たれる）
-- テストコードでの部分データ構築は例外的に許容する。その場合も `as` より `satisfies` や部分構築ヘルパ（`@total-typescript/shoehorn` の fromPartial 等、PJ採用のもの）を優先する
+- テストコードでの部分データ構築は例外的に許容する。その場合も `as` より `satisfies` や部分構築ヘルパ（`@total-typescript/shoehorn` のfromPartial等、PJ採用のもの）を優先する
 
 ## 3. 公開interfaceの戻り値型は明示する
 

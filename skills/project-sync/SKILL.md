@@ -9,7 +9,7 @@ description: PJ ドキュメントの同期。PJ CLAUDE.md の更新依頼、ド
 
 - PJ CLAUDE.mdの更新を依頼された場合
 - ドキュメント構造の整理を依頼された場合
-- 「user-level CLAUDE.md / AGENTS.md に合わせて」と指示された場合
+- 「user-level CLAUDE.md / AGENTS.mdに合わせて」と指示された場合
 - コード変更後にドキュメント更新が必要な場合（npm script追加・環境変数追加・APIエンドポイント追加/変更・アーキテクチャ変更を検出した場合）
 
 ## コード変更起点のドキュメント同期（旧documentationスキル統合）
@@ -64,9 +64,9 @@ ls ~/.claude/context/
 
 | 項目 | 確認内容 |
 |------|---------|
-| CLAUDE.mdのサイズ | 肥大せず簡潔か（@context/claude-customization-guide.md §3 参照） |
-| 変数定義 | MEMORY_DIR, BASE_BRANCH があるか |
-| 品質チェック | lint/format/typecheck/test コマンドがあるか |
+| CLAUDE.mdのサイズ | 肥大せず簡潔か（@context/claude-customization-guide.md §3参照） |
+| 変数定義 | MEMORY_DIR, BASE_BRANCHがあるか |
+| 品質チェック | lint/format/typecheck/testコマンドがあるか |
 | 検証方針 | テスト/E2E/スクショ/期待出力の指針があるか |
 | レビュー方針 | critical不変条件・検証境界・エラーハンドリング方式・却下類型があるか（無ければ追加を提案） |
 | @参照 | 詳細をcontext/に委譲しているか |
@@ -105,7 +105,7 @@ npm test
 - E2Eテスト: <e2e command>（あれば）
 - スクリーンショット: docs/screenshots/ に変更前後を保存
 - 期待出力: tests/fixtures/ 等に主要コマンド/APIのfixture
-- Stop Hook: 必要なら .claude/settings.json で設定
+- Stop Hook: 必要なら .claude/settings.jsonで設定
 
 ## レビュー方針
 - critical不変条件: [...] / 検証境界: [...] / エラーハンドリング方式: [...] / 却下類型: [...]
@@ -149,7 +149,7 @@ paths:
 
 承認後、以下を実行:
 
-1. CLAUDE.mdの更新（肥大させず簡潔に。@context/claude-customization-guide.md §3 参照）
+1. CLAUDE.mdの更新（肥大させず簡潔に。@context/claude-customization-guide.md §3参照）
 2. コンテキスト除外設定の更新（必要な場合。permissions.denyのReadルール）
 3. .claude/rules/の作成（必要な場合）
 4. 不要ファイルの削除
@@ -169,7 +169,7 @@ ls -la .claude/
 ## CLAUDE.md設計原則
 
 ### サイズ・記述の原則
-- CLAUDE.md のサイズ・強調・命令形・理由付け等の設計原則は @context/claude-customization-guide.md §3 に従う（公式目標は1ファイル200行未満。肥大させず、詳細は `@.claude/context/` へ委譲する）
+- CLAUDE.mdのサイズ・強調・命令形・理由付け等の設計原則は @context/claude-customization-guide.md §3に従う（公式目標は1ファイル200行未満。肥大させず、詳細は `@.claude/context/` へ委譲する）
 
 ### 必須セクション
 ```markdown
@@ -198,8 +198,8 @@ BASE_BRANCH=<branch>
 - 禁止事項
 
 ### 記載してはいけない内容
-- **サブエージェント呼び出しの強制** (`quality-checker / pr-reviewer 等を必ず呼び出せ` 等): user-level の `~/.claude/context/tool-claude-code.md` 「委譲判断」と重複・矛盾するため
-- **Phase 0-5 の重複定義**: user-level の workflow-rules.md に委譲
+- **サブエージェント呼び出しの強制** (`quality-checker / pr-reviewer 等を必ず呼び出せ` 等): user-levelの `~/.claude/context/tool-claude-code.md` 「委譲判断」と重複・矛盾するため
+- **Phase 0-5の重複定義**: user-levelのworkflow-rules.mdに委譲
 - **過度な強制表現** (`こまめに`、`必ず`、`絶対に` 等の多用): 自律実行前提に反する
 
 ## 不要ファイルの判断基準
@@ -213,7 +213,7 @@ BASE_BRANCH=<branch>
 
 ## チェックリスト
 
-- [ ] CLAUDE.mdが肥大せず簡潔（@context/claude-customization-guide.md §3 準拠）
+- [ ] CLAUDE.mdが肥大せず簡潔（@context/claude-customization-guide.md §3準拠）
 - [ ] 変数（MEMORY_DIR, BASE_BRANCH）が定義済み
 - [ ] 品質チェックコマンドが記載済み
 - [ ] 検証方針セクションがある（テスト/E2E/スクショ/期待出力）

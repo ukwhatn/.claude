@@ -11,7 +11,7 @@ PRに付いた特定のレビューコメント（discussion）を取得し、�
 
 - **pr-reviewスキル**: PR全体のレビュー用。本スキルは個別コメントへの対応用
 - **commitスキル**: 対応コミットは/commit準拠（git-cz形式）
-- **ukwhatn-writingスキル**: 返信ドラフト作成時に `/ukwhatn-writing` を実行する（文体を意識するだけでは GitHub 向けガイドの実体がロードされない）
+- **ukwhatn-writingスキル**: 返信ドラフト作成時に `/ukwhatn-writing` を実行する（文体を意識するだけではGitHub向けガイドの実体がロードされない）
 - **worktree運用（user-level AGENTS.md）**: コード修正を伴うためworktree運用ルールに従う
 
 ## ワークフロー

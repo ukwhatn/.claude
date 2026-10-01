@@ -6,7 +6,7 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 
 # Instructions Audit
 
-指示ファイル（CLAUDE.md / skills / context / rules / settings.jsonのガード設定）を @context/claude-customization-guide.md のrubric（§7）で監査し、4分類の指摘を修正案付きで報告する。**このスキルは指摘のみを行い、修正はユーザー承認後に別途実施する**（read-only）。
+指示ファイル（CLAUDE.md / skills / context / rules / settings.jsonのガード設定）を @context/claude-customization-guide.mdのrubric（§7）で監査し、4分類の指摘を修正案付きで報告する。**このスキルは指摘のみを行い、修正はユーザー承認後に別途実施する**（read-only）。
 
 ## 使い方
 
@@ -27,7 +27,7 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 ### Step 1: 対象決定
 
 引数から監査スコープを確定する。
-- 完了基準: 監査対象のルートパスと、監査対象ファイル群（CLAUDE.md / context/ / skills/ / rules/ / settings.json）のリストが確定している。user-level の実体は `~/.claude/AGENTS.md`（`CLAUDE.md` は互換symlink。修正提案の編集対象は実体側にする）
+- 完了基準: 監査対象のルートパスと、監査対象ファイル群（CLAUDE.md / context/ / skills/ / rules/ / settings.json）のリストが確定している。user-levelの実体は `~/.claude/AGENTS.md`（`CLAUDE.md` は互換symlink。修正提案の編集対象は実体側にする）
 
 ### Step 2: インベントリ作成
 
@@ -35,16 +35,16 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 1. CLAUDE.mdと、そこから`@`importされるファイルを**再帰的に**辿る（@importは毎セッション常駐のため、常駐行数はimport先を全て合算して計算する）
 2. `skills/*/SKILL.md` の一覧・各行数・frontmatter（description長、allowed-tools有無）・references/の有無
 3. `context/`・`rules/` の一覧と行数、どこから参照されているか（@import / プレーンパス / 未参照）
-4. `settings.json` の hooks / permissions.deny・allow
+4. `settings.json` のhooks / permissions.deny・allow
 
 - 完了基準: 「常駐合計行数」「skill数とdescription合計」「未参照ファイル一覧」が数値で出ている
 
 ### Step 3: rubric適用（監査本体）
 
-@context/claude-customization-guide.md の§7 rubric（4分類）と§1-5の原則を対象に適用する。
+@context/claude-customization-guide.mdの§7 rubric（4分類）と§1-5の原則を対象に適用する。
 
-**対象が大きい場合（合計500行超）はサブエージェントに委譲する**（コンテキスト保護。分割例: CLAUDE.md+context系 / skills系）。**経路は Agent tool**: 委譲先は指摘を lead に返すだけでファイルを書かない（報告のファイル生成はユーザーが求めた場合のみ lead が行う）ため、委譲の既定である herdr pane に当たらない（@context/herdr-delegation.md「経路の選択」）。サブエージェントへの指示に含めること:
-- 監査rubricとして claude-customization-guide.md を読むこと
+**対象が大きい場合（合計500行超）はサブエージェントに委譲する**（コンテキスト保護。分割例: CLAUDE.md+context系 / skills系）。**経路はAgent tool**: 委譲先は指摘をleadに返すだけでファイルを書かない（報告のファイル生成はユーザーが求めた場合のみleadが行う）ため、委譲の既定であるherdr paneに当たらない（@context/herdr-delegation.md「経路の選択」）。サブエージェントへの指示に含めること:
+- 監査rubricとしてclaude-customization-guide.mdを読むこと
 - 指摘ごとに「対象ファイル:行」「4分類のどれか」「根拠となる原則（§番号）」「具体的な修正案」を返すこと
 - 下記Gotchasを遵守すること
 
@@ -65,4 +65,4 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 - **allowed-toolsは事前承認であって制限ではない**。「セキュリティのため制限せよ」という指摘は誤り。read-only skillへの指摘は「事前承認の欠如（permission prompt増）」として出し、実際の制限が必要な場合のみdisallowed-tools/denyを提案する
 - **コミュニティ由来の数値（行数上限等）を規範として指摘しない**。目安として提示し、公式原則（「消したら間違えるか」）を判断基準にする
 - 重複に見える記述が意図的な場合がある（冒頭・末尾への重要ルール再掲等）。削除提案時は意図の可能性を添える
-- 監査対象に本スキルや claude-customization-guide.md 自身が含まれる場合も除外しない
+- 監査対象に本スキルやclaude-customization-guide.md自身が含まれる場合も除外しない

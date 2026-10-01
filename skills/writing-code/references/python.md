@@ -6,7 +6,7 @@
 
 - Seamは `typing.Protocol`（構造的部分型）で表現し、**消費側の近くで定義する**。実装側はProtocolを知らずに満たせるため、疎結合なseamになる
 - ABC（継承ベース）は、所有する型階層に共通実装を持たせたい時のみ。差し替え可能性だけが目的ならProtocolを使う
-- two adapters rule は同様に適用: 差し替えの実需（本番+テスト等）がないProtocolは作らない
+- two adapters ruleは同様に適用: 差し替えの実需（本番+テスト等）がないProtocolは作らない
 
 ## 型ヒント
 
@@ -15,7 +15,7 @@
 
 ## 不正な状態を表現不可能にする
 
-- 状態の組合せは `Enum` / `Literal` union で列挙し、boolean flagの組合せで表現しない
+- 状態の組合せは `Enum` / `Literal` unionで列挙し、boolean flagの組合せで表現しない
 - ドメイン概念を裸のdict・tupleで受け渡さない（Primitive Obsession / Data Clumps）。`dataclass`（不変にするなら `frozen=True`）またはpydanticモデルにする。`dict[str, Any]` のバケツリレーはinterfaceを不透明にする
 
 ## DIと副作用

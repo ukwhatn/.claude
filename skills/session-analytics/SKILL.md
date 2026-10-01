@@ -13,7 +13,7 @@ allowed-tools: Bash(uv run:*), Bash(python3:*), Read
 | 引数 | モード | 手順 |
 |---|---|---|
 | なし | 集計: カウンタを出して示唆を抽出する | 本ファイル |
-| `mining` | 発話マイニング: ユーザー発話を全件読み、指示ファイルの修正提案を作る | [references/directive-mining.md](references/directive-mining.md) を Read して従う |
+| `mining` | 発話マイニング: ユーザー発話を全件読み、指示ファイルの修正提案を作る | [references/directive-mining.md](references/directive-mining.md) をReadして従う |
 
 両方回すと、定量シグナル（中断・権限拒否の件数）と発話の内容を突き合わせられる。以下は集計モードの手順。
 

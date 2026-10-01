@@ -6,7 +6,7 @@
 
 - **Accept interfaces, return structs。** interfaceは**消費側パッケージで**、必要な最小メソッドだけで定義する。小さいinterfaceはdeep moduleの条件そのもの（`io.Reader` が模範）
 - Goの暗黙的interface充足がseamを作る: 実装側は消費側のinterfaceを知らずに満たす。提供側パッケージで大きなinterfaceを事前定義するのはSpeculative Generality
-- two adapters rule は同様に適用: 本番実装しか存在しないinterfaceは定義しない（テストfakeが2つ目のadapterになる時に初めて切る）
+- two adapters ruleは同様に適用: 本番実装しか存在しないinterfaceは定義しない（テストfakeが2つ目のadapterになる時に初めて切る）
 
 ## エラー設計
 
@@ -16,7 +16,7 @@
 ## 不正な状態を表現不可能にする
 
 - zero valueがそのまま有効な状態になる設計を優先する（`sync.Mutex` / `bytes.Buffer` が模範）
-- 列挙は typed const（`type Status int` + `const (...)` ）で表現し、裸のstring/intを流さない（Primitive Obsession）
+- 列挙はtyped const（`type Status int` + `const (...)` ）で表現し、裸のstring/intを流さない（Primitive Obsession）
 
 ## DIと副作用
 

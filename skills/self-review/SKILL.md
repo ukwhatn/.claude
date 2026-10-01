@@ -11,7 +11,7 @@ allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(rg:*)
 
 ## 既存設定との関係
 
-- **Phase 4 品質確認（@context/workflow-rules.md）**: lint/format/typecheck/testを補完する。agent reviewの前に実施すると指摘ノイズが減る
+- **Phase 4品質確認（@context/workflow-rules.md）**: lint/format/typecheck/testを補完する。agent reviewの前に実施すると指摘ノイズが減る
 - **pr-reviewスキル**: 他者PRのレビュー用。本スキルは自分のブランチのPR提出前チェック用
 
 ## ワークフロー
@@ -33,7 +33,7 @@ diffは省略せず全ファイル確認する。一部だけ確認しても意�
 diffで**削除・リネームされた識別子**を抽出し、リポジトリ全体で残存検索する:
 
 - 対象識別子: メソッド名・クラス名・定数・env key・docker service名・キュー名・設定キー・ルーティングパス等
-- 検索範囲: コードに加えて config / docker-compose / .env* / CI定義（.github/workflows等）/ docs / テストfixture
+- 検索範囲: コードに加えてconfig / docker-compose / .env* / CI定義（.github/workflows等）/ docs / テストfixture
 - コマンド: `git grep -n "<identifier>"` または `rg -n "<identifier>"`
 
 ```bash
@@ -48,7 +48,7 @@ git grep -n "konbini-payment-requires-action"
 
 - **format副作用**: 自分のタスクと無関係なファイルの整形のみの変更（`git diff --stat` で変更行数が多い割に意図が不明なファイル）
 - **混入**: `.idea/` `.vscode/` `.env*` `*.log` lockファイルの意図しない変更、一時ファイル
-- **デバッグ残骸**: `console.log` / `print` / `debugger` / コメントアウトされた試行コード / TODO の置き忘れ
+- **デバッグ残骸**: `console.log` / `print` / `debugger` / コメントアウトされた試行コード / TODOの置き忘れ
 - **無関係コミット**: `git log` に他タスクのコミットが混入していないか（rebase漏れ）
 
 ### 4. タスク要件との突合
@@ -83,7 +83,7 @@ git grep -n "konbini-payment-requires-action"
 
 ## 注意事項
 
-- 検出した問題の修正は報告後にユーザー判断を仰ぐ（勝手にファイルを戻さない。特に `git checkout --` は format副作用と断定できるファイルのみ・判断不能時はユーザー確認）
+- 検出した問題の修正は報告後にユーザー判断を仰ぐ（勝手にファイルを戻さない。特に `git checkout --` はformat副作用と断定できるファイルのみ・判断不能時はユーザー確認）
 - 「漏れなく」は要件に対する漏れの確認であり、無関係な要素の網羅列挙ではない（スコープ膨張禁止）
 
 ## 既存設定への参照

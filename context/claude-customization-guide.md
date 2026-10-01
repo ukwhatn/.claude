@@ -1,8 +1,8 @@
-# Claude Code カスタマイズガイド（CLAUDE.md / Skills / Hooks 設計の真実源）
+# Claude Codeカスタマイズガイド（CLAUDE.md / Skills / Hooks設計の真実源）
 
-user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md・skills・context の作成・編集・監査時に読む。
+user-level / project-level共通の指示ファイル設計原則。CLAUDE.md・skills・contextの作成・編集・監査時に読む。
 
-> 本ガイドは Claude Code 固有の機構（@import・hooks・settings.json 等）を扱う。user-level の実体ファイルは `~/.claude/AGENTS.md`（`CLAUDE.md` は互換 symlink）であり、本ガイドの「CLAUDE.md」は user-level ではこの実体を指す（project-level は従来どおり CLAUDE.md 命名）。
+> 本ガイドはClaude Code固有の機構（@import・hooks・settings.json等）を扱う。user-levelの実体ファイルは `~/.claude/AGENTS.md`（`CLAUDE.md` は互換symlink）であり、本ガイドの「CLAUDE.md」はuser-levelではこの実体を指す（project-levelは従来どおりCLAUDE.md命名）。
 仕様の記述は公式ドキュメント（code.claude.com/docs）が根拠。実測・ヒューリスティック由来の数値は目安として扱う。
 
 ## 1. 知識の置き場所判定
@@ -44,18 +44,18 @@ user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md�
 
 指示が実際に注入される順序・層は次の通り:
 
-1. **system prompt**（公式記載: 約4,200トークン。出典 context-window.md）
-2. その**末尾に output style が追記される**（`"All output styles have their own custom instructions added to the end of the system prompt."` output-styles.md）
-3. **user message として CLAUDE.md が注入される**（`"CLAUDE.md content is delivered as a user message after the system prompt, not as part of the system prompt itself. Claude reads it and tries to follow it, but there's no guarantee of strict compliance, especially for vague or conflicting instructions."` memory.md）
+1. **system prompt**（公式記載: 約4,200トークン。出典context-window.md）
+2. その**末尾にoutput styleが追記される**（`"All output styles have their own custom instructions added to the end of the system prompt."` output-styles.md）
+3. **user messageとしてCLAUDE.mdが注入される**（`"CLAUDE.md content is delivered as a user message after the system prompt, not as part of the system prompt itself. Claude reads it and tries to follow it, but there's no guarantee of strict compliance, especially for vague or conflicting instructions."` memory.md）
 4. 会話（ユーザー発話・ツール結果等）
 
-**帰結**: 応答形式の規定は **output style に置くのが最も効果が高い**（system prompt の一部になり、かつ system prompt 前文が応答形式の参照先として output style を名指ししている）。CLAUDE.mdは公式に**遵守保証なし**と明記された層である。
+**帰結**: 応答形式の規定は **output styleに置くのが最も効果が高い**（system promptの一部になり、かつsystem prompt前文が応答形式の参照先としてoutput styleを名指ししている）。CLAUDE.mdは公式に**遵守保証なし**と明記された層である。
 
 **関連する公式仕様**:
 - `keep-coding-instructions`: `true`でClaude Code組み込みのソフトウェアエンジニアリング指示を保持、デフォルトの`false`では**削除**される
-- UserPromptSubmit hook: stdoutがClaudeに見える3イベントの1つ（他はSessionStart / UserPromptExpansion）。複数hookは並列実行され同一ハンドラは自動重複排除される。`hookSpecificOutput.additionalContext`で注入、上限10,000文字。ブロックはexit **2**（Unix慣例の1ではない）。出典 hooks.md
+- UserPromptSubmit hook: stdoutがClaudeに見える3イベントの1つ（他はSessionStart / UserPromptExpansion）。複数hookは並列実行され同一ハンドラは自動重複排除される。`hookSpecificOutput.additionalContext`で注入、上限10,000文字。ブロックはexit **2**（Unix慣例の1ではない）。出典hooks.md
 
-## 3. CLAUDE.md 設計原則
+## 3. CLAUDE.md設計原則
 
 ### サイズと内容
 - 公式は「**1ファイルあたり200行未満を目標**（target under 200 lines per CLAUDE.md file）。長いほどcontextを消費し遵守率が下がる」と明記。コミュニティ実測は60〜300行の範囲に分布。「肥大したCLAUDE.mdは指示自体を無視させる」
@@ -74,9 +74,9 @@ user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md�
 
 `~/.claude` は**公開リポジトリ**。AGENTS.md・`context/`・`skills/` に書く内容は、常に汎用化した規則そのものだけにする。
 
-- **実例・出来事・日付・固有名詞を書かない**: 「実例: ◯◯で〜が起きた」「〜という指摘があった」「YYYY-MM 実測」、勤務先・プロダクト・取引先・人物・社内ツール・業務コードの関数名 / ファイル名は書かない。規則が成り立つ理由は一般的な事実として規則の文面に織り込む。例示が必要なら `<機能名>` のプレースホルダにする。日付の例外は、外部仕様の as-of 表明と、陳腐化管理が規則本体に組み込まれた判定結果のみ。個別の出来事・実値は git 管理外のメモリディレクトリ（`05_log.md` / `99_history.md`）に書く
+- **実例・出来事・日付・固有名詞を書かない**: 「実例: ◯◯で〜が起きた」「〜という指摘があった」「YYYY-MM実測」、勤務先・プロダクト・取引先・人物・社内ツール・業務コードの関数名 / ファイル名は書かない。規則が成り立つ理由は一般的な事実として規則の文面に織り込む。例示が必要なら `<機能名>` のプレースホルダにする。日付の例外は、外部仕様のas-of表明と、陳腐化管理が規則本体に組み込まれた判定結果のみ。個別の出来事・実値はgit管理外のメモリディレクトリ（`05_log.md` / `99_history.md`）に書く
 - **規則は防ぎたい結果で書き、手段（パラメータ名・コマンド・ツール名）は添え物にする**。手段だけを名指しした規則は、別の手段で同じ結果を起こしても字面上は守られたことになる（「◯◯を `false` にする」ではなく「本文に◯◯を含めない（`false` にするのはそのため）」）
-- **記録するルールは一次情報と突き合わせてから書く**。ルール本文は指示ファイルに 1 箇所だけ置き、記録・追跡ファイルからは参照する（複写すると変更時に片方だけ更新されて食い違う）
+- **記録するルールは一次情報と突き合わせてから書く**。ルール本文は指示ファイルに1箇所だけ置き、記録・追跡ファイルからは参照する（複写すると変更時に片方だけ更新されて食い違う）
 - **毎ターン・毎作業に宣言文・記録・確認の往復を挟ませる規則は、防いでいる失敗がそのコストを上回ることを確かめてから書く**。宣言・記録・確認の手順は規則の数だけ積み重なり、システムプロンプトの既定動作（そのまま実行する・簡潔に書く）を打ち消す
 
 ### 書き方
@@ -109,7 +109,7 @@ user-level / project-level 共通の指示ファイル設計原則。CLAUDE.md�
 | 人間向け | README.md, docs/ |
 | エージェント向け | CLAUDE.md, context/, rules/ |
 
-## 4. Skills 設計原則
+## 4. Skills設計原則
 
 ### いつSkillにするか
 - タスク限定の手続き知識・社内固有ワークフロー・大量の参照資料・決定論的スクリプト。「毎回は要らないが、あるタスクでは深く要る」もの
@@ -153,13 +153,13 @@ description: 何をするか。いつ使うか。使わない条件。
 ### 検証・改善ループ
 - **evaluation-driven**: 先にevalを作る（skill無しで実タスクを実行→失敗を記録→3シナリオ→baseline→最小の指示を足して反復）
 - 作成後は**実タスク**（作り物でない）で挙動観察: 詰まる箇所・予想外の探索順・読まれないファイル・繰り返し読むファイルを見つけ、本文に反映
-- 実際に使うモデル（既定の Opus と、委譲先に指定するモデル）で動作確認
+- 実際に使うモデル（既定のOpusと、委譲先に指定するモデル）で動作確認
 
 ## 5. Hooks・検証機構
 
 - 検証のゲート強度: (a) 同一プロンプト内でcheck実行 → (b) `/goal`条件で毎ターン再評価 → (c) Stop hook（scriptで判定、通らない限りターン終了をブロック。8連続ブロックで強制終了） → (d) verification subagent
 - **証拠を出させる**: 成功を主張させず、test出力・実行コマンド・スクリーンショットを提示させる
-- adversarial reviewer（gapを探せと指示されたレビュアー）は健全な実装でもgapを報告しがち。レビュアー側で観点を絞ると報告自体が減るため、絞り込みは受け取った側（lead）のフィルタで行う（運用: `context/agent-cli-guide.md`「Severity 別の lead 判断」）
+- adversarial reviewer（gapを探せと指示されたレビュアー）は健全な実装でもgapを報告しがち。レビュアー側で観点を絞ると報告自体が減るため、絞り込みは受け取った側（lead）のフィルタで行う（運用: `context/agent-cli-guide.md`「Severity別のlead判断」）
 - 繰り返し破られるCLAUDE.mdルールはhookに格上げする（CLAUDE.mdに意図、hookで強制の二重化）
 
 ## 6. コンテキスト最適化
@@ -171,7 +171,7 @@ description: 何をするか。いつ使うか。使わない条件。
 - エッジケースの羅列より、多様で正準的なfew-shot例を少数
 - 知見: 長時間タスクの機械可読な状態ファイル（機能リスト・pass/fail）はMarkdownよりJSONの方がmodelに勝手に上書きされにくい（本環境のメモリ形式は現状維持。99_history.md参照）
 
-## 7. 監査rubric（CLAUDE.md / skills / context の定期監査用）
+## 7. 監査rubric（CLAUDE.md / skills / contextの定期監査用）
 
 `/instructions-audit` スキルが使用する。指摘は次の4分類で出す:
 
@@ -195,7 +195,7 @@ description: 何をするか。いつ使うか。使わない条件。
 - 理由なしの強調乱用（CRITICAL/MUST/絶対の数を数え、理由付き形式に）
 - 実挙動の観察: 読まれないファイル / 繰り返し読まれる内容（本文へ昇格） / リンク未追従（参照を目立たせる）
 
-**(e) system prompt との衝突・重複**
+**(e) system promptとの衝突・重複**
 - 本体system promptと**逆**を言う指示は、原文を引用して名指しで優先を宣言しないと一般論では原文の方が優先される（引用なしの「〜を優先する」だけでは弱い）
 - 本体system promptと**同方向**の指示は重複であり削除候補（system promptが既に強制している内容をCLAUDE.md/skillで繰り返さない）
 - 発火条件は、モデルの自己分類（「複雑な」「重要な」「必要に応じて」等）ではなく、**着手前に確認できる事実**（ファイル数・拡張子・キーワードの有無等）で書く

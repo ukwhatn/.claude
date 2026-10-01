@@ -7,9 +7,9 @@ allowed-tools: Bash, Read, Grep, Glob
 
 # Worktree Audit
 
-複数リポジトリにまたがる worktree とブランチを棚卸しし、削除可否を判定する。
+複数リポジトリにまたがるworktreeとブランチを棚卸しし、削除可否を判定する。
 
-**この skill の核心は「マージ済みの判定を1手法で済ませないこと」。** `git branch --merged` だけで判断すると、squash マージされたブランチが軒並み「未マージ」に見え、削除できないまま残る。逆に three-dot diff の行数を根拠にすると、マージ済みのブランチを「未反映」と誤って報告する。
+**このskillの核心は「マージ済みの判定を1手法で済ませないこと」。** `git branch --merged` だけで判断すると、squashマージされたブランチが軒並み「未マージ」に見え、削除できないまま残る。逆にthree-dot diffの行数を根拠にすると、マージ済みのブランチを「未反映」と誤って報告する。
 
 ## ワークフロー
 
@@ -20,35 +20,35 @@ bash ~/.claude/skills/worktree-audit/scripts/audit.sh > /tmp/audit.tsv
 column -t -s $'\t' /tmp/audit.tsv
 ```
 
-スクリプトはリポジトリ探索 → `git fetch` → 3段判定を行い TSV を返す。**出力だけが文脈に入る**（スクリプト本体は読まなくてよい）。
+スクリプトはリポジトリ探索 → `git fetch` → 3段判定を行いTSVを返す。**出力だけが文脈に入る**（スクリプト本体は読まなくてよい）。
 
 主なオプション:
 
 | オプション | 用途 |
 |---|---|
-| `--branches` | worktree ではなく全ローカルブランチを対象にする |
-| `--no-fetch` | オフライン時。判定は古い remote-tracking 基準になる |
+| `--branches` | worktreeではなく全ローカルブランチを対象にする |
+| `--no-fetch` | オフライン時。判定は古いremote-tracking基準になる |
 | `--root DIR` | 探索起点を指定（既定: `$HOME/workspace` `$HOME/.claude` `$HOME/.dotfiles`） |
 
-**完了基準**: TSV の全行に verdict が入っている。`NO_BASE` や `?` が出た行は、そのリポジトリの base ブランチ名を個別に確認して埋める。
+**完了基準**: TSVの全行にverdictが入っている。`NO_BASE` や `?` が出た行は、そのリポジトリのbaseブランチ名を個別に確認して埋める。
 
 ### 2. 分類
 
-verdict をそのまま3群に分ける。
+verdictをそのまま3群に分ける。
 
 | 群 | verdict | 扱い |
 |---|---|---|
-| 削除可 | `MERGED_ANCESTOR` `MERGED_SQUASH` | dirty / untracked が 0 ならそのまま消せる |
-| 要判断 | `HEAD_MISMATCH` `CLOSED_PR` `NO_PR` | 内容が base にあるか個別確認（→ 3へ） |
+| 削除可 | `MERGED_ANCESTOR` `MERGED_SQUASH` | dirty / untrackedが0ならそのまま消せる |
+| 要判断 | `HEAD_MISMATCH` `CLOSED_PR` `NO_PR` | 内容がbaseにあるか個別確認（→ 3へ） |
 | 削除不可 | `OPEN_PR` | 作業中 |
 
-`dirty` / `untracked` が 0 でない行は、マージ済みでも削除で変更が失われる。群に関わらず退避対象として別に数える。
+`dirty` / `untracked` が0でない行は、マージ済みでも削除で変更が失われる。群に関わらず退避対象として別に数える。
 
 **完了基準**: 全行がいずれかの群に入り、要判断の行数を数え上げている。
 
 ### 3. 要判断の行を確定させる
 
-ここを飛ばすと誤って消すか、逆に消せるものを残す。判定方法は references/gotchas.md に集約してある。**要判断の行が1件でもあれば必ず読むこと。**
+ここを飛ばすと誤って消すか、逆に消せるものを残す。判定方法はreferences/gotchas.mdに集約してある。**要判断の行が1件でもあれば必ず読むこと。**
 
 `git diff base...HEAD`（three-dot）の行数は反映有無の証拠にならない。実際に確認するのは次のいずれか。
 
@@ -71,7 +71,7 @@ cat /tmp/f.txt | xargs git diff --name-status HEAD origin/main --
 
 ### 5. 退避してから削除
 
-未コミット変更・untracked がある worktree は、破棄前に patch と tar で退避する。
+未コミット変更・untrackedがあるworktreeは、破棄前にpatchとtarで退避する。
 
 ```bash
 git -C "$wt" diff > "$BK/$name.patch"
@@ -79,24 +79,24 @@ git -C "$wt" ls-files --others --exclude-standard > "$BK/$name.untracked.txt"
 (cd "$wt" && tar czf "$BK/$name.untracked.tar.gz" -T "$BK/$name.untracked.txt")
 ```
 
-ブランチを消す場合は **削除前に SHA を記録する**。`git branch <名前> <SHA>` で復元できる唯一の手がかりになる（とくに `CLOSED_PR` のブランチは内容が base に存在しない）。
+ブランチを消す場合は **削除前にSHAを記録する**。`git branch <名前> <SHA>` で復元できる唯一の手がかりになる（とくに `CLOSED_PR` のブランチは内容がbaseに存在しない）。
 
 ```bash
 git -C "$repo" rev-parse "refs/heads/$br" >> "$BK/deleted-branches-sha.tsv"
 ```
 
-削除の順序は worktree → ブランチ。worktree が残っているブランチは削除できない。
+削除の順序はworktree → ブランチ。worktreeが残っているブランチは削除できない。
 
 ```bash
 git -C "$repo" worktree remove "$wt"        # dirty なら --force
 git -C "$repo" branch -d "$br"              # squash マージ分は -D が必要
 ```
 
-`-D` は permissions.deny 登録済みの破壊的操作。承認済みの範囲でのみ使う。
+`-D` はpermissions.deny登録済みの破壊的操作。承認済みの範囲でのみ使う。
 
-`MERGED_ANCESTOR` の行で `-d` が拒否されることがある。`branch -d` の基準が origin ではなくローカル HEAD だからで、削除自体は安全（→ references/gotchas.md §6）。
+`MERGED_ANCESTOR` の行で `-d` が拒否されることがある。`branch -d` の基準がoriginではなくローカルHEADだからで、削除自体は安全（→ references/gotchas.md §6）。
 
-**完了基準**: 退避ファイルが存在し、削除コマンドの失敗が 0 件。失敗した行は個別に原因を報告する。
+**完了基準**: 退避ファイルが存在し、削除コマンドの失敗が0件。失敗した行は個別に原因を報告する。
 
 ### 6. 検証
 
@@ -106,29 +106,29 @@ git -C "$repo" worktree list
 git -C "$repo" branch
 ```
 
-`git worktree remove` はディレクトリ削除に失敗しても git 側のメタデータを先に消すことがある。その後 `prune` すると、**git 管理外の孤立ディレクトリだけが残る**。worktree 置き場に想定外のディレクトリが残っていないか実際に `ls` して確かめる。
+`git worktree remove` はディレクトリ削除に失敗してもgit側のメタデータを先に消すことがある。その後 `prune` すると、**git管理外の孤立ディレクトリだけが残る**。worktree置き場に想定外のディレクトリが残っていないか実際に `ls` して確かめる。
 
-**完了基準**: 残存 worktree・ブランチが承認した内容と一致し、worktree 置き場に孤立ディレクトリが無い。
+**完了基準**: 残存worktree・ブランチが承認した内容と一致し、worktree置き場に孤立ディレクトリが無い。
 
 ## 判定の3段階
 
 スクリプトが内部で行っていること。手で追う必要が出た時のために。
 
-1. **祖先判定** — `git rev-list --count "$base..$ref"` が 0。merge commit で取り込まれたものはここで確定する
-2. **PR state** — 非該当を `gh pr list --head "$br" --state all` に通す。squash / rebase マージはコミット SHA が base に存在しないため、ここでしか検出できない
-3. **PR head 一致** — MERGED でも、PR 作成後にローカルで積んだコミットが残っていることがある。`headRefOid` とローカル HEAD を比較し、不一致なら `HEAD_MISMATCH` として要判断に分類する
+1. **祖先判定** — `git rev-list --count "$base..$ref"` が0。merge commitで取り込まれたものはここで確定する
+2. **PR state** — 非該当を `gh pr list --head "$br" --state all` に通す。squash / rebaseマージはコミットSHAがbaseに存在しないため、ここでしか検出できない
+3. **PR head一致** — MERGEDでも、PR作成後にローカルで積んだコミットが残っていることがある。`headRefOid` とローカルHEADを比較し、不一致なら `HEAD_MISMATCH` として要判断に分類する
 
 ## Gotchas
 
-判定を誤らせる既知のケースは references/gotchas.md に集約してある。とくに次のどれかに当たったら読む。
+判定を誤らせる既知のケースはreferences/gotchas.mdに集約してある。とくに次のどれかに当たったら読む。
 
-- three-dot diff の行数を根拠にしようとした時
+- three-dot diffの行数を根拠にしようとした時
 - `NO_PR` の統合ブランチ（マージコミットの塊）が出た時
 - `HEAD_MISMATCH` が出た時
 - 削除したはずのディレクトリが残っていた時
 
 ## 関連
 
-- worktree の作成・命名・単一 worktree の片付け: context/worktree-guide.md
+- worktreeの作成・命名・単一worktreeの片付け: context/worktree-guide.md
 - 破壊的操作の確認規定: AGENTS.md「緩和しない安全項目」
 - ブランチ命名・コミット規約: AGENTS.md「コミット・ブランチ・PR」

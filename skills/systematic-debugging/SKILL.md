@@ -29,7 +29,7 @@ Phase 1を完了していないなら、修正を提案できない。**ルー�
 3. **直近の変更を確認する** — git diff・最近のコミット・依存やconfigの変更・環境差分
 4. **原因を一次情報で特定する** — エラーの原因を公式ドキュメント（context7 / WebSearch）で確認する（グローバル規約「推測禁止・調査先行」と同一。推測での修正着手は禁止）
 5. **複数コンポーネント系では境界に診断ログを仕込む** — 各コンポーネント境界で入る値・出る値・環境変数の伝播を記録し、一度実行して**どの層で値が不正になるか**の証拠を取ってから、その層を調べる
-6. **データフローを遡る** — エラーが出た場所ではなく、不正な値の発生源を突き止める（[references/techniques.md](references/techniques.md) の root-cause-tracing）
+6. **データフローを遡る** — エラーが出た場所ではなく、不正な値の発生源を突き止める（[references/techniques.md](references/techniques.md) のroot-cause-tracing）
 
 ### Phase 2: パターン分析
 
@@ -49,7 +49,7 @@ Phase 1を完了していないなら、修正を提案できない。**ルー�
 1. **失敗するテストケースを先に作る**（最小の再現。フレームワークがなければ使い捨てスクリプトでよい）
 2. **単一の修正を実装する** — 特定した根本原因だけを直す。「ついでの改善」やリファクタを混ぜない。修正コードを書く前に `/writing-code` を発動する（原則を記憶で思い出して書くのは不可。実際にスキルを読むこと）
 3. **検証する** — テストが通り、他のテストが失敗しておらず、元の問題が実際に解消したことを確認してから完了を報告する
-4. 根本原因の修正後、必要なら多層の防御を追加する（[references/techniques.md](references/techniques.md) の defense-in-depth）
+4. 根本原因の修正後、必要なら多層の防御を追加する（[references/techniques.md](references/techniques.md) のdefense-in-depth）
 
 ## 停止条件: 修正3回失敗はアーキテクチャの問題
 
@@ -90,4 +90,4 @@ Phase 1を完了していないなら、修正を提案できない。**ルー�
 
 ---
 
-出典: obra/superpowers（MIT License）を翻案。詳細はリポジトリルートの NOTICE.md を参照。
+出典: obra/superpowers（MIT License）を翻案。詳細はリポジトリルートのNOTICE.mdを参照。

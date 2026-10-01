@@ -46,7 +46,7 @@
 同類の既存画面を特定し、以下のパターンが適用されているか確認:
 - [ ] セキュリティ: `getSafeReturnToUrl` / サニタイズ適用
 - [ ] ダブルクリック防止: `usePreventDoubleClick` の `complete()` 呼び出し
-- [ ] UIパターン: FloatingBanner / CheckBox / Modal の組み合わせ
+- [ ] UIパターン: FloatingBanner / CheckBox / Modalの組み合わせ
 - [ ] 共通ロジック: 既存hookやヘルパーの再利用（重複コードの回避）
 - [ ] 未使用import/依存の排除
 
