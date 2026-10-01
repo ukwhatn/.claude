@@ -36,18 +36,18 @@ type OrderId = string & { readonly __brand: "OrderId" };
 // getOrder(userId) が型エラーになる
 ```
 
-導入はIDの取り違えが実害になる箇所から。全stringのbrand化はSpeculative Generality。
+導入はIDの取り違えで不具合が起きる箇所から。全stringのbrand化はSpeculative Generality。
 
 ## 2. 型の抜け穴を作らない
 
 - `any` を使わない。外部境界からの未知の値は `unknown` で受け、型ガード・スキーマ検証（PJ採用のzod等）でnarrowingする
-- プロダクションコードで `as` による型アサーションを原則使わない。型の嘘は下流の全推論を汚染し、コンパイラの検証を無効化する。値の構築で型を満たすか、型ガードで絞る。正当な例外（branded typeのfactory・型ガードの内部実装・ライブラリ型の既知の不備）では、assertionをその関数の内側に閉じ込め、公開interfaceに漏らさない
+- プロダクションコードで `as` による型アサーションを原則使わない。実態と異なる型を宣言すると、下流の推論がすべてその型を前提に進み、コンパイラの検証が無効になる。値の構築で型を満たすか、型ガードで絞る。正当な例外（branded typeのfactory・型ガードの内部実装・ライブラリ型の既知の不備）では、assertionをその関数の内側に閉じ込め、公開interfaceに漏らさない
 - オブジェクトリテラルが型に適合するかの検証は `satisfies` を使う（型を広げずに検証でき、推論も保たれる）
 - テストコードでの部分データ構築は例外的に許容する。その場合も `as` より `satisfies` や部分構築ヘルパ（`@total-typescript/shoehorn` の fromPartial 等、PJ採用のもの）を優先する
 
 ## 3. 公開interfaceの戻り値型は明示する
 
-推論任せにすると、実装の変更がそのまま公開interfaceの変更として静かに漏れる（意図しないbreaking change）。moduleの公開関数・公開メソッドには戻り値型を書く。module内部のローカル関数は推論に任せてよい。
+推論任せにすると、実装を変更したときに、型エラーを出さずに公開interfaceも変わる（意図しないbreaking change）。moduleの公開関数・公開メソッドには戻り値型を書く。module内部のローカル関数は推論に任せてよい。
 
 ## 4. Seamの作り方
 
