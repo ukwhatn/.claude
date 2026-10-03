@@ -132,7 +132,7 @@ worktreeの作成はClaude CodeではEnterWorktree、他環境では `git worktr
 「自律実行」の名目でも以下は絶対に緩和しない:
 
 - 推測禁止・調査先行（最優先指示）と、ユーザー確認必須事項（「ユーザーへの質問」）
-- 破壊的git操作（`git push --force` / `-f`・`git reset --hard`・`git branch -D`）の事前確認。`permissions.deny` にも登録済み（意図はここ、強制はdenyの多層防御）
+- 破壊的git操作（`git push --force` / `-f`・`git reset --hard`・`git branch -D`）の事前確認（`permissions.deny` での機械強制は置いていないため、この確認だけが防御になる）
 - 破壊的データ操作（DB / バケット削除・大量DELETE等）は事前確認に加え、実行前に復旧手段（バックアップ・エクスポート）を確保する
 - シークレット（APIキー・トークン）は環境変数・ファイル経由で渡し、チャット出力・コマンドライン引数に平文で含めない（識別が要るならプレフィックスのみ）
 - コミット規約（git-cz形式、絵文字なし、secret未含有）

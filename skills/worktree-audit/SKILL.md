@@ -92,7 +92,7 @@ git -C "$repo" worktree remove "$wt"        # dirty なら --force
 git -C "$repo" branch -d "$br"              # squash マージ分は -D が必要
 ```
 
-`-D` はpermissions.deny登録済みの破壊的操作。承認済みの範囲でのみ使う。
+`-D` はmergeされていないコミットを失う破壊的操作。承認済みの範囲でのみ使う。
 
 `MERGED_ANCESTOR` の行で `-d` が拒否されることがある。`branch -d` の基準がoriginではなくローカルHEADだからで、削除自体は安全（→ references/gotchas.md §6）。
 

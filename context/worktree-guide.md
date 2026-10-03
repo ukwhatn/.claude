@@ -49,7 +49,7 @@ baseRefは `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.mdの `BASE_B
 `ExitWorktree(action: 'remove')` は **EnterWorktreeが作った元のブランチ名**（`worktree-<sanitized>`）を削除しようとする。上記フローで `feature/...` に改名している場合、改名後のブランチは消えない。
 - **基本方針**: 改名後ブランチは残す（PR作成・マージのため）
 - 不要ブランチを削除する場合は `/commit` スキルの `references/commit-policy.md`（ブランチ作り直し時）に従う:
-  - **`-D`（強制削除）は使用前にユーザー確認必須**（破壊的操作。mergeされていないコミットを失う。permissions.denyにも登録済）
+  - **`-D`（強制削除）は使用前にユーザー確認必須**（破壊的操作。mergeされていないコミットを失う）
   - 未pushのコミットがあれば、rebase/cherry-pickで別ブランチに保全してから削除
   - merge済み・コミットなしの場合は `git branch -d <name>` （安全削除）を優先
 
