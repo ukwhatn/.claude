@@ -79,17 +79,6 @@
         "hooks": [
           {
             "asyncRewake": true,
-            "command": "if command -v kairan >/dev/null 2>&1; then kairan hook stop; else exit 0; fi",
-            "statusMessage": "kairan: 回答を待っています",
-            "timeout": 3900,
-            "type": "command"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "asyncRewake": true,
             "command": "if [ -x \"$HOME/.local/bin/taskboard\" ]; then \"$HOME/.local/bin/taskboard\" hook stop; else exit 0; fi",
             "statusMessage": "taskboard: 回答を待っています",
             "timeout": 3900,

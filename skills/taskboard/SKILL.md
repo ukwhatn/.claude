@@ -1,6 +1,6 @@
 ---
 name: taskboard
-description: taskboard の MCP tool（board_overview / task_get / task_create / task_update / work_list / work_add / work_update / session_list / session_start / session_prompt）でタスクと作業項目を扱う。自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、ボードの一覧・状態を確認する時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域。
+description: taskboard の MCP tool（board_overview / task_get / task_create / task_update / work_list / work_add / work_update / session_list / session_start / session_prompt / doc_publish / doc_list / ask_user / review_request / feedback_list / comment_reply）でタスク・作業項目・文書を扱う。自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、計画書・設計提案を人に読ませて採否やレビューを求める時、ボードの一覧・状態を確認する時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域。
 ---
 
 # Taskboard
@@ -62,6 +62,17 @@ description: taskboard の MCP tool（board_overview / task_get / task_create / 
 - `note` には**セッションをまたいで必要になる文脈だけ**を書く（決めた方針・詰まっている点・再開条件）。作業ログはメモリディレクトリ側に書く
 - 起票するとこのセッションが紐づく（`link_session: false` で結ばない）
 
+## 文書を見せる・聞く・レビューしてもらう
+
+ユーザーが後から見返す判断文書（計画書・設計提案・調査結果）はタスクに載せ、アプリの受信箱から読ませる。どの tool もブロックしない。
+
+- **`doc_publish`** で載せる（`path` か `content` + `name`）。同じ `name` への再 publish は新しいリビジョンになり、前の版のコメントは残る。比較軸が 3 つ以上・状態遷移・段階の順序を示す文書は HTML にする（外部の画像・CSS・script は読み込まれないので、全部インラインで書く）
+- **`ask_user`** で選択肢を出して聞く。背景・判断材料・trade-off は `context`（markdown）に書き、質問文に詰め込まない。既存の文書に付けるなら `name` にその文書名を渡す。質問は全問に答えるまで送れないので、問いは本当に要るものだけにする
+- **`review_request`** で、載せた文書のレビューを頼む（`note` に何を見てほしいか 1 行）
+- **回答とレビューは Stop hook がこのセッションに注入する**（ターンを終えると hook が最大 1 時間待ち、届いたら起こす）。聞いたら答えを前提にした作業は止め、答えに依存しない作業だけ進めてターンを終える。返事を待つために tool を繰り返し呼ばない
+- 届いたレビューのコメントは 1 件ずつ対応し、**`comment_reply`**（`comment_id` は届いた本文の `commentId`）で何をしたかを返す。直したら `resolve: true`。文書を直したら同じ `name` で `doc_publish` し直す
+- Stop hook が無い環境（`claude -p`・herdr の外）では、**`feedback_list`** で届いた分を取る。各項目は 1 回しか返らない
+
 ## 別のセッションへ送る・起こす
 
 `session_list` で pane と状態を見て、`session_prompt` で文字を送る。委譲先への指示と、止まっている自分の委譲先への返答に使う。**動いている人のセッション（`working`）と、自分が起こしたのでないセッションには送らない。**
@@ -73,6 +84,8 @@ description: taskboard の MCP tool（board_overview / task_get / task_create / 
 - **`work_update` で `wait` にするときは `blocker_kind` か `blocker_text` が必須**（無いとエラー）
 - **`task_id` の解決は herdr の pane 経由**。herdr の外（CI・単発の `claude -p`）では毎回 `task_id` を渡す
 - **タスク番号は削除しても再利用されない。** 一度得た番号は安定した handle として使える
+- **同じ文書に未回答の質問は 1 束だけ。** 新しい `questions` を付けて publish すると前の未回答の束は取り下げられる（同じ内容なら作り直さない）
+- **文書を消すと、その文書の質問とコメントも消える**
 - **daemon が止まっていると tool はエラーを返す。** その旨を伝え、`launchctl kickstart -k gui/$UID/uk.whatn.taskboardd` を案内する（自分では実行しない）
 
 ## 既存設定との関係
