@@ -1,6 +1,6 @@
 ---
 name: taskboard
-description: taskboard の MCP tool（board_overview / task_get / task_create / task_update / work_list / work_add / work_update / session_list / session_prompt）でタスクと作業項目を扱う。自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、ボードの一覧・状態を確認する時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域。
+description: taskboard の MCP tool（board_overview / task_get / task_create / task_update / work_list / work_add / work_update / session_list / session_start / session_prompt）でタスクと作業項目を扱う。自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、ボードの一覧・状態を確認する時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域。
 ---
 
 # Taskboard
@@ -62,9 +62,11 @@ description: taskboard の MCP tool（board_overview / task_get / task_create / 
 - `note` には**セッションをまたいで必要になる文脈だけ**を書く（決めた方針・詰まっている点・再開条件）。作業ログはメモリディレクトリ側に書く
 - 起票するとこのセッションが紐づく（`link_session: false` で結ばない）
 
-## 別のセッションへ送る
+## 別のセッションへ送る・起こす
 
 `session_list` で pane と状態を見て、`session_prompt` で文字を送る。委譲先への指示と、止まっている自分の委譲先への返答に使う。**動いている人のセッション（`working`）と、自分が起こしたのでないセッションには送らない。**
+
+委譲先を新しく起こすときは `session_start`（`task_id` 省略で自分のタスク、`cwd` 省略で自分の cwd、`preset` は `claude-opus-medium` / `claude-fable-high` / `claude-sonnet-high` / `codex-default`、`worktree_branch` で worktree を切る）。daemon が tab と agent を作って起動プロンプト（省略時は列の既定）を送り、そのタスクに結ぶ。進み具合は `session_list` に出る。herdr の `agent start` を自分で叩くより、紐づけと起動プロンプトが揃うこちらを使う。
 
 ## Gotchas
 
