@@ -115,7 +115,7 @@
   "model": "claude-opus-5-5[1m]",
   "outputStyle": "ukwhatn-style",
   "permissions": {
-    "defaultMode": "auto"
+    "defaultMode": "bypassPermissions"
   },
   "preferredNotifChannel": "auto",
   "promptSuggestionEnabled": false,
