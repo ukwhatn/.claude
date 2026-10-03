@@ -1,14 +1,117 @@
 {
-  "cleanupPeriodDays": 365,
-  "env": {
-    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]",
-    "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
-  },
+  "agentPushNotifEnabled": true,
+  "askUserQuestionTimeout": "never",
   "attribution": {
     "commit": "",
     "pr": "",
     "sessionUrl": false
   },
+  "autoCompactEnabled": true,
+  "autoCompactWindow": 450000,
+  "autoContinueAtUsageLimit": true,
+  "autoMemoryEnabled": false,
+  "cleanupPeriodDays": 365,
+  "editorMode": "normal",
+  "enabledPlugins": {
+    "document-skills@anthropic-agent-skills": true
+  },
+  "env": {
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]",
+    "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1"
+  },
+  "extraKnownMarketplaces": {
+    "claude-plugins-official": {
+      "source": {
+        "source": "git",
+        "url": "https://github.com/anthropics/claude-plugins-official.git"
+      }
+    },
+    "scp-jp-plugins": {
+      "source": {
+        "repo": "SCP-JP/claude-plugins",
+        "source": "github"
+      }
+    },
+    "scp-jp-plugins-staff": {
+      "source": {
+        "repo": "SCP-JP/claude-plugins-staff",
+        "source": "github"
+      }
+    }
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "command": "if [ -x \"$HOME/.claude/hooks/agent-model-required.py\" ]; then python3 \"$HOME/.claude/hooks/agent-model-required.py\"; fi",
+            "timeout": 5,
+            "type": "command"
+          }
+        ],
+        "matcher": "Agent"
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "command": "bash ~/.claude/hooks/herdr-agent-state.sh session",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      },
+      {
+        "hooks": [
+          {
+            "command": "\"$HOME/.local/bin/taskboard\" hook session",
+            "timeout": 10,
+            "type": "command"
+          }
+        ],
+        "matcher": "*"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "asyncRewake": true,
+            "command": "if command -v kairan >/dev/null 2>&1; then kairan hook stop; else exit 0; fi",
+            "statusMessage": "kairan: 回答を待っています",
+            "timeout": 3900,
+            "type": "command"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "command": "\"$HOME/.local/bin/taskboard\" hook stop",
+            "timeout": 30,
+            "type": "command"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/language-reminder.py\"",
+            "timeout": 5,
+            "type": "command"
+          }
+        ]
+      }
+    ]
+  },
+  "inputNeededNotifEnabled": true,
+  "language": "日本語",
+  "model": "claude-opus-5-5[1m]",
+  "outputStyle": "ukwhatn-style",
   "permissions": {
     "allow": [
       "WebFetch",
@@ -77,6 +180,10 @@
       "Grep",
       "NotebookEdit"
     ],
+    "ask": [
+      "mcp__claude-in-chrome__javascript_tool"
+    ],
+    "defaultMode": "auto",
     "deny": [
       "Bash(git branch -D:*)",
       "Bash(git branch * -D)",
@@ -93,132 +200,30 @@
       "Bash(nc:*)",
       "Bash(sudo:*)",
       "Bash(wget:*)"
-    ],
-    "ask": [
-      "mcp__claude-in-chrome__javascript_tool"
-    ],
-    "defaultMode": "auto"
-  },
-  "model": "claude-opus-5-5[1m]",
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x \"$HOME/.claude/hooks/agent-model-required.py\" ]; then python3 \"$HOME/.claude/hooks/agent-model-required.py\"; fi",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "matcher": "*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash ~/.claude/hooks/herdr-agent-state.sh session",
-            "timeout": 10
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x \"$HOME/.claude/hooks/taskherd-sync.py\" ]; then python3 \"$HOME/.claude/hooks/taskherd-sync.py\" prompt; fi",
-            "timeout": 15
-          },
-          {
-            "type": "command",
-            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/language-reminder.py\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if command -v kairan >/dev/null 2>&1; then kairan hook stop; else exit 0; fi",
-            "timeout": 3900,
-            "statusMessage": "kairan: 回答を待っています",
-            "asyncRewake": true
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "if [ -x \"$HOME/.claude/hooks/taskherd-sync.py\" ]; then python3 \"$HOME/.claude/hooks/taskherd-sync.py\" stop; fi",
-            "timeout": 30
-          }
-        ]
-      }
     ]
   },
+  "preferredNotifChannel": "auto",
+  "promptSuggestionEnabled": false,
+  "remoteControlAtStartup": true,
+  "skipAutoPermissionPrompt": true,
+  "skipDangerousModePermissionPrompt": true,
+  "skipWorkflowUsageWarning": true,
+  "statusLine": {
+    "command": "sh ~/.claude/statusline-command.sh",
+    "padding": 0,
+    "refreshInterval": 10,
+    "type": "command"
+  },
+  "subagentStatusLine": {
+    "command": "python3 ~/.claude/subagent-statusline.py",
+    "type": "command"
+  },
+  "switchModelsOnFlag": true,
+  "teammateMode": "auto",
+  "theme": "light",
+  "tui": "fullscreen",
   "worktree": {
     "baseRef": "fresh",
     "bgIsolation": "none"
-  },
-  "statusLine": {
-    "type": "command",
-    "command": "sh ~/.claude/statusline-command.sh",
-    "padding": 0,
-    "refreshInterval": 10
-  },
-  "subagentStatusLine": {
-    "type": "command",
-    "command": "python3 ~/.claude/subagent-statusline.py"
-  },
-  "enabledPlugins": {
-    "document-skills@anthropic-agent-skills": true
-  },
-  "extraKnownMarketplaces": {
-    "claude-plugins-official": {
-      "source": {
-        "source": "git",
-        "url": "https://github.com/anthropics/claude-plugins-official.git"
-      }
-    },
-    "scp-jp-plugins": {
-      "source": {
-        "source": "github",
-        "repo": "SCP-JP/claude-plugins"
-      }
-    },
-    "scp-jp-plugins-staff": {
-      "source": {
-        "source": "github",
-        "repo": "SCP-JP/claude-plugins-staff"
-      }
-    }
-  },
-  "outputStyle": "ukwhatn-style",
-  "language": "日本語",
-  "autoCompactWindow": 450000,
-  "promptSuggestionEnabled": false,
-  "askUserQuestionTimeout": "never",
-  "tui": "fullscreen",
-  "autoMemoryEnabled": false,
-  "skipDangerousModePermissionPrompt": true,
-  "skipWorkflowUsageWarning": true,
-  "theme": "light",
-  "editorMode": "normal",
-  "preferredNotifChannel": "auto",
-  "autoCompactEnabled": true,
-  "switchModelsOnFlag": true,
-  "autoContinueAtUsageLimit": true,
-  "teammateMode": "auto",
-  "remoteControlAtStartup": true,
-  "inputNeededNotifEnabled": true,
-  "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true
+  }
 }
