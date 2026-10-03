@@ -25,4 +25,5 @@ AGENTS.mdから @importされ、Claude Codeでは毎セッション常駐する�
 
 ## Claude Code固有ツールの注意
 
-- **Agentツール**: 委譲の既定経路はpane（`bin/herdr-delegate.sh`）。Agent toolを使うのは、委譲先自身がファイルを書かない作業（`Explore` の探索・複数観点のレビュー報告・freshな単発判定）とHerdr外でのフォールバックに限る（`context/herdr-delegation.md`「経路の選択」「Herdr外でのフォールバック」）
+- **Agentツール**: 委譲の既定経路はpane（`bin/herdr-delegate.sh`）。Agent toolを使うのは、委譲先自身がファイルを書かない作業（`Explore` の探索・Web / 文書の調査・複数観点のレビュー報告・freshな単発判定）とHerdr外でのフォールバックに限る（`context/herdr-delegation.md`「経路の選択」「Herdr外でのフォールバック」）
+- **Agent toolを呼ぶときは `model` を用途で選んで毎回渡す**（調査はsonnet、レビュー報告・判定はopus、難所はfable。表は `context/herdr-delegation.md`「モデルの選択」）。省略すると親セッションのモデルを継承し、fableのセッションでは調査にもfableが使われる

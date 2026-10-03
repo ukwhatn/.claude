@@ -23,17 +23,20 @@ paneを選ぶ利点は3つ。レートリミットに当たってもpane側のCl
 
 ## モデルの選択
 
+**委譲先のモデルは経路によらず用途で決め、毎回明示する。** paneは `--model`、Agent toolは `model` パラメータで渡す。Agent toolは `model` を省略すると親セッションのモデルを継承するので、fableのセッションから省略して委譲すると調査1本にfableを使うことになる。省略してよいのは「親と同じモデルが要る」と判断したときだけで、その判断を05_log.mdに書く。
+
 **委譲は基本Claude（`--kind claude`）で行う。** codexはsubscriptionの枠が小さいので、**別ベンダーであること自体が要件になる用途（外部レビュー）に温存する**。
 
-| 用途 | 指定 |
-|---|---|
-| 設計判断を含む実装・文書生成 | `--kind claude --model opus`（effortは既定のmedium） |
-| パターンが確立した実装・横展開（リネーム・既知パターンの適用） | `--kind claude --model opus --agent-arg --effort --agent-arg low` |
-| コードを書かない調査（ファイル探し・ログ / テスト出力の読み取り） | `--kind claude --model sonnet` |
-| 前例のない難所・監督しない長時間の実行・壁打ち | `--kind claude --model fable` |
-| 外部レビュー（別ベンダーのbias独立性が要る） | `--kind codex` |
+| 用途 | pane（`bin/herdr-delegate.sh`） | Agent tool |
+|---|---|---|
+| 設計判断を含む実装・文書生成 | `--kind claude --model opus`（effortは既定のmedium） | paneで行う（ファイルを書く委譲はAgent toolを使わない） |
+| パターンが確立した実装・横展開（リネーム・既知パターンの適用） | `--kind claude --model opus --agent-arg --effort --agent-arg low` | 同上 |
+| コードを書かない調査（コード内のファイル探し・ログ / テスト出力の読み取り・Web / 文書の収集と要約） | `--kind claude --model sonnet` | `model: "sonnet"`。コード内の探索は `subagent_type: "Explore"`、Web / 外部資料は `general-purpose` |
+| 複数観点のレビュー報告・freshな単発判定（結果をleadが検証する） | — | `model: "opus"` |
+| 前例のない難所・監督しない長時間の実行・壁打ち | `--kind claude --model fable` | `model: "fable"` |
+| 外部レビュー（別ベンダーのbias独立性が要る） | `--kind codex` | —（`context/agent-cli-guide.md`） |
 
-Sonnetにはコードを書かせない。小さいモデルが読み違えるとleadが誤った前提で進むため、結果の誤りに気づきやすい作業に限る。opusのmediumで同じ問題に2回詰まったら、`--agent-arg --effort --agent-arg high` かfableで委譲し直す。
+Sonnetにはコードを書かせない。小さいモデルが読み違えるとleadが誤った前提で進むため、結果の誤りに気づきやすい作業に限る。調査をsonnetに任せるときは、報告の事実を一次ソースで突き合わせてから採用する（`AGENTS.md`「自律実行と委譲」）。opusのmediumで同じ問題に2回詰まったら、`--agent-arg --effort --agent-arg high` かfableで委譲し直す。
 
 codexを起動する前に枠を確認する（`python3 ~/.claude/codex-usage.py --refresh` → `--show`）。枯渇していれば `context/agent-cli-guide.md` のfallback規定に従う。**枠に余裕があっても、Claudeで足りる委譲にcodexを使わない。**
 
