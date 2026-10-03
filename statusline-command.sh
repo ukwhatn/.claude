@@ -6,6 +6,13 @@
 
 input=$(cat)
 
+# taskboard の daemon に使用枠と context を渡す（taskboard を入れた Mac だけ）
+# Why not: 前景で待たない・stdout をつながない。出力をパイプで読む側は EOF まで待つので、
+# 裏の子が stdout を握っていると描画が遅れる
+if [ -x "$HOME/.local/bin/taskboard" ]; then
+  (printf '%s' "$input" | "$HOME/.local/bin/taskboard" hook statusline >/dev/null 2>&1 &)
+fi
+
 # --- helpers ---
 # 数値を k / M 表記に丸める (76393 -> 76k, 1000000 -> 1M)
 humanize() {
