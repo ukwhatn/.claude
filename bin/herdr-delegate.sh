@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# herdr pane へ作業を委譲する。tab 作成 → agent 起動 → 指示書の投入 → 完了待ち → 成果物の判定 → tab の片付け。
+# herdr pane へ作業を委譲する。tab 作成 → agent 起動 → 指示書の投入 → 完了待ち → 成果物の判定。
+# tab は既定で閉じない（--close 指定時のみ閉じる）。完了待ちは idle を完了とみなすため、委譲先が
+# 長いコマンドをバックグラウンドに回して応答を終えると作業途中でも戻る。そこで閉じると作業中の
+# 委譲先ごと終了するので、閉じる判断は完了を確かめた lead が行う。
 # 規定と使い方: ~/.claude/context/herdr-delegation.md
 #
 # 終了時は必ず1行 JSON を stdout に出す（SIGKILL 等の異常終了を除く）。
@@ -20,7 +23,7 @@ LEAD_PANE="${HERDR_PANE_ID:-}"
 WORK_TASK=""
 TIMEOUT=1800000
 START_TIMEOUT=120000
-KEEP=0
+KEEP=1
 OUTS=""        # 改行区切り
 AGENT_ARGS=""  # 改行区切り
 
@@ -49,7 +52,8 @@ usage: herdr-delegate.sh --kind <claude|codex> --task <指示書の絶対パス>
                        （ListAgents に出る自分のセッション名。省略時は pane 経由の連絡だけ案内する）
   --timeout MS         完了待ちの上限（既定: 1800000）
   --start-timeout MS   起動と入力可能判定の上限（既定: 120000）
-  --keep               完了しても tab を閉じない
+  --close              status が done のとき tab を閉じる（既定は閉じない）
+  --keep               互換のため受け付ける（既定で閉じないので効果はない）
 USAGE
 }
 
@@ -159,6 +163,7 @@ while [ $# -gt 0 ]; do
     --lead-name)     LEAD_NAME="${2:-}"; shift 2 ;;
     --timeout)       TIMEOUT="${2:-}"; shift 2 ;;
     --start-timeout) START_TIMEOUT="${2:-}"; shift 2 ;;
+    --close)         KEEP=0; shift ;;
     --keep)          KEEP=1; shift ;;
     -h|--help)       usage; exit 0 ;;
     *)               usage; NAME=""; finalize invalid_input 2 arg_invalid ;;
@@ -452,7 +457,7 @@ for line in os.environ.get("OS_LIST", "").split("\n"):
 ' 2>/dev/null || finalize missing_output 4
 fi
 
-# --- 7. 片付け ---
+# --- 7. 片付け（--close 指定時のみ） ---
 if [ "$KEEP" -eq 0 ]; then
   if herdr_call herdr tab close "$TAB_ID"; then
     TAB_CLOSED="true"
