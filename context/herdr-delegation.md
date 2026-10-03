@@ -23,7 +23,7 @@ paneを選ぶ利点は3つ。レートリミットに当たってもpane側のCl
 
 ## モデルの選択
 
-**委譲先のモデルは経路によらず用途で決め、毎回明示する。** paneは `--model`、Agent toolは `model` パラメータで渡す。Agent toolは `model` を省略すると親セッションのモデルを継承するので、fableのセッションから省略して委譲すると調査1本にfableを使うことになる。省略してよいのは「親と同じモデルが要る」と判断したときだけで、その判断を05_log.mdに書く。
+**委譲先のモデルは経路によらず用途で決め、毎回明示する。** paneは `--model`、Agent toolは `model` パラメータで渡す。Agent toolは `model` を省略すると親セッションのモデルを継承するので、fableのセッションから省略して委譲すると調査1本にfableを使うことになる。親と同じモデルが要ると判断したときは、そのモデル名を `model` に明示し、判断を05_log.mdに書く。`model` の無いAgent tool呼び出しはPreToolUse hook（`hooks/agent-model-required.py`）が拒否する（意図はここ、強制はhook。`fork` は常に親モデルで動くので対象外）。
 
 **委譲は基本Claude（`--kind claude`）で行う。** codexはsubscriptionの枠が小さいので、**別ベンダーであること自体が要件になる用途（外部レビュー）に温存する**。
 

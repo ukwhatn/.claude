@@ -101,6 +101,18 @@
   },
   "model": "claude-opus-5-5[1m]",
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Agent",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x \"$HOME/.claude/hooks/agent-model-required.py\" ]; then python3 \"$HOME/.claude/hooks/agent-model-required.py\"; fi",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "SessionStart": [
       {
         "matcher": "*",
