@@ -132,6 +132,11 @@
             "type": "command",
             "command": "if [ -x \"$HOME/.claude/hooks/taskherd-sync.py\" ]; then python3 \"$HOME/.claude/hooks/taskherd-sync.py\" prompt; fi",
             "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/language-reminder.py\"",
+            "timeout": 5
           }
         ]
       }
