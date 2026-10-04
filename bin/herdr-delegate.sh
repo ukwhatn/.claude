@@ -296,6 +296,11 @@ PANE_ID="$(herdr_field result.root_pane.pane_id)"
 
 herdr pane rename "$PANE_ID" "$LABEL" >/dev/null 2>&1
 
+# 委譲の親子を pane の token に残す。タスクボード等がセッションを lead → 委譲先の木で出すときに読む
+if [ -n "$LEAD_PANE" ]; then
+  herdr pane report-metadata "$PANE_ID" --source herdr-delegate --token "parent_pane=$LEAD_PANE" >/dev/null 2>&1
+fi
+
 # --- 2. agent の起動 ---
 # 承認プロンプトで止まると委譲が進まないため、確認のバイパスを既定にする。
 # 委譲先は lead が書いた指示書の範囲で動く前提。
