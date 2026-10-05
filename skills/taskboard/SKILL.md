@@ -32,9 +32,9 @@ description: taskboard の MCP tool（board_overview / task_get / task_create / 
 
 **自律的に動かしてよいのは、自分のセッションに紐づくタスクだけ。** 他のタスクの列・作業項目は、ユーザーの指示なしに変えない。
 
-**PR の状態に対応する列の前進は daemon が自動で行う**（PR が ready なら `review`、merge されれば `deploying`。前進方向のみ、終端列と `review_req` は触らない。Stop hook でも同じ判定が走る）。この 2 つを手で `task_update` しに行かない。手で動かすのは daemon が判断しない列（`planning` / `working` / `wontfix` 等）と、ユーザーから指示された移動だけ。
+**PR の状態に対応する列の前進は daemon が自動で行う**（PR が ready なら `review`、merge されれば案件の「マージしたら」の列（既定は `deploying`）。前進方向のみで、終端列は触らない。Stop hook でも同じ判定が走る）。この前進を手で `task_update` しに行かない。手で動かすのは daemon が判断しない列（`planning` / `working` / `wontfix` 等）と、ユーザーから指示された移動だけ。
 
-**`review_req` に入ったタスクは `review_req` と終端列しか取らない。** 紐づいているのは他人の PR なので、自分が approve しても作業段階は進まない。レビューを投稿したらタイトルの頭に `✅ ` を付けて `review_req` に留め、`done` へ移すのはリンク先の PR がマージされてから。
+**`review_req` に入ったタスクは `review_req` と終端列しか取らない。** 紐づいているのは他人の PR なので、自分が approve しても作業段階は進まない。レビューを投稿したらタイトルの頭に `✅ ` を付けて `review_req` に留める。紐づく PR が全部マージかクローズになると daemon が `done` へ進めるので、手で `done` へ移さない。
 
 **紐づくタスクが無い状態で PR が open していれば、Stop hook が自動起票する**（タイトルは PR のタイトル、列は draft なら `working` / ready なら `review`、PR URL をリンク、セッションを紐づけ）。同じ URL のタスクが既にあれば起票せずそれに紐づける。
 
@@ -77,7 +77,7 @@ description: taskboard の MCP tool（board_overview / task_get / task_create / 
 
 `session_list` で pane と状態を見て、`session_prompt` で文字を送る。委譲先への指示と、止まっている自分の委譲先への返答に使う。**動いている人のセッション（`working`）と、自分が起こしたのでないセッションには送らない。**
 
-委譲先を新しく起こすときは `session_start`（`task_id` 省略で自分のタスク、`cwd` 省略で自分の cwd、`preset` は `claude-opus-medium` / `claude-fable-high` / `claude-sonnet-high` / `codex-default`、`worktree_branch` で worktree を切る）。daemon が tab と agent を作って起動プロンプト（省略時は列の既定）を送り、そのタスクに結ぶ。進み具合は `session_list` に出る。herdr の `agent start` を自分で叩くより、紐づけと起動プロンプトが揃うこちらを使う。
+委譲先を新しく起こすときは `session_start`（`task_id` 省略で自分のタスク、`cwd` 省略で自分の cwd、`worktree_branch` で worktree を切る）。エージェントは `kind`（`claude` / `codex`）、Claude Code のモデルと effort は `model`（`opus` / `fable` / `sonnet`）と `effort`（`low` / `medium` / `high` / `xhigh` / `max`）で選び、省略すると `opus` / `medium`。前の版の `preset` も受けるが、`model`・`effort` を渡すとそちらが優先する。daemon が tab と agent を作って起動プロンプト（省略時は列の既定）を送り、そのタスクに結ぶ。進み具合は `session_list` に出る。herdr の `agent start` を自分で叩くより、紐づけと起動プロンプトが揃うこちらを使う。
 
 ## Gotchas
 
