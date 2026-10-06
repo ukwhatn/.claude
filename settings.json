@@ -112,6 +112,12 @@
   },
   "outputStyle": "ukwhatn-style",
   "language": "日本語",
+  "feedbackDrafts": "off",
+  "modelSettings": {
+    "claude-opus-5-5": {
+      "autoCompactWindow": 600000
+    }
+  },
   "autoCompactWindow": 450000,
   "promptSuggestionEnabled": false,
   "askUserQuestionTimeout": "never",
@@ -129,6 +135,5 @@
   "remoteControlAtStartup": true,
   "inputNeededNotifEnabled": true,
   "agentPushNotifEnabled": true,
-  "skipAutoPermissionPrompt": true,
-  "feedbackDrafts": "off"
+  "skipAutoPermissionPrompt": true
 }
