@@ -24,6 +24,10 @@
 !/output-styles/**
 !/bin/
 !/bin/**
+!/vendor/
+!/vendor/**
+!/.github/
+!/.github/**
 __pycache__/
 /skills/synced/
 /skills/idle-compact/types/

@@ -1,0 +1,43 @@
+{
+  "skills": [
+    {
+      "name": "yomiyasu",
+      "repo": "nanaism/yomiyasu",
+      "branch": "main",
+      "commit": "30ee6041c328ce21d38a7963f667e079a93d7a12",
+      "watch_dirs": ["references", "scripts"],
+      "files": [
+        {"upstream": "SKILL.md", "local": "skills/yomiyasu/SKILL.md"},
+        {"upstream": "LICENSE", "local": "skills/yomiyasu/LICENSE"},
+        {"upstream": "references/gemini-syntax.md", "local": "skills/yomiyasu/references/gemini-syntax.md"},
+        {"upstream": "references/slop-catalog.md", "local": "skills/yomiyasu/references/slop-catalog.md"},
+        {"upstream": "references/domains/business.md", "local": "skills/yomiyasu/references/domains/business.md"},
+        {"upstream": "references/domains/essay.md", "local": "skills/yomiyasu/references/domains/essay.md"},
+        {"upstream": "references/domains/tech.md", "local": "skills/yomiyasu/references/domains/tech.md"},
+        {"upstream": "scripts/yomiyasu_lint.py", "local": "skills/yomiyasu/scripts/yomiyasu_lint.py"}
+      ]
+    },
+    {
+      "name": "shadcn",
+      "repo": "shadcn-ui/ui",
+      "branch": "main",
+      "commit": "0e3abd65a97707f4a9cc3ed07bf5006e1cb67b13",
+      "watch_dirs": ["skills/shadcn"],
+      "patch": "vendor/patches/shadcn.patch",
+      "files": [
+        {"upstream": "skills/shadcn/SKILL.md", "local": "skills/shadcn/SKILL.md", "patched": true},
+        {"upstream": "skills/shadcn/cli.md", "local": "skills/shadcn/cli.md"},
+        {"upstream": "skills/shadcn/customization.md", "local": "skills/shadcn/customization.md"},
+        {"upstream": "skills/shadcn/mcp.md", "local": "skills/shadcn/mcp.md"},
+        {"upstream": "skills/shadcn/registry.md", "local": "skills/shadcn/registry.md"},
+        {"upstream": "skills/shadcn/rules/base-vs-radix.md", "local": "skills/shadcn/rules/base-vs-radix.md"},
+        {"upstream": "skills/shadcn/rules/chat.md", "local": "skills/shadcn/rules/chat.md"},
+        {"upstream": "skills/shadcn/rules/composition.md", "local": "skills/shadcn/rules/composition.md"},
+        {"upstream": "skills/shadcn/rules/forms.md", "local": "skills/shadcn/rules/forms.md"},
+        {"upstream": "skills/shadcn/rules/icons.md", "local": "skills/shadcn/rules/icons.md"},
+        {"upstream": "skills/shadcn/rules/styling.md", "local": "skills/shadcn/rules/styling.md"},
+        {"upstream": "LICENSE.md", "local": "skills/shadcn/LICENSE.md"}
+      ]
+    }
+  ]
+}

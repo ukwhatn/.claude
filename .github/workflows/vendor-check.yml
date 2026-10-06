@@ -1,0 +1,53 @@
+name: vendored skills check
+
+on:
+  schedule:
+    - cron: "0 0 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      ISSUE_TITLE: 取り込んだ外部 skill に上流の更新がある
+      ISSUE_ASSIGNEE: ukwhatn
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Compare with upstream
+        id: check
+        run: |
+          set +e
+          python3 bin/vendor-check.py > report.md
+          echo "status=$?" >> "$GITHUB_OUTPUT"
+          cat report.md
+
+      - name: Find open issue
+        id: issue
+        run: |
+          number=$(gh issue list --state open --search "in:title \"$ISSUE_TITLE\"" --json number,title \
+            --jq "map(select(.title == env.ISSUE_TITLE))[0].number // empty")
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Open or update issue
+        if: steps.check.outputs.status == '1'
+        run: |
+          if [ -n "${{ steps.issue.outputs.number }}" ]; then
+            gh issue edit "${{ steps.issue.outputs.number }}" --body-file report.md --add-assignee "$ISSUE_ASSIGNEE"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body-file report.md --assignee "$ISSUE_ASSIGNEE"
+          fi
+
+      - name: Close resolved issue
+        if: steps.check.outputs.status == '0' && steps.issue.outputs.number != ''
+        run: gh issue close "${{ steps.issue.outputs.number }}" --comment "固定 commit が上流の最新に追いついたので閉じる。"
+
+      - name: Fail on fetch error
+        if: steps.check.outputs.status == '2'
+        run: exit 1

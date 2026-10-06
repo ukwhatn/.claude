@@ -13,7 +13,7 @@ Read when: `~/.claude` の構成を変更するとき、新しいPCをセット�
 | 追跡する | 追跡しない |
 |---|---|
 | `AGENTS.md`（実体）/ `CLAUDE.md`（symlink）/ `settings.json` | `CLAUDE.local.md`（マシン固有の実値） |
-| `context/` `skills/` `hooks/` `agents/` `templates/` `output-styles/` `bin/` | `.local/`（メモリ・issue） |
+| `context/` `skills/` `hooks/` `agents/` `templates/` `output-styles/` `bin/` `vendor/` `.github/` | `.local/`（メモリ・issue） |
 | `statusline-command.sh` `subagent-statusline.py` `codex-usage.py` `README.md` `NOTICE.md` | `plugins/`（marketplaceキャッシュ） |
 
 statusline系スクリプトは**ルート直下**に置く（`bin/` を切らない）。`settings.json` が `statusLine` / `subagentStatusLine` から参照しており、settingsだけ同期されてスクリプトが無いと毎tickで実行失敗するため、allowlistへの追加は必須。

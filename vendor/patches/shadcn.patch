@@ -1,0 +1,43 @@
+diff --git a/skills/shadcn/SKILL.md b/skills/shadcn/SKILL.md
+index 1b4c414..92e63d6 100644
+--- a/skills/shadcn/SKILL.md
++++ b/skills/shadcn/SKILL.md
+@@ -2,7 +2,6 @@
+ name: shadcn
+ description: Manages shadcn components and projects — adding, searching, fixing, debugging, styling, and composing UI, including chat interfaces. Provides project context, component docs, and usage examples. Applies when working with shadcn/ui, component registries, presets, --preset codes, or any project with a components.json file. Also triggers for "shadcn init", "create an app with --preset", or "switch to --preset".
+ user-invocable: false
+-allowed-tools: Bash(npx shadcn@latest *), Bash(pnpm dlx shadcn@latest *), Bash(bunx --bun shadcn@latest *)
+ ---
+ 
+ # shadcn/ui
+@@ -13,11 +12,7 @@ A framework for building ui, components and design systems. Components are added
+ 
+ ## Current Project Context
+ 
+-```json
+-!`npx shadcn@latest info --json`
+-```
+-
+-The JSON above contains the project config and installed components. Use `npx shadcn@latest docs <component>` to get documentation and example URLs for any component.
++Run `npx shadcn@latest info --json` (with the project's package runner) to get the project config and installed components before you rely on them. Use `npx shadcn@latest docs <component>` to get documentation and example URLs for any component.
+ 
+ ## Principles
+ 
+@@ -148,7 +143,7 @@ These are the most common patterns that differentiate correct shadcn/ui code. Fo
+ 
+ ## Key Fields
+ 
+-The injected project context contains these key fields:
++The project context from `npx shadcn@latest info --json` contains these key fields:
+ 
+ - **`aliases`** → use the actual alias prefix for imports (e.g. `@/`, `~/`), never hardcode.
+ - **`isRSC`** → when `true`, components using `useState`, `useEffect`, event handlers, or browser APIs need `"use client"` at the top of the file. Always reference this field when advising on the directive.
+@@ -176,7 +171,7 @@ npx shadcn@latest docs button dialog select
+ 
+ ## Workflow
+ 
+-1. **Get project context** — already injected above. Run `npx shadcn@latest info` again if you need to refresh.
++1. **Get project context** — run `npx shadcn@latest info --json` (see Current Project Context above).
+ 2. **Check installed components first** — before running `add`, always check the `components` list from project context or list the `resolvedPaths.ui` directory. Don't import components that haven't been added, and don't re-add ones already installed.
+ 3. **Find components** — `npx shadcn@latest search`.
+ 4. **Get docs and examples** — run `npx shadcn@latest docs <component>` to get URLs, then fetch them. Use `npx shadcn@latest view` to browse registry items you haven't installed. To preview changes to installed components, use `npx shadcn@latest add --diff`.
