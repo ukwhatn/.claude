@@ -69,7 +69,7 @@ Phase: 0準備（メモリディレクトリ・`/findmem`）→ 1調査 → 2計
 - **工数・所要期間・スケジュールの見積を回答・記載する前（計画書・PR分割に見積欄を設ける場合を含む）**: `context/estimation.md`
 - **ブラウザ操作ツール（claude-in-chrome / playwright / chrome-devtools）を呼ぶ前、またはブラウザ自動化のセットアップ・接続設定を変更する前**: `context/browser-automation.md`
 - **Cloudflare（wrangler / Workers / D1 / R2）を触る前**: `context/cloudflare-development.md`
-- **画面・モック・ダッシュボードを作る前、UI文言を書く前**: `context/ui-artifact-standards.md`
+- **画面・モック・ダッシュボードを作る前、UI文言を書く前**: `context/ui-artifact-standards.md`（型の選び方とレイアウトは `/designing-ui`）
 - **Web APIの外部仕様（エラー形式・認証・バージョニング・ページネーション等）を新規に決める・変更する前**: `context/web-api-design.md`
 - **gws MCPで数百KB超のファイルを扱う前**: `context/gws-mcp-notes.md`
 - **`~/.claude` の構成変更・新PCセットアップ・Codexへの配布経路を触る前**: `context/multi-agent-setup.md`

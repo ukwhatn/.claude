@@ -20,6 +20,8 @@ git clone <this-repo> ~/.claude
 ├── skills/                # 自動トリガースキル（Agent Skills 形式・両ツール共用）
 ├── hooks/                 # SessionStart 等のフックスクリプト
 ├── templates/project/     # プロジェクト初期化テンプレート
+├── vendor/                # 取り込んだ外部 skill の台帳と、取り込み時の改変パッチ
+├── .github/workflows/     # 取り込んだ外部 skill の上流更新を週次で検出する
 └── settings.json          # 権限・環境変数・hooks・モデル
 ```
 
@@ -48,9 +50,11 @@ git clone <this-repo> ~/.claude
 
 ### skills/
 
-28 スキル。一覧と発動条件は各 `SKILL.md` の frontmatter を参照（Claude Code では `/help` で確認できる）。
+29 スキル。一覧と発動条件は各 `SKILL.md` の frontmatter を参照（Claude Code では `/help` で確認できる）。
 
-主要なもの: `commit` / `create-draft-pr`（コミット・PR）、`writing-code`（実装原則）、`systematic-debugging`（根本原因調査）、`self-review` / `pr-review` / `codebase-review`（レビュー）、`design-feature`（要件定義）、`update-inst` / `instructions-audit`（本リポジトリ自体の保守）。
+主要なもの: `commit` / `create-draft-pr`（コミット・PR）、`writing-code`（実装原則）、`systematic-debugging`（根本原因調査）、`self-review` / `pr-review` / `codebase-review`（レビュー）、`design-feature`（要件定義）、`update-inst` / `instructions-audit`（本リポジトリ自体の保守）、`designing-ui` / `writing-ui-text`（画面の型の選択と文言）。
+
+`skills/yomiyasu/` と `skills/shadcn/` は外部リポジトリから取り込んだもの。出典・改変・更新手順は `NOTICE.md`、台帳は `vendor/manifest.json`。上流の更新は `bin/vendor-check.py` が検出し、GitHub Actions が週次で実行して issue を立てる。
 
 `skills/idle-compact/` はスキルではなく、function hooks で書いた Claude Code のプラグインで、`idle-compact@skills-dir` として自動で読み込まれる。役割は 2 つある。メイン会話を最後の応答から `idleMinutes`（既定 50 分）放置すると、プロンプトキャッシュが切れる前に compact する。また、どの compact にも `AGENTS.md` の「Compact Instructions」節を渡す。有効化には `settings.json` の `env` にある `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` が要る。オプションは `pluginConfigs["idle-compact@skills-dir"].options` で変える。テストは `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 claude plugin test skills/idle-compact`、型チェックはセッションで `/plugin-types skills/idle-compact/types` を実行してから `tsc -p skills/idle-compact/tsconfig.json` で行う（`types/` は git 管理外）。
 
