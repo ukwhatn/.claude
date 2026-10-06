@@ -62,8 +62,8 @@ SOFTWARE.
 
 ## nanaism/yomiyasu
 
-- 出典: https://github.com/nanaism/yomiyasu （参照commit: `30ee6041c328ce21d38a7963f667e079a93d7a12`）
-- 配置先: `skills/yomiyasu/`（SKILL.md, LICENSE, references/, scripts/yomiyasu_lint.py）。上流のファイルを無改変でコピーしたもので、翻案していない。本環境向けの扱いは `skills/ukwhatn-writing/SKILL.md` 側で上書きする
+- 出典: https://github.com/nanaism/yomiyasu （参照commit: `986da6ffc89316a90e509d007c1efe1fc59057e6`）
+- 配置先: `skills/yomiyasu/`（SKILL.md, LICENSE, references/, scripts/yomiyasu_lint.py, scripts/yomiyasu_diff.py）。上流のファイルを無改変でコピーしたもので、翻案していない。本環境向けの扱いは `skills/ukwhatn-writing/SKILL.md` 側で上書きする
 - plugin や `npx skills add` で導入しない（サプライチェーン攻撃を避けるため）。更新するときは上流を clone し、`diff -r` で差分を全文読んでからコピーし、上の参照commitと `vendor/manifest.json` の `commit` を書き換える
 - ライセンス全文: `skills/yomiyasu/LICENSE`（MIT License, Copyright (c) 2026 nanaism）
 

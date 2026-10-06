@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-yomiyasu_lint.py - 日本語文章のAIっぽさ（LLM-Slop）数値化・機械的静的検査スクリプト
+yomiyasu_lint.py - 日本語の表現とMarkdownの書式を、設定されたルールで点検する。
 
-Qiita 7万件の計量調査、統語構造復元論、AI語彙の出現頻度分析に基づく
-決定論的リンター。標準ライブラリのみで動作。
+指摘は見直し候補であり、意味の保持や読みやすさを判定するものではない。
+Python標準ライブラリだけで動作する。
 """
 
 import sys
 import re
 import argparse
 import json
+import unicodedata
 from typing import List, Dict, Any, Tuple
 
 
@@ -29,7 +30,7 @@ EMOJI_PATTERN = re.compile(
     r"|[\u2B50-\u2B55]"
 )
 
-# 2026年最新AIスロップ語彙リスト
+# 文脈を確かめる語の一覧。含まれていることだけでは誤りとしない。
 SLOP_WORDS = [
     # 質感を装う疑似具体語
     "手触り", "肌感", "肌感覚", "体温", "温度感", "熱量", "血の通った", "泥臭い", "泥臭さ",
@@ -37,20 +38,25 @@ SLOP_WORDS = [
     "解像度", "腹落ち", "メンタルモデル", "本質的", "地に足のついた", "等身大",
     # 抽象比喩名詞
     "営み", "装置", "意思決定OS", "土台", "羅針盤", "起爆剤", "触媒",
-    # 必殺技造語（体験の壮大化）
+    # 日常の体験を大げさに表す場合がある語
     "真理", "虚飾", "境地", "美学", "深淵", "冷徹", "禁欲的", "優美", "極致", "宿命",
-    # 2026年急増語（文脈によるが要点検）
+    # 指す役割を確かめる語
     "正本",
 ]
 
 # 比喩動詞・AI偏愛動詞パターン
 METAPHOR_VERB_PATTERNS = [
-    (r"(地味に|よく|じわじわ)効[きくいた]", "比喩動詞「効く」の過剰使用"),
+    (r"(地味に|よく|じわじわ)効[かきくけいた]", "比喩動詞「効く」の過剰使用"),
+    (r"(データ|仕様|設計|環境|ビルド|システム|秩序)が(静かに)?壊れ", "比喩動詞「壊れる」"),
     (r"静かに(壊れ|落ち|失敗|沈黙)", "英語直訳「静かに壊れる (silently fail)」"),
     (r"黙って(無視|捨て|スキップ|破棄)", "英語直訳「黙って無視される」"),
     (r"側に倒[すしせ]", "判断を方向で表現する「〜側に倒す」"),
     (r"時間[をに]溶か[したす]", "比喩動詞「時間を溶かす」"),
     (r"(1つずつ|一つずつ)潰[していく]", "比喩動詞「潰す」"),
+    (r"(実装|詳細|コード|設計|内部|仕組み|領域|本質)(に|まで|へ)踏み込[んむみま]", "比喩動詞「踏み込む」"),
+    (r"動かしながら引き返[すし]", "比喩動詞「引き返す」"),
+    (r"代わりに添え[るた]", "比喩動詞「添える」"),
+    (r"(議論|意見|結論|方向性|価格|話題|検討)が[^。！？!?]*?収斂", "比喩動詞「収斂する」"),
     (r"した瞬間に?", "英語直訳「〜した瞬間 (the moment ...)」"),
     (r"(前提|基盤)が崩れ[るた]", "抽象比喩「前提が崩れる」"),
     (r"文化が醸成", "非生物主語「文化が醸成される」"),
@@ -161,7 +167,7 @@ def check_sentence_end_repetitions(sentences: List[Tuple[int, str]]) -> List[Dic
                     "rule": "sentence_end_repetition",
                     "line": curr_line,
                     "severity": "warn",
-                    "message": f"同一文末「{curr_type}」が3回以上連続しています。文末のリズムを調整してください。",
+                    "message": f"同一文末「{curr_type}」が3回以上連続しています。読みにくくなっていないか確認し、自然な説明や文体は保ってください。",
                     "snippet": curr_s
                 })
         else:
@@ -213,6 +219,323 @@ def analyze_markdown_metrics(text: str) -> Dict[str, Any]:
     }
 
 
+# ---- 太字が表示されるか（GitHub などの Markdown）----
+# GitHub の Markdown では、** のすぐ内側が記号（「」（）` など）で、すぐ外側が文字だと、** を太字の印として読まず、
+# ** がそのまま表示される。新しい CommonMark（記号に Unicode の S も入る）でも、GitHub の GFM（P だけ）でも
+# 太字になる形だけを「表示される」とみなす。直し方の案は、かっこの内側だけを太字にする → 句読点を太字の外に出す
+# → 文字に接する側に半角スペースを入れる、の順に試す。
+BOLD_ASCII_PUNCT = set("!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~")
+BOLD_BRACKETS = {"「": "」", "『": "』", "（": "）", "(": ")", "【": "】", "〔": "〕", "［": "］", "[": "]",
+                 "〈": "〉", "《": "》", "“": "”", "‘": "’", "＜": "＞"}
+
+
+def _bold_ws(ch: str) -> bool:
+    return ch == "" or ch.isspace()
+
+
+def _bold_punct_gfm(ch: str) -> bool:
+    return ch != "" and (ch in BOLD_ASCII_PUNCT or unicodedata.category(ch).startswith("P"))
+
+
+def _bold_punct_new(ch: str) -> bool:
+    return ch != "" and unicodedata.category(ch)[0] in "PS"
+
+
+def _bold_can_open(prev: str, nxt: str) -> bool:
+    return all(not _bold_ws(nxt) and (not p(nxt) or _bold_ws(prev) or p(prev)) for p in (_bold_punct_gfm, _bold_punct_new))
+
+
+def _bold_can_close(prev: str, nxt: str) -> bool:
+    return all(not _bold_ws(prev) and (not p(prev) or _bold_ws(nxt) or p(nxt)) for p in (_bold_punct_gfm, _bold_punct_new))
+
+
+def _bold_code_spans(text: str):
+    """インラインコード（同じ数のバッククォートで閉じたもの）の範囲"""
+    runs = [(m.start(), m.end()) for m in re.finditer(r"`+", text)]
+    spans, k = [], 0
+    while k < len(runs):
+        s, e = runs[k]
+        for m in range(k + 1, len(runs)):
+            if runs[m][1] - runs[m][0] == e - s:
+                spans.append((s, runs[m][1]))
+                k = m
+                break
+        k += 1
+    return spans
+
+
+def _bold_pairs(text: str):
+    """後方互換用: テキスト内の太字ペアを返す"""
+    return _bold_pairs_in_block(text)
+
+
+def _bold_pairs_in_block(block_text: str):
+    code = _bold_code_spans(block_text)
+    pos = []
+    for m in re.finditer(r"(?<!\*)\*\*(?!\*)", block_text):
+        p = m.start()
+        if any(a <= p < b for a, b in code):
+            continue
+        bs_match = re.search(r"\\*$", block_text[:p])
+        bs_count = len(bs_match.group(0)) if bs_match else 0
+        if bs_count % 2 == 1:
+            continue
+        pos.append(p)
+
+    pairs = []
+    used = set()
+
+    # 第1段: 強調開閉の基本条件（前後の空白判定）によるスタック照合
+    stack = []
+    for p in pos:
+        prev = block_text[p - 1] if p > 0 else ""
+        nxt = block_text[p + 2] if p + 2 < len(block_text) else ""
+
+        can_open = not _bold_ws(nxt)
+        can_close = not _bold_ws(prev)
+
+        if can_close and stack:
+            opener = stack.pop()
+            if opener + 2 < p:
+                pairs.append((opener, p))
+                used.add(opener)
+                used.add(p)
+        elif can_open:
+            stack.append(p)
+
+    # 第2段: 内側空白によって開閉条件から外れた太字候補のペアリング
+    unpaired = [p for p in pos if p not in used]
+    idx = 0
+    while idx < len(unpaired) - 1:
+        p1 = unpaired[idx]
+        p2 = unpaired[idx + 1]
+        if any(p1 < a < p2 or p1 < b < p2 for a, b in pairs):
+            idx += 1
+            continue
+        inner = block_text[p1 + 2:p2]
+        if inner.strip() != "":
+            if _bold_ws(inner[0]) or _bold_ws(inner[-1]):
+                pairs.append((p1, p2))
+                used.add(p1)
+                used.add(p2)
+                idx += 2
+                continue
+        idx += 1
+
+    pairs.sort(key=lambda x: x[0])
+    return pairs
+
+
+def _bold_pair_ok(text: str, i: int, j: int) -> bool:
+    ch = lambda p: text[p] if 0 <= p < len(text) else ""
+    return _bold_can_open(ch(i - 1), ch(i + 2)) and _bold_can_close(ch(j - 1), ch(j + 2))
+
+
+def _bold_close_of(s: str) -> int:
+    """s の先頭のかっこに対応する閉じかっこの位置（なければ -1）"""
+    o, c, depth = s[0], BOLD_BRACKETS[s[0]], 0
+    for k, x in enumerate(s):
+        if x == o:
+            depth += 1
+        elif x == c:
+            depth -= 1
+            if depth == 0:
+                return k
+    return -1
+
+
+def _bold_fix(text: str, i: int, j: int, k: int):
+    """k 番目の太字（i と j の **）の直し方の案。(直したあとの部分, 直し方) を返す"""
+    inner = text[i + 2:j]
+    tries = []
+    if len(inner) >= 3 and inner[0] in BOLD_BRACKETS and _bold_close_of(inner) == len(inner) - 1:
+        tries.append((inner[0] + "**" + inner[1:-1] + "**" + inner[-1], "かっこの内側だけを太字にする"))
+    if len(inner) >= 2 and inner[-1] in "。、．，！？!?":
+        tries.append(("**" + inner[:-1] + "**" + inner[-1], "句読点を太字の外に出す"))
+    ch = lambda p: text[p] if 0 <= p < len(text) else ""
+    body = inner
+    if _bold_ws(ch(i + 2)) or _bold_ws(ch(j - 1)):
+        body = inner.strip()
+    left = "" if _bold_can_open(ch(i - 1), body[:1]) else " "
+    right = "" if _bold_can_close(body[-1:], ch(j + 2)) else " "
+    tries.append((left + "**" + body + "**" + right, "太字の内側の空白を取る" if body != inner and not (left or right)
+                  else "文字に接する側に半角スペースを入れる"))
+    for middle, how in tries:
+        cand = text[:i] + middle + text[j + 2:]
+        pairs = _bold_pairs_in_block(cand)
+        if k < len(pairs) and _bold_pair_ok(cand, *pairs[k]):
+            return middle, how
+    return None, "手で直す"
+
+
+def _line_containers(line: str):
+    """行のコンテナ（リストマーカー、引用の深さ）と、内部のコンテンツを簡易解析する"""
+    is_list = False
+    m_list = re.match(r"^\s{0,3}(?:[*+-]|\d+[.)])\s+", line)
+    if m_list:
+        is_list = True
+        rem = line[m_list.end():]
+    else:
+        rem = line
+
+    depth = 0
+    p = 0
+    while True:
+        m_sp = re.match(r"^\s{0,3}", rem[p:])
+        if m_sp:
+            p += m_sp.end()
+        if p < len(rem) and rem[p] == ">":
+            depth += 1
+            p += 1
+            if p < len(rem) and rem[p] == " ":
+                p += 1
+        else:
+            break
+    content = rem[p:]
+    return is_list, depth, content
+
+
+def bold_problems(text: str, skip_frontmatter: bool = True):
+    """太字にならない ** の場所と、直し方の案。
+    コードブロック・インラインコード・HTML の行・先頭の設定部分は見ない。
+    段落・リスト・引用などのブロック単位で複数行太字を正しく扱う。
+    """
+    out = []
+    lines = text.split("\n")
+    start = 0
+    if skip_frontmatter and lines and lines[0].rstrip("\r") == "---":
+        for n in range(1, len(lines)):
+            if lines[n].rstrip("\r") == "---":
+                start = n + 1
+                break
+
+    blocks = []
+    curr_lines = []
+    fence = None
+    curr_depth = 0
+    in_table = False
+
+    def flush():
+        nonlocal curr_lines, curr_depth, in_table
+        if curr_lines:
+            blocks.append(curr_lines)
+            curr_lines = []
+        curr_depth = 0
+        in_table = False
+
+    for no in range(start, len(lines)):
+        raw_line = lines[no]
+        line = raw_line.rstrip("\r")
+        line_no = no + 1
+
+        is_list, depth, content = _line_containers(line)
+
+        # フェンスコードブロックの開始・終了
+        m = re.match(r"^\s{0,3}(`{3,}|~{3,})(.*)$", content)
+        if fence:
+            if m and m.group(1)[0] == fence[0] and len(m.group(1)) >= fence[1] and not m.group(2).strip():
+                fence = None
+            continue
+        if m and not (m.group(1)[0] == "`" and "`" in m.group(2)):
+            flush()
+            fence = (m.group(1)[0], len(m.group(1)))
+            continue
+
+        if not content.strip():
+            flush()
+            continue
+
+        if content.lstrip().startswith("<"):
+            flush()
+            continue
+
+        if re.match(r"^\s{0,3}(?:(\*)\s*(?:\1\s*){2,}|(-)\s*(?:\2\s*){2,}|(_)\s*(?:\3\s*){2,})\s*$", content):
+            flush()
+            continue
+
+        # GFM 表の区切り行（-- | -- など、外周パイプなしを含む）
+        m_tbl_sep = re.match(r"^\s{0,3}\|?\s*:?-{1,}:?\s*(\|\s*:?-{1,}:?\s*)+\|?\s*$", content)
+        if m_tbl_sep:
+            if curr_lines:
+                hdr = curr_lines.pop()
+                flush()
+                blocks.append([hdr])
+            else:
+                flush()
+            in_table = True
+            continue
+
+        # Setext 見出し下線（=== または ---）
+        if curr_lines and re.match(r"^\s{0,3}(=+|-+)\s*$", content):
+            flush()
+            continue
+
+        # ATX 見出し
+        if re.match(r"^\s{0,3}#{1,6}(\s+|$)", content):
+            flush()
+            blocks.append([(line_no, line)])
+            continue
+
+        # 表の行（外周パイプあり、または表の継続行）
+        if content.startswith("|") or (in_table and "|" in content):
+            flush()
+            blocks.append([(line_no, line)])
+            in_table = True
+            continue
+        else:
+            in_table = False
+
+        # リスト項目の開始
+        if is_list or re.match(r"^\s{0,3}(?:[*+-]|\d+[.)])\s+", content):
+            flush()
+            curr_depth = depth
+            curr_lines.append((line_no, line))
+            continue
+
+        # 引用深度の変更（lazy continuation: 直前の深さ>0 かつ 現在の深さ0 の場合は許容）
+        if curr_lines:
+            if depth != curr_depth:
+                if not (curr_depth > 0 and depth == 0):
+                    flush()
+                    curr_depth = depth
+
+        if not curr_lines:
+            curr_depth = depth
+
+        curr_lines.append((line_no, line))
+
+    flush()
+
+    for block in blocks:
+        block_text = "\n".join(l for _, l in block)
+        offsets = [0]
+        for _, l in block[:-1]:
+            offsets.append(offsets[-1] + len(l) + 1)
+
+        def get_line_no(char_idx: int) -> int:
+            import bisect
+            l_idx = bisect.bisect_right(offsets, char_idx) - 1
+            return block[l_idx][0]
+
+        pairs = _bold_pairs_in_block(block_text)
+        for k, (i, j) in enumerate(pairs):
+            if _bold_pair_ok(block_text, i, j):
+                continue
+            middle, how = _bold_fix(block_text, i, j, k)
+            pre, post = block_text[max(0, i - 4):i], block_text[j + 2:j + 6]
+            found = pre + _bold_short(block_text[i:j + 2]) + post
+            suggest = pre + _bold_short(middle) + post if middle is not None else ""
+            line_no = get_line_no(i)
+            out.append({"line": line_no, "found": found, "suggest": suggest, "how": how})
+
+    return out
+
+
+def _bold_short(s: str) -> str:
+    """長い太字は、直すところ（両端）だけを見せる"""
+    return s if len(s) <= 30 else s[:12] + "…" + s[-12:]
+
+
 def lint_text(text: str) -> Dict[str, Any]:
     """文章全体を総合検査する"""
     findings = []
@@ -226,7 +549,7 @@ def lint_text(text: str) -> Dict[str, Any]:
                 "rule": "excess_bold",
                 "line": 1,
                 "severity": "warn",
-                "message": f"太字の頻度（1,000字あたり {metrics['bold_per_1000']}個）が高すぎます（推奨: 2.5以下）。重要な要点のみに絞ってください。",
+                "message": f"太字の頻度（1,000字あたり {metrics['bold_per_1000']}個）が設定した目安を超えています（推奨: 2.0以下）。強調の役割を確かめ、不要なものだけ整理してください。",
                 "snippet": f"太字数: {metrics['bold_count']}回 / {metrics['char_count']}文字"
             })
 
@@ -235,12 +558,22 @@ def lint_text(text: str) -> Dict[str, Any]:
                 "rule": "excess_list",
                 "line": 1,
                 "severity": "warn",
-                "message": f"箇条書きの比率（{round(metrics['list_ratio']*100, 1)}%）が高すぎます（推奨: 20%以下）。思考や論理展開は地の文で記述してください。",
+                "message": f"箇条書きの比率（{round(metrics['list_ratio']*100, 1)}%）が設定した目安を超えています（推奨: 15%以下）。項目の役割を確かめ、不要なものだけ整理してください。",
                 "snippet": f"リスト行: {metrics['list_lines']} / 全非空行: {metrics['total_lines']}"
             })
 
     # 2. 文末重複検査
     findings.extend(check_sentence_end_repetitions(sentences))
+
+    # 2.5 太字が表示されるか（GitHub などの Markdown で ** がそのまま出るところ）
+    for p in bold_problems(text):
+        findings.append({
+            "rule": "bold_not_rendered",
+            "line": p["line"],
+            "severity": "error",
+            "message": f"太字の印（**）が記号に接していて、GitHub などでは太字にならず ** がそのまま表示されます。直し方: {p['how']}。",
+            "snippet": f"{p['found']} → {p['suggest']}" if p["suggest"] else p["found"]
+        })
 
     # 3. 語彙・構文パターン検査
     lines = text.split("\n")
@@ -306,7 +639,7 @@ def lint_text(text: str) -> Dict[str, Any]:
                 "rule": "trailing_colon",
                 "line": line_no,
                 "severity": "warn",
-                "message": "文末にコロン（：）が使われています。英語直訳の記法を避け、平文の句点（。）で終えるか前置きを省いてください。",
+                "message": "文末にコロン（：）があります。ラベルと値の対応などに必要か確認し、不要な前置きなら整理してください。",
                 "snippet": line.strip()
             })
 
@@ -317,18 +650,38 @@ def lint_text(text: str) -> Dict[str, Any]:
                     "rule": "slop_vocabulary",
                     "line": line_no,
                     "severity": "warn",
-                    "message": f"AI頻出語彙「{word}」が含まれています。文脈上必要のない比喩や大げさな装飾であれば、具体的な客観表現に置き換えてください。",
+                    "message": f"AI頻出語彙「{word}」が含まれています。文脈上必要のない比喩や大げさな装飾であれば、ふだん使う自然な表現に置き換えてください。ただし、文字どおりの意味や必要な文脈を担っている場合は残してかまいません。",
                     "snippet": line.strip()
                 })
 
         # 比喩動詞パターン
+        kowareru_span = None
         for pattern, desc in METAPHOR_VERB_PATTERNS:
-            if re.search(pattern, plain_text):
+            if desc == "英語直訳「静かに壊れる (silently fail)」" and kowareru_span:
+                # 「壊れる」と「静かに壊れる」が同一動詞に二重反応することを防止
+                for m in re.finditer(pattern, plain_text):
+                    span = (m.start(), m.end())
+                    if kowareru_span[0] <= span[0] and span[1] <= kowareru_span[1]:
+                        continue
+                    findings.append({
+                        "rule": "metaphor_verb",
+                        "line": line_no,
+                        "severity": "warn",
+                        "message": f"{desc}が検出されました。不自然な比喩動詞であれば、ふだん使う動詞や客観的な表現に書き直してください。ただし、文字どおりの動作や状態変化を表している場合は無理に言い換える必要はありません。",
+                        "snippet": line.strip()
+                    })
+                    break
+                continue
+
+            m = re.search(pattern, plain_text)
+            if m:
+                if desc == "比喩動詞「壊れる」":
+                    kowareru_span = (m.start(), m.end())
                 findings.append({
                     "rule": "metaphor_verb",
                     "line": line_no,
                     "severity": "warn",
-                    "message": f"{desc}が検出されました。具体的な操作や状態変化に書き直してください。",
+                    "message": f"{desc}が検出されました。不自然な比喩動詞であれば、ふだん使う動詞や客観的な表現に書き直してください。ただし、文字どおりの動作や状態変化を表している場合は無理に言い換える必要はありません。",
                     "snippet": line.strip()
                 })
 
@@ -339,7 +692,7 @@ def lint_text(text: str) -> Dict[str, Any]:
                     "rule": "meta_filler",
                     "line": line_no,
                     "severity": "warn",
-                    "message": f"{desc}が検出されました。前置きや定型文を削り、本題から直接書いてください。",
+                    "message": f"{desc}が検出されました。単なる前置きや不要な飾りであれば削り、本題から書いてください。ただし、「何が大事か」という評価や主張そのものを担っている場合は、述語に移すなどして意味を残してください。",
                     "snippet": line.strip()
                 })
 
@@ -350,7 +703,7 @@ def lint_text(text: str) -> Dict[str, Any]:
                     "rule": "negative_parallelism",
                     "line": line_no,
                     "severity": "info",
-                    "message": "「AではなくB」構文が検出されました。肯定文（単に「Bである」）で直接書けないか検討してください。",
+                    "message": "「AではなくB」構文が検出されました。否定を外しても主張が変わらない場合は肯定文を検討してください。ただし、誤解の訂正や見方の切り替えなど意味・比重を担っている否定なら、無理に肯定化せずそのまま残してください。",
                     "snippet": line.strip()
                 })
 
@@ -367,7 +720,7 @@ def lint_text(text: str) -> Dict[str, Any]:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="日本語文章のAIっぽさ数値化リンター")
+    parser = argparse.ArgumentParser(description="日本語の表現とMarkdownの書式を、設定されたルールで点検します。指摘は見直し候補です。")
     parser.add_argument("file", nargs="?", help="検査対象のMarkdownファイルパス（指定なしの場合は標準入力）")
     parser.add_argument("--json", action="store_true", help="JSON形式で出力")
     parser.add_argument("--strict", action="store_true", help="警告が1件でもあれば非ゼロ（終了コード1）で終了")
@@ -399,9 +752,9 @@ def main():
         print("-" * 60)
 
         if result["is_clean"]:
-            print("[PASS] AIっぽさは検出されませんでした。設定された検査ルールによる指摘はありません。")
+            print("[PASS] 設定された検査ルールによる指摘はありません。")
         else:
-            print(f"[NOTICE] {len(result['findings'])} 件の改善推奨箇所が見つかりました。\n")
+            print(f"[NOTICE] {len(result['findings'])} 件の見直し候補が見つかりました。\n")
             for f in result["findings"]:
                 sev = f"[{f['severity'].upper()}]"
                 print(f"L{f['line']} {sev} {f['message']}")

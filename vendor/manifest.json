@@ -4,7 +4,7 @@
       "name": "yomiyasu",
       "repo": "nanaism/yomiyasu",
       "branch": "main",
-      "commit": "30ee6041c328ce21d38a7963f667e079a93d7a12",
+      "commit": "986da6ffc89316a90e509d007c1efe1fc59057e6",
       "watch_dirs": ["references", "scripts"],
       "files": [
         {"upstream": "SKILL.md", "local": "skills/yomiyasu/SKILL.md"},
@@ -14,7 +14,8 @@
         {"upstream": "references/domains/business.md", "local": "skills/yomiyasu/references/domains/business.md"},
         {"upstream": "references/domains/essay.md", "local": "skills/yomiyasu/references/domains/essay.md"},
         {"upstream": "references/domains/tech.md", "local": "skills/yomiyasu/references/domains/tech.md"},
-        {"upstream": "scripts/yomiyasu_lint.py", "local": "skills/yomiyasu/scripts/yomiyasu_lint.py"}
+        {"upstream": "scripts/yomiyasu_lint.py", "local": "skills/yomiyasu/scripts/yomiyasu_lint.py"},
+        {"upstream": "scripts/yomiyasu_diff.py", "local": "skills/yomiyasu/scripts/yomiyasu_diff.py"}
       ]
     },
     {
