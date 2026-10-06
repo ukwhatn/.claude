@@ -61,6 +61,8 @@ http_headers = { CONTEXT7_API_KEY = "ctx7sk-..." }
 
 `CLAUDE.local.md`（マシン固有の実値: Chrome deviceIdマッピング、PATの置き場所等）はgit管理外なので手動で用意する。
 
+ディスクの自動棚卸しを使うPCでは `bin/disk-inventory-setup.sh` でLaunchAgentを登録する。対象のリポジトリ・ビルド成果物の起点は `~/.config/disk-inventory/config.sh`（git管理外。無ければ雛形が置かれる）に書き、登録前に `bin/disk-inventory.sh`（dry-run）の報告で消える対象を確認する。
+
 ### セットアップの検証
 
 symlinkの存在確認では**注入されているかどうかが分からない**（AGENTS.mdがbyte上限でtruncateされる可能性がある）。実機で確認する:
