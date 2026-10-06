@@ -1,6 +1,6 @@
 ---
 name: taskboard
-description: taskboard の MCP tool（health / board_* / task_* / work_* / doc_* / ask_* / review_request / feedback_list / comment_reply / schedule_* / session_* / orchestrator_* / settings_* / inbox_* / prs_* / usage_get）でタスク・作業項目・文書と、案件・定期起動・セッション・受信箱を扱う。自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、計画書・設計提案を人に読ませて採否やレビューを求める時、ボードの一覧・状態を確認する時、オーケストレーターとして全体の health を見回る時、案件・定期起動・セッションを作る・変える・止める・消す時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: taskboard の外で始まったセッションをタスクに移すのは taskboard-adopt、pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域。
+description: taskboard の MCP tool（health / board_* / task_* / work_* / doc_* / ask_* / review_request / feedback_list / comment_reply / schedule_* / session_* / orchestrator_* / settings_* / inbox_* / prs_* / usage_get）でタスク・作業項目・文書と、案件・定期起動・セッション・受信箱を扱う。自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、計画書・設計提案を人に読ませて採否やレビューを求める時、ボードの一覧・状態を確認する時、オーケストレーターとして全体の health を見回る時、案件・定期起動・セッションを作る・変える・止める・消す時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: taskboard の外で始まったセッションをタスクに移すのは taskboard-adopt、pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域、新しい定期起動の中身（仕組みの選択・手順書・プロンプト・状態ファイル）の設計は scheduling-jobs。
 ---
 
 # Taskboard
@@ -96,7 +96,7 @@ description: taskboard の MCP tool（health / board_* / task_* / work_* / doc_*
 | 案件 | `board_create` / `board_update`（名前・起動プロンプト・`merge_target`・アーカイブ・`edit_columns` / `add_columns` / `remove_columns` / `reassign`）/ `board_delete` |
 | タスク | `task_update` の `board`（別の案件へ）・`remove_links`・`unlink_session` / `unlink_sessions`（紐づけを外す。セッションは止めない）/ `task_delete` |
 | 作業項目・文書・質問 | `work_delete`（`drop` と違い母数からも履歴からも消える）/ `doc_read` / `doc_delete` / `ask_cancel` |
-| 定期起動 | `schedule_runs`（各回の結果と失敗の理由）/ `schedule_delete`。`schedule_create` / `schedule_update` の `task_id`・`new_task`（`board`）で常設タスクに結ぶ（結ばないと各回のセッションはどのタスクにも結ばれない）、`clear_task` で外す |
+| 定期起動 | `schedule_runs`（各回の結果と失敗の理由）/ `schedule_delete`。`schedule_create` / `schedule_update` の `task_id`・`new_task`（`board`）で常設タスクに結ぶ（結ばないと各回のセッションはどのタスクにも結ばれない）、`clear_task` で外す。新しく作るときは /scheduling-jobs スキルで中身を決めてから登録する |
 | セッション | `session_screen`（画面の文字。blocked が何を待っているか読む）/ `session_keys`（承認のキー）/ `session_stop` / `session_resume` / `session_history` / `session_rename` |
 | マシン | `orchestrator_status` / `orchestrator_start` / `orchestrator_prompt` / `orchestrator_restart` / `settings_get` / `settings_update` / `inbox_list` / `inbox_dismiss` / `inbox_restore` / `prs_list` / `prs_refresh` / `usage_get` |
 
