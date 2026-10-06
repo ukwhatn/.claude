@@ -1,6 +1,6 @@
 ---
 name: taskboard
-description: taskboard の MCP tool（board_overview / task_get / task_create / task_update / work_list / work_add / work_update / session_list / session_start / session_prompt / doc_publish / doc_list / ask_user / review_request / feedback_list / comment_reply）でタスク・作業項目・文書を扱う。自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、計画書・設計提案を人に読ませて採否やレビューを求める時、ボードの一覧・状態を確認する時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域。
+description: taskboard の MCP tool（board_overview / session_guide / task_get / task_create / task_update / work_list / work_add / work_update / session_list / session_start / session_prompt / doc_publish / doc_list / ask_user / review_request / feedback_list / comment_reply）でタスク・作業項目・文書を扱う。自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、計画書・設計提案を人に読ませて採否やレビューを求める時、ボードの一覧・状態を確認する時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: taskboard の外で始まったセッションをタスクに移すのは taskboard-adopt、pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域。
 ---
 
 # Taskboard
@@ -11,32 +11,37 @@ description: taskboard の MCP tool（board_overview / task_get / task_create / 
 
 ツール一覧に `mcp__taskboard__*` があること。無ければ「taskboard の MCP が繋がっていない（`claude mcp list` で確認）」と伝えて止まる。CLI や API を推測して直接叩かない。
 
-`task_id` を省くと、このセッションに紐づくタスクを使う。紐づけは SessionStart hook が herdr の pane（`HERDR_PANE_ID`）経由で行うので、herdr の pane の外では `task_id` が必須。`work_list` が「紐づくタスクが無い」と返したら `board_overview` で候補を見て、`task_update` の `link_session: true` で結ぶか、`task_create` で起票する。
+`task_id` を省くと、このセッションに紐づくタスクを使う。セッションは、taskboard の herdr の pane なら pane（`HERDR_PANE_ID`）で、その外の Claude Code なら MCP に渡るセッション ID（`CLAUDE_CODE_SESSION_ID`）で見分ける。taskboard が起動したセッションは SessionStart hook が結ぶ。`work_list` が「紐づくタスクが無い」と返したら `board_overview` で候補を見て、`task_update` の `link_session: true` で結ぶか、`task_create` で起票する。taskboard の外で始まった作業をまとめて移すときは /taskboard-adopt スキルを実行する。
+
+結んだ後の案内（タスク・今の列・案件の列の説明）は `session_guide` で読める。SessionStart の案内が無いセッションで結んだとき、圧縮で案内が消えたと感じたときに読む。
 
 ## 列
 
-列の id はボードごとに違うことがある。`board_overview` が返す id を使い、ハードコードしない。役割で選ぶ:
+**列は案件の列の説明に従って選ぶ。** 列の id・名前・説明は案件ごとに違い、人が直せる（既定の列を消した案件、列を足した案件もある）。説明は SessionStart の案内・`session_guide`・`task_get`（今の列）・`task_update`（移した先）・`board_overview` に出る。id をハードコードしない。
 
-| 状況 | 列の役割 | 標準的な id |
+新しい案件の既定の列（参考。今の案件の説明が優先する）:
+
+| 列の名前 | 既定の説明 | 標準的な id |
 |---|---|---|
-| 他人の PR・チケットのレビューを頼まれた | 受け口（レビュー投稿後もマージまで留まる） | `review_req` |
-| やると決まったが未着手 | 待ち | `todo` |
-| 方針・設計を詰めている | 計画 | `planning` |
-| 実装・調査を実際に進めている | 作業中 | `working` |
-| PR を出してレビュー待ち | レビュー | `review` |
-| approve 済みで反映・リリース待ち | 反映待ち | `deploying` |
-| 完了した | 終端 | `done` |
-| やらないと決めた | 終端 | `wontfix` |
+| 常設 | 期限なく続く仕事（定常の運用・問い合わせ対応など）。完了にしない | `standing` |
+| レビュー依頼 | 他人の PR・チケットのレビューを頼まれたタスク。レビューを出してもマージまでここに置き、自分の作業の列へ移さない | `review_req` |
+| 未着手 | やると決めたが、まだ始めていない | `todo` |
+| 計画 | 方針・設計を詰めている | `planning` |
+| 作業中 | 実装・調査を進めている | `working` |
+| レビュー中 | PR を出してレビューを待っている | `review` |
+| デプロイ中 | 承認され、反映・リリースを待っている | `deploying` |
+| 完了 | 終わった | `done` |
+| 見送り | やらないと決めた | `wontfix` |
 
 ## 自分のセッションのタスクを進める
 
 **自律的に動かしてよいのは、自分のセッションに紐づくタスクだけ。** 他のタスクの列・作業項目は、ユーザーの指示なしに変えない。
 
-**PR の状態に対応する列の前進は daemon が自動で行う**（PR が ready なら `review`、merge されれば案件の「マージしたら」の列（既定は `deploying`）。前進方向のみで、終端列は触らない。Stop hook でも同じ判定が走る）。この前進を手で `task_update` しに行かない。手で動かすのは daemon が判断しない列（`planning` / `working` / `wontfix` 等）と、ユーザーから指示された移動だけ。
+**PR の状態に対応する列の前進は daemon が自動で行う**（PR が ready なら `review`、merge されれば案件の「マージしたら」の列（既定は `deploying`。その列を消した案件では `done`）。前進方向のみで、終端列・常設・足した列は触らず、進める先の列が案件に無ければ動かさない。Stop hook でも同じ判定が走る）。この前進を手で `task_update` しに行かない。手で動かすのは daemon が判断しない列（`planning` / `working` / `wontfix` 等）と、ユーザーから指示された移動だけ。
 
 **`review_req` に入ったタスクは `review_req` と終端列しか取らない。** 紐づいているのは他人の PR なので、自分が approve しても作業段階は進まない。レビューを投稿したらタイトルの頭に `✅ ` を付けて `review_req` に留める。紐づく PR が全部マージかクローズになると daemon が `done` へ進めるので、手で `done` へ移さない。
 
-**紐づくタスクが無い状態で PR が open していれば、Stop hook が自動起票する**（タイトルは PR のタイトル、列は draft なら `working` / ready なら `review`、PR URL をリンク、セッションを紐づけ）。同じ URL のタスクが既にあれば起票せずそれに紐づける。
+**紐づくタスクが無い状態で PR が open していれば、Stop hook が自動起票する**（タイトルは PR のタイトル、列は draft なら `working` / ready なら `review`（無ければ常設とレビュー依頼を除く最初の進行中の列）、PR URL をリンク、セッションを紐づけ）。同じ URL のタスクが既にあれば起票せずそれに紐づける。
 
 列を動かすのは**確認できた事実に対応する遷移だけ**。自分が実行した操作（PR を出した・merge した）と `task_get` の内容が根拠になる。根拠なく先の列へ進めない。判断がつかないときは動かさず、ユーザーに聞く。
 
@@ -60,6 +65,7 @@ description: taskboard の MCP tool（board_overview / task_get / task_create / 
 - **粒度は「1 タスク = 1 つの完了判定」**。PR 1 本・チケット 1 件・調査 1 件が単位。複数 PR にまたがる 1 つの作業は、束ねる 1 タスクにリンクを複数付ける（PR ごとに割らない。PR ごとの進みは作業項目で表す）
 - **タイトルは、何が終われば完了かが読み取れる形にする。** チケット由来ならチケット側の表題をそのまま使う
 - `note` には**セッションをまたいで必要になる文脈だけ**を書く（決めた方針・詰まっている点・再開条件）。作業ログはメモリディレクトリ側に書く
+- 列を省くと `todo`、無ければ常設とレビュー依頼を除く最初の進行中の列に入る（`Board.defaultColumn`）
 - 起票するとこのセッションが紐づく（`link_session: false` で結ばない）
 
 ## 文書を見せる・聞く・レビューしてもらう
@@ -82,7 +88,8 @@ description: taskboard の MCP tool（board_overview / task_get / task_create / 
 ## Gotchas
 
 - **`work_update` で `wait` にするときは `blocker_kind` か `blocker_text` が必須**（無いとエラー）
-- **`task_id` の解決は herdr の pane 経由**。herdr の外（CI・単発の `claude -p`）では毎回 `task_id` を渡す
+- **`task_id` の解決は pane か Claude Code のセッション ID 経由**。どちらも無い所（Codex、CI）では毎回 `task_id` を渡す
+- **`/clear` の後の会話は、MCP に `/clear` の前の会話の ID が残る**（MCP の process が起動し直されない）。`/clear` の後に `link_session` で別のタスクへ結ぶと前の会話を結ぶので、`/exit` して `claude --continue` で開き直してから結ぶ
 - **タスク番号は削除しても再利用されない。** 一度得た番号は安定した handle として使える
 - **同じ文書に未回答の質問は 1 束だけ。** 新しい `questions` を付けて publish すると前の未回答の束は取り下げられる（同じ内容なら作り直さない）
 - **文書を消すと、その文書の質問とコメントも消える**
