@@ -1,6 +1,6 @@
 ---
 name: taskboard
-description: taskboard の MCP tool（board_overview / session_guide / task_get / task_create / task_update / work_list / work_add / work_update / session_list / session_start / session_prompt / doc_publish / doc_list / ask_user / review_request / feedback_list / comment_reply）でタスク・作業項目・文書を扱う。自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、計画書・設計提案を人に読ませて採否やレビューを求める時、ボードの一覧・状態を確認する時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: taskboard の外で始まったセッションをタスクに移すのは taskboard-adopt、pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域。
+description: taskboard の MCP tool（health / board_* / task_* / work_* / doc_* / ask_* / review_request / feedback_list / comment_reply / schedule_* / session_* / orchestrator_* / settings_* / inbox_* / prs_* / usage_get）でタスク・作業項目・文書と、案件・定期起動・セッション・受信箱を扱う。自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、計画書・設計提案を人に読ませて採否やレビューを求める時、ボードの一覧・状態を確認する時、オーケストレーターとして全体の health を見回る時、案件・定期起動・セッションを作る・変える・止める・消す時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: taskboard の外で始まったセッションをタスクに移すのは taskboard-adopt、pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域。
 ---
 
 # Taskboard
@@ -39,7 +39,7 @@ description: taskboard の MCP tool（board_overview / session_guide / task_get 
 
 **PR の状態に対応する列の前進は daemon が自動で行う**（PR が ready なら `review`、merge されれば案件の「マージしたら」の列（既定は `deploying`。その列を消した案件では `done`）。前進方向のみで、終端列・常設・足した列は触らず、進める先の列が案件に無ければ動かさない。Stop hook でも同じ判定が走る）。この前進を手で `task_update` しに行かない。手で動かすのは daemon が判断しない列（`planning` / `working` / `wontfix` 等）と、ユーザーから指示された移動だけ。
 
-**`review_req` に入ったタスクは `review_req` と終端列しか取らない。** 紐づいているのは他人の PR なので、自分が approve しても作業段階は進まない。レビューを投稿したらタイトルの頭に `✅ ` を付けて `review_req` に留める。紐づく PR が全部マージかクローズになると daemon が `done` へ進めるので、手で `done` へ移さない。
+**`review_req` に入ったタスクは `review_req` と終端列しか取らない。** 紐づいているのは他人の PR なので、自分が approve しても作業段階は進まない。レビューを投稿しても `review_req` に留める（「レビュー済み」は daemon が PR の状態から出すので、タイトルに印を付けない）。紐づく PR が全部マージかクローズになると daemon が `done` へ進めるので、手で `done` へ移さない。
 
 **紐づくタスクが無い状態で PR が open していれば、Stop hook が自動起票する**（タイトルは PR のタイトル、列は draft なら `working` / ready なら `review`（無ければ常設とレビュー依頼を除く最初の進行中の列）、PR URL をリンク、セッションを紐づけ）。同じ URL のタスクが既にあれば起票せずそれに紐づける。
 
@@ -66,6 +66,7 @@ description: taskboard の MCP tool（board_overview / session_guide / task_get 
 - **タイトルは、何が終われば完了かが読み取れる形にする。** チケット由来ならチケット側の表題をそのまま使う
 - `note` には**セッションをまたいで必要になる文脈だけ**を書く（決めた方針・詰まっている点・再開条件）。作業ログはメモリディレクトリ側に書く
 - 列を省くと `todo`、無ければ常設とレビュー依頼を除く最初の進行中の列に入る（`Board.defaultColumn`）
+- 案件は `board`（id か名前）で選ぶ。省くとアーカイブしていない最初の案件。別の案件へ移すのは `task_update` の `board`
 - 起票するとこのセッションが紐づく（`link_session: false` で結ばない）
 
 ## 文書を見せる・聞く・レビューしてもらう
@@ -75,7 +76,7 @@ description: taskboard の MCP tool（board_overview / session_guide / task_get 
 - **`doc_publish`** で載せる（`path` か `content` + `name`）。同じ `name` への再 publish は新しいリビジョンになり、前の版のコメントは残る。比較軸が 3 つ以上・状態遷移・段階の順序を示す文書は HTML にする（外部の画像・CSS・script は読み込まれないので、全部インラインで書く）
 - **`ask_user`** で選択肢を出して聞く。背景・判断材料・trade-off は `context`（markdown）に書き、質問文に詰め込まない。既存の文書に付けるなら `name` にその文書名を渡す。質問は全問に答えるまで送れないので、問いは本当に要るものだけにする
 - **`review_request`** で、載せた文書のレビューを頼む（`note` に何を見てほしいか 1 行）
-- **回答とレビューは Stop hook がこのセッションに注入する**（ターンを終えると hook が最大 1 時間待ち、届いたら起こす）。聞いたら答えを前提にした作業は止め、答えに依存しない作業だけ進めてターンを終える。返事を待つために tool を繰り返し呼ばない
+- **回答とレビューは、ターンを終えて入力待ちになった時点で daemon が人の発話としてこのセッションの入力欄に入れる**（herdr の pane の無いセッションでは Stop hook が最大 1 時間待って注入する）。聞いたら答えを前提にした作業は止め、答えに依存しない作業だけ進めてターンを終える。返事を待つために tool を繰り返し呼ばない
 - 届いたレビューのコメントは 1 件ずつ対応し、**`comment_reply`**（`comment_id` は届いた本文の `commentId`）で何をしたかを返す。直したら `resolve: true`。文書を直したら同じ `name` で `doc_publish` し直す
 - Stop hook が無い環境（`claude -p`・herdr の外）では、**`feedback_list`** で届いた分を取る。各項目は 1 回しか返らない
 
@@ -85,9 +86,30 @@ description: taskboard の MCP tool（board_overview / session_guide / task_get 
 
 委譲先を新しく起こすときは `session_start`（`task_id` 省略で自分のタスク、`cwd` 省略で自分の cwd、`worktree_branch` で worktree を切る）。エージェントは `kind`（`claude` / `codex`）、Claude Code のモデルと effort は `model`（`opus` / `fable` / `sonnet`）と `effort`（`low` / `medium` / `high` / `xhigh` / `max`）で選び、省略すると `opus` / `medium`。前の版の `preset` も受けるが、`model`・`effort` を渡すとそちらが優先する。daemon が tab と agent を作って起動プロンプト（省略時は列の既定）を送り、そのタスクに結ぶ。進み具合は `session_list` に出る。herdr の `agent start` を自分で叩くより、紐づけと起動プロンプトが揃うこちらを使う。
 
+## 全体を見回る・管理する
+
+アプリでできる操作は MCP でもできる。主にオーケストレーターが全体の health を保つために使う。
+
+| 用途 | tool |
+|---|---|
+| 全体の様子（daemon・herdr・gh・APNs・オーケストレーター・利用枠・blocked のセッション・失敗した起動・うまくいかなかった定期起動・受信箱の対応待ちの数） | `health` |
+| 案件 | `board_create` / `board_update`（名前・起動プロンプト・`merge_target`・アーカイブ・`edit_columns` / `add_columns` / `remove_columns` / `reassign`）/ `board_delete` |
+| タスク | `task_update` の `board`（別の案件へ）・`remove_links`・`unlink_session` / `unlink_sessions`（紐づけを外す。セッションは止めない）/ `task_delete` |
+| 作業項目・文書・質問 | `work_delete`（`drop` と違い母数からも履歴からも消える）/ `doc_read` / `doc_delete` / `ask_cancel` |
+| 定期起動 | `schedule_runs`（各回の結果と失敗の理由）/ `schedule_delete`。`schedule_create` / `schedule_update` の `task_id`・`new_task`（`board`）で常設タスクに結ぶ（結ばないと各回のセッションはどのタスクにも結ばれない）、`clear_task` で外す |
+| セッション | `session_screen`（画面の文字。blocked が何を待っているか読む）/ `session_keys`（承認のキー）/ `session_stop` / `session_resume` / `session_history` / `session_rename` |
+| マシン | `orchestrator_status` / `orchestrator_start` / `orchestrator_prompt` / `settings_get` / `settings_update` / `inbox_list` / `inbox_dismiss` / `inbox_restore` / `prs_list` / `prs_refresh` / `usage_get` |
+
+- **見回りの順**: `health` → blocked のセッションは `session_screen` で何を待っているかを読む → 失敗・スキップした定期起動は `schedule_runs` で理由を見る → 戻すなら `session_stop`・`session_resume`・`schedule_run`
+- **消す tool（`task_delete`・`board_delete`・`work_delete`・`doc_delete`・`schedule_delete`）と `session_stop` の `force` は、1 回目は何が消える（止まる）かを返すだけで実行しない。** 中身を読んで、消してよいと確かめてから同じ引数に `confirm: true` を付けて呼び直す。消すのも PR の操作も、人の指示があるときだけ
+- 自分のセッションに紐づくタスク以外の列・作業項目は、health のために動かすときだけ触り、理由をそのタスクの `note` に 1 行足す（`note` は丸ごと置き換わるので、`task_get` で今の備考を読んでから足す）
+- `session_keys`・`session_stop`・`session_prompt` は自分の pane には使えない。`session_keys` は先に `session_screen` で画面を読み、何に答えるかを確かめてから送る
+
 ## Gotchas
 
 - **`work_update` で `wait` にするときは `blocker_kind` か `blocker_text` が必須**（無いとエラー）
+- **`task_delete` は `task_id` を省けない**（このセッションのタスクを暗に消さない）
+- **案件を消せるのはタスクが 0 件のときだけ。** 残っていれば `task_update` の `board` でほかの案件へ移すか `task_delete` で消してから
 - **`task_id` の解決は pane か Claude Code のセッション ID 経由**。どちらも無い所（Codex、CI）では毎回 `task_id` を渡す
 - **`/clear` の後の会話は、MCP に `/clear` の前の会話の ID が残る**（MCP の process が起動し直されない）。`/clear` の後に `link_session` で別のタスクへ結ぶと前の会話を結ぶので、`/exit` して `claude --continue` で開き直してから結ぶ
 - **タスク番号は削除しても再利用されない。** 一度得た番号は安定した handle として使える
