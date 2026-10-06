@@ -70,6 +70,26 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -n \"$CLAUDE_CODE_SESSION_ID\" ] && [ -e \"$HOME/Library/Application Support/taskboard/feedback-pending/$CLAUDE_CODE_SESSION_ID\" ] && [ -x \"$HOME/.local/bin/taskboard\" ]; then \"$HOME/.local/bin/taskboard\" hook prompt; else exit 0; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -n \"$CLAUDE_CODE_SESSION_ID\" ] && [ -e \"$HOME/Library/Application Support/taskboard/feedback-pending/$CLAUDE_CODE_SESSION_ID\" ] && [ -x \"$HOME/.local/bin/taskboard\" ]; then \"$HOME/.local/bin/taskboard\" hook tool; else exit 0; fi",
+            "timeout": 10
+          }
+        ]
       }
     ]
   },
