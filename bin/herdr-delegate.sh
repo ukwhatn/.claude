@@ -342,7 +342,9 @@ fi
 START_CMD=(herdr agent start "$NAME" --kind "$KIND" --pane "$PANE_ID" --timeout "$START_TIMEOUT" --)
 if [ "$KIND" = "codex" ]; then
   [ -n "$MODEL" ] && START_CMD=("${START_CMD[@]}" -m "$MODEL")
-  START_CMD=("${START_CMD[@]}" --dangerously-bypass-approvals-and-sandbox)
+  # 起動時の更新の選択ダイアログで止まると、agent 名が登録されずに prompt_failed で落ちる。
+  # 委譲の pane では更新確認をしない（更新は人が普段使う codex で行う）
+  START_CMD=("${START_CMD[@]}" -c check_for_update_on_startup=false --dangerously-bypass-approvals-and-sandbox)
 else
   [ -n "$MODEL" ] && START_CMD=("${START_CMD[@]}" --model "$MODEL")
   # 委譲先に子エージェントを起動させない。子は使用量を lead・他の委譲先と分け合い、上限に当たると

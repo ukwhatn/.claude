@@ -192,6 +192,7 @@ herdr pane get <pane_id>
 - **codexの承認バイパス（`--dangerously-bypass-approvals-and-sandbox`）は、作業ディレクトリの信頼確認ダイアログをバイパスしない。** 信頼確認は自動承認しない（プロンプトインジェクション耐性を落とすため）。信頼済みのディレクトリを `--cwd` に渡すか、`~/.codex/config.toml` の `[projects."<path>"]` に登録する
 - **herdrのagent名は「小文字で始まり、小文字・数字・`-`・`_` だけの1〜32字」。** 違反すると `herdr agent start` が `invalid_agent_name` を返し、paneはシェルのまま残る（スクリプトは事前に検証する）
 - **`herdr agent prompt` の宛先にはpane IDを使える。** Claude Codeのセッション名（SendMessageの宛先名）はherdrのagent名とは別物で、宛先にすると `agent_not_found` になる
+- **codexに `-c` で設定を渡すと、共有のバックグラウンドサーバーを使わないembeddedモードで起動する**（起動時の警告に出る。スクリプトは更新確認を切るために `-c` を付けている）。embeddedモードでも起動・agent名の登録・MCPツールの呼び出しは通る
 - **`codex exec --sandbox read-only` ではMCPツールを呼べず、`--dangerously-bypass-approvals-and-sandbox` では呼べる**（同じツール呼び出しで比較）
 - **`claude --disallowedTools Agent Workflow` で両toolが外れ、SendMessage・ListAgentsは残る**（`-p` の起動時のtools一覧と、本スクリプト経由で起動したpaneのツール一覧の両方で確認。`-p` ではAgent toolが `Task` の名で出るが、`Agent` の指定で外れる。`TaskCreate` 等のタスク管理toolは残るが子エージェントは起動しない）。完了通知の経路はこれで壊れない
 - **承認プロンプトのバイパスは既定で付く**（claude: `--dangerously-skip-permissions` / codex: `--dangerously-bypass-approvals-and-sandbox`）。承認待ちで止まると委譲が進まないため。追加のフラグは `--agent-arg` で透過的に渡せる
@@ -203,4 +204,4 @@ herdr pane get <pane_id>
 
 - `done_close_failed`（`--close` 指定時のtab closeの失敗）
 - 起動タイムアウトによる `blocked_unknown`
-- codexの更新**選択ダイアログ**の自動スキップ（バナー形態しか再現できていない）。選択ダイアログ（更新する／スキップ／このバージョンをスキップの3択）が出たpaneは、自動スキップが効かずに `prompt_failed`（agent名が未登録）で落ちた例がある。次に出たら画面（`herdr pane read`）を保存してから判定を直す
+- codexの更新**選択ダイアログ**の自動スキップ（バナー形態しか再現できていない）。選択ダイアログ（更新する／スキップ／このバージョンをスキップの3択）が出たpaneは、自動スキップが効かずに `prompt_failed`（agent名が未登録）で落ちた例がある。対策として、スクリプトはcodexを `-c check_for_update_on_startup=false` で起動し、ダイアログ自体を出さない。ダイアログが出なくなることは次の更新が来るまで確かめられないので、それでも出たら画面（`herdr pane read`）を保存してから判定を直す
