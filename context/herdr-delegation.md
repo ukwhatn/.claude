@@ -82,7 +82,7 @@ codexを起動する前に枠を確認する（`python3 ~/.claude/codex-usage.py
 - `--state` はtab作成とagent起動の直後に `{"run_id","name","tab_id","pane_id","task","out","started_at"}` を書き出す。stdoutの最終JSONは完了まで出ないので、識別子はここから取る
 - **stateを読んだら `run_id` の一致を確認してから採用する**（同じパスに前回実行のstateが残っていると、置換前の古い内容を読むことがある）
 - **起動したら05_log.mdに1行記録してからターンを終える**（agent名 / tab_id / 指示書 / 成果物 / 起動時刻）。compactionから復帰したら、この記録と `herdr tab list` を突き合わせる。**記録に残っている委譲を再起動しない**
-- 並列に回すときは、ジョブごとに `--state` / `--out` / 結果JSON / ログの保存先を分ける
+- 並列に回すときは、ジョブごとに `--state` / `--out` / 結果JSON / ログの保存先を分ける。同時に6体以上起動するときは、起動前にユーザーの確認を取る（`context/tool-claude-code.md`「委譲判断」）
 - **tabは既定で閉じない**（`--close` を付けたときだけ、`done` で閉じる）。完了待ちは委譲先がidleになった時点で戻るが、委譲先は長いコマンドをバックグラウンドに回して応答を終えたときもidleになる。その時点で成果物ファイルが存在すれば `done` が返るため、そこでtabを閉じると作業途中の委譲先ごと終了する。`--close` は、委譲先がバックグラウンド実行を使わない短い作業に限る
 
 ### `~/.claude` の追跡ファイルをpaneに直接書かせない
@@ -110,6 +110,11 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 **要件・仕様文書に基づく作業では、対象条項の原文を指示書に引用する。** leadの解釈・決定に変換した形だけを渡すと、変換で脱落した条件・対象・適用除外を委譲先は構造上検出できなくなる。leadの決定が原文と異なる箇所は、異なることと理由を明記して渡す（断りのない差し替えは、委譲先には要件そのものに見える）。
 
 `herdr-delegate.sh` は指示書の先頭に**連絡経路の定型ヘッダを自動で前置きする**ので、指示書側に書く必要はない。ヘッダとタスク本文が食い違ったときは**タスク本文が優先する**とヘッダ自身に明記してある。
+
+**ヘッダは委譲先に再委譲（子エージェントの起動）をしないことも伝え、claudeのpaneでは起動時にAgent / Workflow toolを外す（`--disallowedTools`）。** これはタスク本文でも解除できない。委譲先もuser-levelの「並列に分けられるなら委譲する」を読むので、散文の指示だけでは分割される。作業を分けたいなら、leadが分けて各paneを起動する。
+
+- 実装を委譲し、委譲先に自分の成果物の外部レビュー（`codex exec`）まで回させたいときは `--allow-review` を付ける。Agent / Workflow toolは外したままなので、codexが使えないときのfable subagentでの代替（`context/agent-cli-guide.md`）は委譲先ではできず、leadに戻ってくる
+- 調査の委譲には付けない。調査の成果物はleadが検証する
 
 ## 委譲先とのやり取り
 
@@ -169,6 +174,7 @@ herdr pane get <pane_id>
 - **`herdr agent start` は起動時ダイアログで止まっているpaneに対して `agent_not_ready` を返す。** これは「起動できなかった」ではなく「画面を見て分類すべき状態」。ダイアログを抜けた後に `agent start` を**再実行**しないとagent名が登録されず、以後の `agent prompt <name>` が使えない
 - **codexの更新通知には選択ダイアログと通知バナーの2形態がある。** 「次のバージョンまでスキップ」を一度選ぶと、以後はバナーとして表示され続ける。`Update available!` の文字列だけでは区別できないので、**選択待ちの目印は `Press enter to continue`** で判定する
 - **codexの承認バイパス（`--dangerously-bypass-approvals-and-sandbox`）は、作業ディレクトリの信頼確認ダイアログをバイパスしない。** 信頼確認は自動承認しない（プロンプトインジェクション耐性を落とすため）。信頼済みのディレクトリを `--cwd` に渡すか、`~/.codex/config.toml` の `[projects."<path>"]` に登録する
+- **`claude --disallowedTools Agent Workflow` で両toolが外れ、SendMessage・ListAgentsは残る**（`-p` の起動時のtools一覧と、本スクリプト経由で起動したpaneのツール一覧の両方で確認。`-p` ではAgent toolが `Task` の名で出るが、`Agent` の指定で外れる。`TaskCreate` 等のタスク管理toolは残るが子エージェントは起動しない）。完了通知の経路はこれで壊れない
 - **承認プロンプトのバイパスは既定で付く**（claude: `--dangerously-skip-permissions` / codex: `--dangerously-bypass-approvals-and-sandbox`）。承認待ちで止まると委譲が進まないため。追加のフラグは `--agent-arg` で透過的に渡せる
 - `herdr pane run` と `herdr agent prompt` はテキストとEnterを一括送信する。**改行を含む長文を直接渡すと途中で送信される**ので、指示書はファイルに書いてパスだけを渡す（スクリプトがこれを行う）
 

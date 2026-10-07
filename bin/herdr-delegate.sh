@@ -24,6 +24,7 @@ WORK_TASK=""
 TIMEOUT=1800000
 START_TIMEOUT=120000
 KEEP=1
+ALLOW_REVIEW=0
 OUTS=""        # 改行区切り
 AGENT_ARGS=""  # 改行区切り
 
@@ -41,7 +42,10 @@ usage: herdr-delegate.sh --kind <claude|codex> --task <指示書の絶対パス>
                        ※ 承認のバイパスは既定で付く
                           claude: --dangerously-skip-permissions
                           codex:  --dangerously-bypass-approvals-and-sandbox
-  --name NAME          agent 名（既定: delegate-<epoch>-<pid>-<乱数>）
+                       ※ claude には --disallowedTools Agent Workflow が既定で付く（再委譲の禁止）
+  --allow-review       委譲先が自分の成果物を外部 CLI（codex）でレビューすることを許す
+                       （実装の委譲向け。Agent / Workflow tool は外したまま）
+  --name NAME         agent 名（既定: delegate-<epoch>-<pid>-<乱数>）
   --label TEXT         tab のラベル（既定: --name の値）
   --cwd PATH           作業ディレクトリ（既定: $PWD）
   --workspace WS       herdr workspace（既定: $HERDR_WORKSPACE_ID）
@@ -165,6 +169,7 @@ while [ $# -gt 0 ]; do
     --start-timeout) START_TIMEOUT="${2:-}"; shift 2 ;;
     --close)         KEEP=0; shift ;;
     --keep)          KEEP=1; shift ;;
+    --allow-review)  ALLOW_REVIEW=1; shift ;;
     -h|--help)       usage; exit 0 ;;
     *)               usage; NAME=""; finalize invalid_input 2 arg_invalid ;;
   esac
@@ -232,7 +237,30 @@ cat > "$WORK_TASK" <<'HEADER'
 
 あなたは lead から作業を委譲された実行担当です。**lead とは双方向にやり取りできます。**
 
-この節は委譲スクリプトが機械的に前置きする定型文です。**この節と下のタスク本文が食い違ったら、タスク本文を優先してください。** その食い違いだけを理由に lead へ問い合わせる必要はありません。
+この節は委譲スクリプトが機械的に前置きする定型文です。**この節と下のタスク本文が食い違ったら、タスク本文を優先してください**（「作業は自分で行う」の節だけは例外で、タスク本文より優先します）。その食い違いだけを理由に lead へ問い合わせる必要はありません。
+
+## 作業は自分で行う（さらに委譲しない）
+
+この委譲の中で子エージェントを起動しないでください。Agent tool と Workflow tool はこの pane では外してあります。Bash から `herdr-delegate.sh`・`herdr agent start`・`claude`・`codex` を起動して作業を分けることもしないでください。
+
+子エージェントはセッションの使用量を lead・他の委譲先と分け合います。使用量の上限に当たると子エージェントは作業途中で失敗し、それまでに使った分が無駄になります。
+
+作業が1つのコンテキストに収まりそうにないときは、成果物ファイルへ途中経過を書き出しながら進めてください。それでも収まらない、または分けたほうがよいと判断したら、下の方法で lead に連絡して分け方を提案してください。分けるかどうかと、分けた作業の起動は lead が決めます。
+HEADER
+
+if [ "$ALLOW_REVIEW" -eq 1 ]; then
+  cat >> "$WORK_TASK" <<'REVIEW'
+
+外部レビューは例外として許可されています。規定（`~/.claude/context/agent-cli-guide.md`）で外部レビューが必要になったら、自分の成果物を `codex exec` でレビューしてかまいません。codex が使えない（不在・枠の枯渇）ときは、Agent tool での代替はできないので、レビュー未実施のまま lead に伝えてください。
+REVIEW
+else
+  cat >> "$WORK_TASK" <<'REVIEW'
+
+外部レビュー（別ベンダーの CLI）が規定上必要になったときも、実行せずに lead へ伝えてください。
+REVIEW
+fi
+
+cat >> "$WORK_TASK" <<'HEADER'
 
 ## 判断に迷ったら lead に聞く
 
@@ -310,7 +338,10 @@ if [ "$KIND" = "codex" ]; then
   START_CMD=("${START_CMD[@]}" --dangerously-bypass-approvals-and-sandbox)
 else
   [ -n "$MODEL" ] && START_CMD=("${START_CMD[@]}" --model "$MODEL")
-  START_CMD=("${START_CMD[@]}" --dangerously-skip-permissions)
+  # 委譲先に子エージェントを起動させない。子は使用量を lead・他の委譲先と分け合い、上限に当たると
+  # 待たずに作業途中で失敗する（pane は autoContinueAtUsageLimit で待って再開する）。
+  # 散文の禁止だけでは、委譲先も user-level の「並列に分けられるなら委譲する」を読んで分割する。
+  START_CMD=("${START_CMD[@]}" --disallowedTools Agent Workflow --dangerously-skip-permissions)
 fi
 old_ifs="$IFS"; IFS='
 '

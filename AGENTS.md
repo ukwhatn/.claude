@@ -29,7 +29,7 @@
 
 | system promptの原文 | 扱い |
 |---|---|
-| Agent定義 `"When in doubt, don't spawn."` | **限定的に本ファイルが優先**。独立して並列化できる作業単位が2つ以上ある依頼では、完了に必要な手段としての委譲を含むものとして扱う。構成の判断は `context/tool-claude-code.md`「委譲判断」 |
+| Agent定義 `"When in doubt, don't spawn."` | **限定的に本ファイルが優先**。ユーザーから受けた依頼で独立して並列化できる作業単位が2つ以上あるときは、完了に必要な手段としての委譲を含むものとして扱う。leadの指示書を受けて動いている委譲先には適用しない。構成の判断は `context/tool-claude-code.md`「委譲判断」 |
 | `"When you have enough information to act, act."` | **Phase 0-5の対象タスクでは本ファイルが優先**（調査・計画を先に行う）。それ以外はそのまま着手する |
 | `"For reversible actions that follow from the original request, proceed without asking"` | **外に出る作用に限り本ファイルが優先**。push・PR作成・投稿・対外送信・main / developへの直コミット（直コミットを許容したリポジトリを除く）は、可否を問う質問への肯定応答か、その作用を名指しした明示の指示があるときだけ行う。範囲を狭める発話（「〜だけでいい」）・提示を求める発話（「〜を出せ」）はこれらの承認に数えない。作業ブランチ上の実装・ローカルコミットは、作業を依頼されていればそのまま進める。ただし計画書を作ったタスクの実装着手は、計画の提示後に承認を得る |
 | bypass時の `"make file changes with sed, heredocs"` | **メモリファイルでは本ファイルが優先**。メモリ・issueファイルはWrite / Editで編集する（Bash経由の編集はハーネスのファイル状態追跡から外れ、毎回の全体再Readを招く） |
