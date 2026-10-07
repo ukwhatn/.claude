@@ -84,6 +84,23 @@ codex exec --sandbox read-only --skip-git-repo-check < /dev/null \
 
 確認方法は、各コマンドグループを引数なしで実行してusageを出す形（`herdr tab` / `herdr agent` / `herdr pane`）。**bareの `herdr` はTUIを起動するので実行しない**。
 
+## CodexにMCPサーバーを足す
+
+`~/.codex/config.toml` はマシンごとなので、Codexに使わせたいMCPはPCごとに足す。URL・OAuthのclient id・ポート番号の実値はここに書かない（PJの `CLAUDE.local.md` かメモリに置く）。
+
+- **`codex mcp add <name> --url <url>` はOAuthを検出すると、その場でブラウザでのログインを始めて待つ。** 承認を別の端末で行うと、待ち受けが時間切れ（`timed out waiting for OAuth callback`）になる。追加だけ済ませ、ログインは次の手順でやり直す
+- **ログインは `codex mcp login <name> --no-browser` で行う。** 承認URLを出し、承認後にブラウザが開こうとしたcallbackのURLを標準入力で受け取る。ハーネスのBashは対話入力できないので、FIFOを介して渡す:
+
+```bash
+mkfifo /tmp/codex-login.fifo
+cat /tmp/codex-login.fifo | codex mcp login <name> --no-browser > /tmp/codex-login.log 2>&1 &
+# ログに出た承認URLをユーザーに渡し、承認後のcallback URL（ブラウザのアドレス欄）を貼ってもらう
+printf '%s\n' '<貼られたcallback URL>' > /tmp/codex-login.fifo
+```
+
+- **OAuthの提供元がredirect URIの事前登録を求めるときは、トップレベルの `mcp_oauth_callback_port` / `mcp_oauth_callback_url` でcallbackのポートを固定する**（`[mcp_servers.*]` より前に置く）。同じポートを使うログインは1つずつ行う
+- **ログインできたかは `codex mcp list` のAuth欄で判断しない。** 表示とツール呼び出しの結果が食い違うことがある。`codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check < /dev/null '<サーバー名> のツールを1回呼んで結果を答える'` で実際に呼んで確かめる（read-only sandboxではMCPツールを呼べないので、確認にも使えない）
+
 ## 同期の運用
 
 - **user-level設定を変更したら、変更したスキル自身が `/commit --push` でコミット・pushまで行う**（AGENTS.md「コミット・ブランチ・PR」）。手元に残さない

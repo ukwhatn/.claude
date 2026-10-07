@@ -65,7 +65,7 @@ USAGE
 finalize() {
   FIN_STATUS="$1" FIN_CODE="$2" FIN_REASON="${3:-}" \
   FIN_NAME="$NAME" FIN_KIND="$KIND" FIN_TAB="$TAB_ID" FIN_PANE="$PANE_ID" \
-  FIN_CLOSED="$TAB_CLOSED" FIN_OUTS="$OUT_STATES" \
+  FIN_CLOSED="$TAB_CLOSED" FIN_OUTS="$OUT_STATES" FIN_SENT="$WORK_TASK" \
   python3 -c '
 import json, os
 outs = []
@@ -86,6 +86,7 @@ print(json.dumps({
     "exit": int(os.environ["FIN_CODE"]),
     "out": outs,
     "tab_closed": os.environ.get("FIN_CLOSED") == "true",
+    "task_sent": orn(os.environ.get("FIN_SENT")),
 }, ensure_ascii=False))
 ' 2>/dev/null || printf '{"status":"%s","exit":%s,"note":"json_emit_failed"}\n' "$1" "$2"
   exit "$2"
@@ -216,6 +217,8 @@ if [ -n "$STATE" ] || [ -n "$RUN_ID" ]; then
 fi
 
 [ -n "$NAME" ] || NAME="delegate-$(date +%s)-$$-$(od -An -N2 -tu2 /dev/urandom | tr -d ' ')"
+# herdr の agent 名の制約。合わない名前は tab を作った後の agent start で invalid_agent_name になる
+[[ "$NAME" =~ ^[a-z][a-z0-9_-]{0,31}$ ]] || finalize invalid_input 2 name_invalid
 [ -n "$LABEL" ] || LABEL="$NAME"
 
 # --out の実行前スナップショット
@@ -241,7 +244,7 @@ cat > "$WORK_TASK" <<'HEADER'
 
 ## 作業は自分で行う（さらに委譲しない）
 
-この委譲の中で子エージェントを起動しないでください。Agent tool と Workflow tool はこの pane では外してあります。Bash から `herdr-delegate.sh`・`herdr agent start`・`claude`・`codex` を起動して作業を分けることもしないでください。
+この委譲の中で、子エージェントを起動する tool・機能を使わないでください（claude の pane では Agent tool と Workflow tool を外してあります）。Bash から `herdr-delegate.sh`・`herdr agent start`・`claude`・`codex` を起動して作業を分けることもしないでください。
 
 子エージェントはセッションの使用量を lead・他の委譲先と分け合います。使用量の上限に当たると子エージェントは作業途中で失敗し、それまでに使った分が無駄になります。
 
@@ -285,20 +288,24 @@ HEADER
 
 {
   echo
-  if [ -n "$LEAD_NAME" ]; then
+  # codex には SendMessage が無い。セッション名を見せると herdr の宛先と取り違えるので出さない
+  USE_SENDMESSAGE=0
+  [ -n "$LEAD_NAME" ] && [ "$KIND" = "claude" ] && USE_SENDMESSAGE=1
+  if [ "$USE_SENDMESSAGE" -eq 1 ]; then
     printf 'SendMessage ツールで `to: "%s"` に送る。\n\n' "$LEAD_NAME"
   fi
   if [ -n "$LEAD_PANE" ]; then
-    if [ -n "$LEAD_NAME" ]; then
+    if [ "$USE_SENDMESSAGE" -eq 1 ]; then
       echo 'SendMessage が使えない場合は、Bash で次を実行する。'
     else
       echo 'Bash で次を実行する。'
     fi
     echo
     echo '```bash'
-    printf 'herdr agent prompt "%s" "<メッセージ本文>"\n' "$LEAD_PANE"
+    printf "herdr agent prompt \"%s\" '<メッセージ本文>'\n" "$LEAD_PANE"
     echo '```'
     echo
+    printf '宛先の `%s` は lead の pane ID です。セッション名や agent 名に置き換えると届きません。本文は1行にして、シングルクォートで囲んでください（本文が空になると送れません）。\n\n' "$LEAD_PANE"
   fi
   cat <<'HEADER2'
 連絡したら、返答が届くまで待ってください。返答は同じ画面に届きます。
@@ -317,7 +324,7 @@ HEADER2
 
 # --- 1. tab の作成 ---
 herdr_call herdr tab create --workspace "$WORKSPACE" --cwd "$CWD" --label "$LABEL" --no-focus \
-  || finalize create_failed 6
+  || finalize create_failed 6 "$(herdr_field error.code)"
 TAB_ID="$(herdr_field result.tab.tab_id)"
 PANE_ID="$(herdr_field result.root_pane.pane_id)"
 [ -n "$TAB_ID" ] && [ -n "$PANE_ID" ] || finalize create_failed 6
@@ -355,21 +362,21 @@ IFS="$old_ifs"
 START_BLOCKED=0
 if ! herdr_call "${START_CMD[@]}"; then
   err_code="$(herdr_field error.code)"
-  [ "$err_code" = "agent_not_ready" ] || finalize start_failed 6
+  [ "$err_code" = "agent_not_ready" ] || finalize start_failed 6 "$err_code"
   START_BLOCKED=1
 fi
 
 # --- 3. state の書き出し（tab_id / pane_id が確定した直後） ---
 if [ -n "$STATE" ]; then
   ST_RUN="$RUN_ID" ST_NAME="$NAME" ST_TAB="$TAB_ID" ST_PANE="$PANE_ID" \
-  ST_TASK="$TASK" ST_OUTS="$OUTS" ST_PATH="$STATE" \
+  ST_TASK="$TASK" ST_SENT="$WORK_TASK" ST_OUTS="$OUTS" ST_PATH="$STATE" \
   python3 -c '
 import json, os, time
 outs = [p for p in os.environ.get("ST_OUTS", "").split("\n") if p.strip()]
 data = {
     "run_id": os.environ["ST_RUN"], "name": os.environ["ST_NAME"],
     "tab_id": os.environ["ST_TAB"], "pane_id": os.environ["ST_PANE"],
-    "task": os.environ["ST_TASK"], "out": outs,
+    "task": os.environ["ST_TASK"], "task_sent": os.environ["ST_SENT"], "out": outs,
     "started_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
 }
 path = os.environ["ST_PATH"]
@@ -440,7 +447,7 @@ done
 
 # ブロックを抜けた場合は agent 名がまだ登録されていないので、ここで登録し直す
 if [ "$START_BLOCKED" -eq 1 ]; then
-  herdr_call "${START_CMD[@]}" || finalize start_failed 6
+  herdr_call "${START_CMD[@]}" || finalize start_failed 6 "$(herdr_field error.code)"
 fi
 
 # --- 5. 指示書の投入と完了待ち ---
@@ -454,7 +461,7 @@ if [ $prompt_rc -ne 0 ]; then
   if [ "$st" = "working" ] || [ "$st" = "blocked" ]; then
     finalize timeout 5
   fi
-  finalize prompt_failed 6
+  finalize prompt_failed 6 "$(herdr_field error.code)"
 fi
 
 # --- 6. 成果物の判定 ---
@@ -502,5 +509,6 @@ if [ "$KEEP" -eq 0 ]; then
   fi
 fi
 
-rm -f "$WORK_TASK"   # 失敗時は残す（何を渡したかが調査材料になる）
+rm -f "$WORK_TASK"   # 失敗時は残し、task_sent でパスを返す（送り直しと調査に使う）
+WORK_TASK=""
 finalize "done" 0

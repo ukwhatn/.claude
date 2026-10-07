@@ -25,7 +25,9 @@ paneを選ぶ利点は3つ。レートリミットに当たってもpane側のCl
 
 **委譲先のモデルは経路によらず用途で決め、毎回明示する。** paneは `--model`、Agent toolは `model` パラメータで渡す。Agent toolは `model` を省略すると親セッションのモデルを継承するので、fableのセッションから省略して委譲すると調査1本にfableを使うことになる。親と同じモデルが要ると判断したときは、そのモデル名を `model` に明示し、判断を05_log.mdに書く。`model` の無いAgent tool呼び出しはPreToolUse hook（`hooks/agent-model-required.py`）が拒否する（意図はここ、強制はhook。`fork` は常に親モデルで動くので対象外）。
 
-**委譲は基本Claude（`--kind claude`）で行う。** codexはsubscriptionの枠が小さいので、**別ベンダーであること自体が要件になる用途（外部レビュー）に温存する**。
+**委譲は基本Claude（`--kind claude`）で行う。** codexは**別ベンダーであること自体が要件になる用途（外部レビュー）に温存する**。PCによってはcodexの枠が月間のcredit上限しか無く、調査で使い切ると外部レビューまで止まるため。
+
+**例外として、コードを書かない調査をcodexに振ってよいのは、ユーザーが指示したときだけ。** paneを同時に6体以上起動する確認（`context/tool-claude-code.md`「委譲判断」）では、Claudeとcodexの枠の残量を並べ、一部をcodexに振る案を添えて聞く。振るときは下の「codexに委譲するとき」に従う。
 
 | 用途 | pane（`bin/herdr-delegate.sh`） | Agent tool |
 |---|---|---|
@@ -35,10 +37,11 @@ paneを選ぶ利点は3つ。レートリミットに当たってもpane側のCl
 | 複数観点のレビュー報告・freshな単発判定（結果をleadが検証する） | — | `model: "opus"` |
 | 前例のない難所・監督しない長時間の実行・壁打ち | `--kind claude --model fable` | `model: "fable"` |
 | 外部レビュー（別ベンダーのbias独立性が要る） | `--kind codex` | —（`context/agent-cli-guide.md`） |
+| コードを書かない調査をユーザーの指示でcodexに振る | `--kind codex` | — |
 
 Sonnetにはコードを書かせない。小さいモデルが読み違えるとleadが誤った前提で進むため、結果の誤りに気づきやすい作業に限る。調査をsonnetに任せるときは、報告の事実を一次ソースで突き合わせてから採用する（`AGENTS.md`「自律実行と委譲」）。opusのmediumで同じ問題に2回詰まったら、`--agent-arg --effort --agent-arg high` かfableで委譲し直す。
 
-codexを起動する前に枠を確認する（`python3 ~/.claude/codex-usage.py --refresh` → `--show`）。枯渇していれば `context/agent-cli-guide.md` のfallback規定に従う。**枠に余裕があっても、Claudeで足りる委譲にcodexを使わない。**
+codexを起動する前に枠を確認する（`python3 ~/.claude/codex-usage.py --refresh` → `--show`。taskboardの `usage_get` でも見える）。枯渇していれば `context/agent-cli-guide.md` のfallback規定に従う。**枠に余裕があっても、ユーザーの指示なしにClaudeで足りる委譲をcodexに振らない。**
 
 ## Herdr外でのフォールバック
 
@@ -103,7 +106,7 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 | 構成 | 成果物に含める章立て。順序も指定する |
 | やらないこと | 触ってはいけないファイル、取り込まない情報源、書いてはいけない内容 |
 | 完了基準 | 満たしていれば完了と判断できる条件を、確認可能な形で列挙する |
-| 完了の通知 | **成果物を書き終えたらleadへ完了を送ってから終了する**（Claude Codeのpaneなら `SendMessage` で `--lead-name` の宛先へ、codexなら `herdr agent prompt`）。送る内容は成果物のパスと要点数行。これが無いと委譲先はstandaloneで止まり、leadは完了を検知できずに待ち続ける |
+| 完了の通知 | **成果物を書き終えたらleadへ完了を送ってから終了する**（Claude Codeのpaneなら `SendMessage` で `--lead-name` の宛先へ、codexなら `herdr agent prompt` でleadのpane ID宛てに）。送る内容は成果物のパスと要点数行。これが無いと委譲先はstandaloneで止まり、leadは完了を検知できずに待ち続ける。**宛先は指示書に書かない**（ヘッダが案内する。指示書はヘッダより優先されるので、SendMessageの宛先名（セッション名）をherdrの宛先として書くと届かない） |
 
 **確認済みの事実と未確認の推測を分けて書く。** 推測を事実として書いて渡すと、委譲先はそれを検証せずに前提として使う。
 
@@ -116,12 +119,21 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 - 実装を委譲し、委譲先に自分の成果物の外部レビュー（`codex exec`）まで回させたいときは `--allow-review` を付ける。Agent / Workflow toolは外したままなので、codexが使えないときのfable subagentでの代替（`context/agent-cli-guide.md`）は委譲先ではできず、leadに戻ってくる
 - 調査の委譲には付けない。調査の成果物はleadが検証する
 
+## codexに委譲するとき
+
+いつ振るかは「モデルの選択」に従う。ここはcodexに振ると決めた後の差分。
+
+- **MCPを使う作業は、承認バイパスで起動するpane（本スクリプト）で行う。** `codex exec --sandbox read-only` ではMCPツールを呼べない
+- **codexが使うMCPは `~/.codex/config.toml` にマシンごとに設定する**（手順は `context/multi-agent-setup.md`「CodexにMCPサーバーを足す」）。委譲する前に、codexから実際にツールを1回呼んで使えることを確かめる。設定の一覧に出ていることでは確かめたことにならない
+- **同じMCPサーバーでも、codexから見えるツール名がClaudeと違うことがある。** Claude向けに書いた指示書を流用するときは、ツール名をcodex側で確かめた名前に直す
+- 完了の通知と問い合わせは `herdr agent prompt` でleadのpane ID宛てに送る（codexにSendMessageは無い）。ヘッダが宛先を案内するので、指示書には宛先を書かない
+
 ## 委譲先とのやり取り
 
 委譲先は、指示書の前提が実態と食い違ったときにleadへ問い合わせる。問い合わせの方法はヘッダに書いてある。
 
 - **pane上のClaude Code**: `ListAgents` に現れるので、`SendMessage` で名前宛に送れる。lead → 委譲先も同じ
-- **pane上のcodex**: SendMessageは届かない。`herdr agent prompt <name> "<メッセージ>"` を使う（委譲先からleadへも、codexがBashでこのコマンドを叩く）
+- **pane上のcodex**: SendMessageは届かない。`herdr agent prompt <宛先> '<メッセージ>'` を使う。lead → 委譲先の宛先は委譲先のagent名かpane ID、委譲先 → leadの宛先はleadのpane ID（ヘッダが案内する。codexがBashでこのコマンドを叩く）
 
 **leadがスクリプトを同期実行していると、問い合わせをリアルタイムに受け取れない**（完了後にまとめて届く）。バックグラウンド起動が必要なのはこのためでもある。
 
@@ -147,6 +159,10 @@ tabは既定で残るので、追加指示は完了後でもそのまま送れ�
 | `create_failed` / `start_failed` / `prompt_failed` | 6 | 作成後なら残る | herdrの操作そのものが失敗した |
 
 `out` の各要素は `created` / `updated` / `unchanged` / `absent` を返す。**存在確認では通さず、実行前の `st_mtime_ns` と比較している**ので、実行前から置いてあったファイルが更新されなければ失敗になる。
+
+`create_failed` / `start_failed` / `prompt_failed` の `reason` にはherdrのエラーコード（`invalid_agent_name`・`agent_not_found` 等）が入る。agent名の制約違反は、tabを作る前に `invalid_input`（reason `name_invalid`）で止まる。
+
+**失敗した委譲を送り直すときは、tabを閉じてスクリプトごと起動し直す。** 手で送るなら、元の指示書ではなく `task_sent`（ヘッダを前置きした指示書。結果のJSONとstateに出る）を送る。元の指示書を送ると連絡経路と再委譲禁止のヘッダが欠ける。`task_sent` の一時ファイルは `done` のときだけ消える（JSONでは `null`）。
 
 **`done` は作業の完了を保証しない。** 判定しているのは「idleになった時点で成果物ファイルが作成・更新されていた」ことだけで、書きかけ（骨組み・プレースホルダ）の保存でも満たす。逆に `missing_output` でも、委譲先がバックグラウンドの完了を待って作業を続けていることがある。どちらのstatusでも、成果物を採用する前に次の2つを確かめる。
 
@@ -174,6 +190,9 @@ herdr pane get <pane_id>
 - **`herdr agent start` は起動時ダイアログで止まっているpaneに対して `agent_not_ready` を返す。** これは「起動できなかった」ではなく「画面を見て分類すべき状態」。ダイアログを抜けた後に `agent start` を**再実行**しないとagent名が登録されず、以後の `agent prompt <name>` が使えない
 - **codexの更新通知には選択ダイアログと通知バナーの2形態がある。** 「次のバージョンまでスキップ」を一度選ぶと、以後はバナーとして表示され続ける。`Update available!` の文字列だけでは区別できないので、**選択待ちの目印は `Press enter to continue`** で判定する
 - **codexの承認バイパス（`--dangerously-bypass-approvals-and-sandbox`）は、作業ディレクトリの信頼確認ダイアログをバイパスしない。** 信頼確認は自動承認しない（プロンプトインジェクション耐性を落とすため）。信頼済みのディレクトリを `--cwd` に渡すか、`~/.codex/config.toml` の `[projects."<path>"]` に登録する
+- **herdrのagent名は「小文字で始まり、小文字・数字・`-`・`_` だけの1〜32字」。** 違反すると `herdr agent start` が `invalid_agent_name` を返し、paneはシェルのまま残る（スクリプトは事前に検証する）
+- **`herdr agent prompt` の宛先にはpane IDを使える。** Claude Codeのセッション名（SendMessageの宛先名）はherdrのagent名とは別物で、宛先にすると `agent_not_found` になる
+- **`codex exec --sandbox read-only` ではMCPツールを呼べず、`--dangerously-bypass-approvals-and-sandbox` では呼べる**（同じツール呼び出しで比較）
 - **`claude --disallowedTools Agent Workflow` で両toolが外れ、SendMessage・ListAgentsは残る**（`-p` の起動時のtools一覧と、本スクリプト経由で起動したpaneのツール一覧の両方で確認。`-p` ではAgent toolが `Task` の名で出るが、`Agent` の指定で外れる。`TaskCreate` 等のタスク管理toolは残るが子エージェントは起動しない）。完了通知の経路はこれで壊れない
 - **承認プロンプトのバイパスは既定で付く**（claude: `--dangerously-skip-permissions` / codex: `--dangerously-bypass-approvals-and-sandbox`）。承認待ちで止まると委譲が進まないため。追加のフラグは `--agent-arg` で透過的に渡せる
 - `herdr pane run` と `herdr agent prompt` はテキストとEnterを一括送信する。**改行を含む長文を直接渡すと途中で送信される**ので、指示書はファイルに書いてパスだけを渡す（スクリプトがこれを行う）
@@ -184,4 +203,4 @@ herdr pane get <pane_id>
 
 - `done_close_failed`（`--close` 指定時のtab closeの失敗）
 - 起動タイムアウトによる `blocked_unknown`
-- codexの更新**選択ダイアログ**の自動スキップ（バナー形態しか再現できていない）
+- codexの更新**選択ダイアログ**の自動スキップ（バナー形態しか再現できていない）。選択ダイアログ（更新する／スキップ／このバージョンをスキップの3択）が出たpaneは、自動スキップが効かずに `prompt_failed`（agent名が未登録）で落ちた例がある。次に出たら画面（`herdr pane read`）を保存してから判定を直す
