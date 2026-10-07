@@ -1,6 +1,12 @@
 # GitHub CLI・集計の注意
 
-Read when: 大量ページの `gh api` 取得・PRの状態棚卸し・多バイト文字列の集計の前（AGENTS.mdのRead when一覧から誘導）。
+Read when: 大量ページの `gh api` 取得・PRの状態棚卸し・PR / issueへの画像添付・多バイト文字列の集計の前（AGENTS.mdのRead when一覧から誘導）。
+
+## 画像・動画の添付
+
+- **PR・issueの本文やコメントに画像・動画を貼るときは、ブラウザでアップロードせず `gh` の `--attach` を使う**（`gh pr create` / `gh pr edit` / `gh issue create` / `gh pr comment` 等。gh v2.99.0以降）。ブラウザ操作ツールのプロファイルはGitHubにログインしていないことがあり、アップロードできない。`gh --version` が古ければ先に更新する
+  - 本文に `![alt](./shot.png)` と書いて `--body-file` と一緒に `--attach ./shot.png` を渡すと、その参照がアップロード先のURLに置き換わる。本文フラグなしで渡すと既存本文の末尾に追記される
+  - 一部の添付だけ失敗しても成功分で更新され、exit codeは非0になる。exit codeを見て、失敗したファイルを再送する
 
 ## 取得
 

@@ -64,7 +64,7 @@ Phase: 0準備（メモリディレクトリ・`/findmem`）→ 1調査 → 2計
 - **作業の委譲を決めた時点**: `context/herdr-delegation.md`（経路・モデル・指示書・結果の回収・後片付け）
 - **外部レビュー実行前**: `context/agent-cli-guide.md`（CLI選択・コマンド形式・打ち切り条件・ハーネスから起動すると空振りする条件）
 - **PR提出前・レビュー実行前**: `context/code-review-checklist.md`
-- **大量ページの `gh api` 取得・PRの状態棚卸し・多バイト文字列の集計の前**: `context/github-cli-notes.md`
+- **大量ページの `gh api` 取得・PRの状態棚卸し・PR / issueへの画像添付・多バイト文字列の集計の前**: `context/github-cli-notes.md`
 - **AGENTS.md・context・skills・hooksを編集・設計・監査する前**: `context/claude-customization-guide.md`（公開リポジトリに書いてよい内容の規則を含む）
 - **工数・所要期間・スケジュールの見積を回答・記載する前（計画書・PR分割に見積欄を設ける場合を含む）**: `context/estimation.md`
 - **ブラウザ操作ツール（claude-in-chrome / playwright / chrome-devtools）を呼ぶ前、またはブラウザ自動化のセットアップ・接続設定を変更する前**: `context/browser-automation.md`
