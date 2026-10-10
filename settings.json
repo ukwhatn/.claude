@@ -24,6 +24,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x \"$HOME/.claude/hooks/herdr-delegate-launch.py\" ]; then python3 \"$HOME/.claude/hooks/herdr-delegate-launch.py\"; fi",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionStart": [

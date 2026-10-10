@@ -281,9 +281,11 @@ cat >> "$WORK_TASK" <<'HEADER'
 2. 進め方の選択肢を2つ以上
 3. あなたの推奨と、その理由
 
-指示書どおりに進められる範囲は、いちいち確認せずに進めてください。連絡するのは上の5つに当たったときです。
+指示書どおりに進められる範囲は、いちいち確認せずに進めてください。問い合わせるのは上の5つに当たったときです。
 
-### 連絡の方法
+## lead への連絡の方法
+
+問い合わせと、下の「完了したら」の完了の連絡は、どちらもこの方法で送ります。
 HEADER
 
 {
@@ -308,13 +310,24 @@ HEADER
     printf '宛先の `%s` は lead の pane ID です。セッション名や agent 名に置き換えると届きません。本文は1行にして、シングルクォートで囲んでください（本文が空になると送れません）。\n\n' "$LEAD_PANE"
   fi
   cat <<'HEADER2'
-連絡したら、返答が届くまで待ってください。返答は同じ画面に届きます。
+問い合わせたら、返答が届くまで待ってください。返答は同じ画面に届きます。
 
 ## 完了したら
 
-成果物を書き終えたら応答を終了してください。lead はファイルを読んで結果を受け取ります。タスク本文が成果物のパスを指定している場合、**それを書かずに応答を終えると lead 側では失敗として扱われます**。
+HEADER2
+  if [ "$USE_SENDMESSAGE" -eq 1 ] || [ -n "$LEAD_PANE" ]; then
+    cat <<'HEADER3'
+成果物を書き終えたら、**上の連絡の方法で lead に完了を送ってから応答を終了してください**。送る内容は、成果物のパスと要点を数行です。lead はこの連絡で完了を知り、成果物はファイルから読みます。送らずに終えると、lead は完了に気付けず待ち続けます。
 
-lead に質問を投げるときも、応答を終えた時点で lead 側は「成果物なし」の状態を見ます。lead はそこで質問の有無を確認するので、質問は必ず上記の方法で送ってから応答を終えてください。
+作業の途中で応答を終えるとき（長いコマンドをバックグラウンドに回して完了を待つ、lead の返答を待つ）も、何を待っているかを lead に送ってから終えてください。lead 側は、あなたが応答を終えた時点で「委譲先が止まった」ことだけを知ります。
+
+HEADER3
+  else
+    echo '成果物を書き終えたら応答を終了してください。lead はファイルを読んで結果を受け取ります。'
+    echo
+  fi
+  cat <<'HEADER2'
+タスク本文が成果物のパスを指定している場合、**それを書かずに応答を終えると lead 側では失敗として扱われます**。
 
 ---
 
@@ -351,6 +364,20 @@ else
   # 待たずに作業途中で失敗する（pane は autoContinueAtUsageLimit で待って再開する）。
   # 散文の禁止だけでは、委譲先も user-level の「並列に分けられるなら委譲する」を読んで分割する。
   START_CMD=("${START_CMD[@]}" --disallowedTools Agent Workflow --dangerously-skip-permissions)
+  # ヘッダの「完了したら lead に送る」を守らずに終えることがあるので、送るまで1回だけ停止を止める。
+  # user-level の settings に置くと lead や普段のセッションでも発火するため、委譲先にだけ足す
+  STOP_HOOK="$(cd "$(dirname "$0")/.." && pwd)/hooks/delegate-completion-stop.py"
+  if [ -f "$STOP_HOOK" ] && { [ -n "$LEAD_NAME" ] || [ -n "$LEAD_PANE" ]; }; then
+    STOP_SETTINGS="$(SH_PATH="$STOP_HOOK" SH_NAME="$LEAD_NAME" SH_PANE="$LEAD_PANE" python3 -c '
+import json, os, shlex
+command = " ".join(shlex.quote(a) for a in [
+    "python3", os.environ["SH_PATH"],
+    "--lead-name", os.environ["SH_NAME"], "--lead-pane", os.environ["SH_PANE"],
+])
+print(json.dumps({"hooks": {"Stop": [{"hooks": [{"type": "command", "command": command, "timeout": 10}]}]}}))
+')" || finalize invalid_input 2 python3_unavailable
+    START_CMD=("${START_CMD[@]}" --settings "$STOP_SETTINGS")
+  fi
 fi
 old_ifs="$IFS"; IFS='
 '

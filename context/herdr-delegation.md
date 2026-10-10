@@ -63,6 +63,14 @@ codexを起動する前に枠を確認する（`python3 ~/.claude/codex-usage.py
 
 `bin/herdr-delegate.sh` は完了まで同期ブロックする。**`--state` を付けてバックグラウンドで起動し、stateファイルの生成を確認してからそのターンを終える。** 完了はharnessの通知で受け取る。
 
+**起動の形は「1委譲 = Bash 1呼び出し、`run_in_background: true`、`&`・`nohup`・`disown`・`setsid` を付けない」に固定する。** harnessの完了通知はBash呼び出しのプロセスの終了に紐づく。シェルの `&` で切り離すと、harnessが追うのはすぐ終わる起動用シェルだけになり、委譲先が終わっても通知が来ない。ループで複数を1呼び出しに入れると、通知は全部が終わったときの1回になる。
+
+- 並列に回すときは、同じメッセージにBash呼び出しを体数分並べる（ループで回さない）
+- stateの確認（`cat` / `sleep` を含む）は起動とは別の呼び出しで行う。起動の呼び出しに混ぜると、確認のために `&` で切り離すことになる
+- 起動の形はPreToolUse hook（`hooks/herdr-delegate-launch.py`）が検査し、外れた呼び出しを拒否する（意図はここ、強制はhook）。hookが見るのはBashのコマンド文字列なので、起動をスクリプトファイルに書いて `bash <file>` で呼ぶと検査を通り抜ける。起動はコマンドに直接書く
+
+`run_in_background: true` を付けて、次のコマンドをそのまま1呼び出しで実行する。
+
 ```bash
 ~/.claude/bin/herdr-delegate.sh \
   --kind claude --model opus \
@@ -106,7 +114,7 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 | 構成 | 成果物に含める章立て。順序も指定する |
 | やらないこと | 触ってはいけないファイル、取り込まない情報源、書いてはいけない内容 |
 | 完了基準 | 満たしていれば完了と判断できる条件を、確認可能な形で列挙する |
-| 完了の通知 | **成果物を書き終えたらleadへ完了を送ってから終了する**（Claude Codeのpaneなら `SendMessage` で `--lead-name` の宛先へ、codexなら `herdr agent prompt` でleadのpane ID宛てに）。送る内容は成果物のパスと要点数行。これが無いと委譲先はstandaloneで止まり、leadは完了を検知できずに待ち続ける。**宛先は指示書に書かない**（ヘッダが案内する。指示書はヘッダより優先されるので、SendMessageの宛先名（セッション名）をherdrの宛先として書くと届かない） |
+| 完了の通知 | **指示書には書かない。** ヘッダが「成果物を書き終えたら、成果物のパスと要点数行をleadへ送ってから終了する」を指示し、宛先（Claude Codeのpaneは `SendMessage` で `--lead-name` の宛先、codexは `herdr agent prompt` でleadのpane ID）も案内する。指示書はヘッダより優先されるので、「連絡は不要」「宛先は◯◯」と書くとヘッダの指示を打ち消す（SendMessageの宛先名をherdrの宛先として書くと届かない）。claudeのpaneでは、送らずに終えようとするとStop hookが1回止める（「完了の連絡を強制する」） |
 
 **確認済みの事実と未確認の推測を分けて書く。** 推測を事実として書いて渡すと、委譲先はそれを検証せずに前提として使う。
 
@@ -130,7 +138,7 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 
 ## 委譲先とのやり取り
 
-委譲先は、指示書の前提が実態と食い違ったときにleadへ問い合わせる。問い合わせの方法はヘッダに書いてある。
+委譲先は、指示書の前提が実態と食い違ったときの問い合わせと、作業を終えたとき・途中で止まるとき（バックグラウンドの完了待ち・leadの返答待ち）の連絡をleadへ送る。どちらも方法はヘッダに書いてある。
 
 - **pane上のClaude Code**: `ListAgents` に現れるので、`SendMessage` で名前宛に送れる。lead → 委譲先も同じ
 - **pane上のcodex**: SendMessageは届かない。`herdr agent prompt <宛先> '<メッセージ>'` を使う。lead → 委譲先の宛先は委譲先のagent名かpane ID、委譲先 → leadの宛先はleadのpane ID（ヘッダが案内する。codexがBashでこのコマンドを叩く）
@@ -140,6 +148,15 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 **委譲先が問い合わせて応答を終えると、lead側からは「成果物なし」に見える**（`missing_output` / exit 4）。失敗と断ずる前に、委譲先からのメッセージが届いていないかを確認する。
 
 tabは既定で残るので、追加指示は完了後でもそのまま送れる。
+
+### 完了の連絡を強制する
+
+ヘッダで連絡を求めても、委譲先が送らずに終えることがある。claudeのpaneでは、スクリプトが起動時に `--settings` でStop hook（`hooks/delegate-completion-stop.py`）を足す。委譲先が応答を終えようとしたとき、最後の入力（指示書・leadからのメッセージ）以降にlead宛の送信（`SendMessage` の `to` がlead名、またはleadのpane ID宛ての `herdr agent prompt`）が無ければ、停止を1回止めて送るよう返す。
+
+- user-levelのsettingsには登録しない（leadや普段のセッションで発火させないため）
+- 止めるのは1回だけ（`stop_hook_active` なら通す）。送れない状況で委譲先が終われなくなるのを防ぐ
+- 宛先が無い（`--lead-name` も `HERDR_PANE_ID` も無い）ときは足さない。codexにはhookが無いので、ヘッダの指示だけになる
+- 判定は「最後の入力以降に送ったか」だけで、送った中身が完了の連絡か問い合わせかは区別しない。問い合わせを送った後に返答を待たずに作業を続けて終えた場合は、止めずに通る
 
 ## 結果の受け取り
 
@@ -166,10 +183,12 @@ tabは既定で残るので、追加指示は完了後でもそのまま送れ�
 
 **`done` は作業の完了を保証しない。** 判定しているのは「idleになった時点で成果物ファイルが作成・更新されていた」ことだけで、書きかけ（骨組み・プレースホルダ）の保存でも満たす。逆に `missing_output` でも、委譲先がバックグラウンドの完了を待って作業を続けていることがある。どちらのstatusでも、成果物を採用する前に次の2つを確かめる。
 
-- 委譲先から完了の連絡（指示書が求めるSendMessage等）が届いている
+- 委譲先から完了の連絡（ヘッダが求めるSendMessage等）が届いている
 - `herdr pane get <pane_id>` の `agent_status` が `working` でない
 
-満たさなければ作業中として扱い、成果物を採用せず、委譲をやり直さずに連絡を待つ。
+満たさなければ作業中として扱い、成果物を採用せず、委譲をやり直さずに連絡を待つ。届いた連絡が「バックグラウンドの完了を待っている」等の途中経過なら、その完了の連絡を待つ。
+
+`agent_status` がidleのまま連絡が届かないとき（codexのpane、Stop hookの1回を経ても送らなかった）は、待ち続けずに `herdr pane read` で画面の最後の応答を読み、完了か途中かを判断する。
 
 ## 調査と後片付け
 
@@ -196,6 +215,10 @@ herdr pane get <pane_id>
 - **`codex exec --sandbox read-only` ではMCPツールを呼べず、`--dangerously-bypass-approvals-and-sandbox` では呼べる**（同じツール呼び出しで比較）
 - **`claude --disallowedTools Agent Workflow` で両toolが外れ、SendMessage・ListAgentsは残る**（`-p` の起動時のtools一覧と、本スクリプト経由で起動したpaneのツール一覧の両方で確認。`-p` ではAgent toolが `Task` の名で出るが、`Agent` の指定で外れる。`TaskCreate` 等のタスク管理toolは残るが子エージェントは起動しない）。完了通知の経路はこれで壊れない
 - **承認プロンプトのバイパスは既定で付く**（claude: `--dangerously-skip-permissions` / codex: `--dangerously-bypass-approvals-and-sandbox`）。承認待ちで止まると委譲が進まないため。追加のフラグは `--agent-arg` で透過的に渡せる
+- **Bashの `run_in_background: true` はPreToolUse hookの `tool_input` に載り、前景の呼び出しでは項目自体が無い**（`claude -p` に記録用hookを足して確認）
+- **`claude --settings '<JSON>'` で足したhookは、user-levelのhookを置き換えずに併用される**（委譲先のpaneで、足したStop hookとuser-levelのSessionStart・UserPromptSubmitが両方動いた）
+- **Stop hookで1回止めると、委譲先は指示書に「連絡は不要」とあっても連絡を送る**（2026-10-10、sonnetで確認）。ヘッダだけの委譲先は、hookが止める前に自分から `SendMessage` で送った
+- **委譲先が `herdr agent prompt <lead pane>` で送った連絡は、leadの画面にユーザーの入力として入る**（cross-session messageの表示にならない）。送り主の区別が付きにくいので、ヘッダとStop hookはSendMessageを先に案内する
 - `herdr pane run` と `herdr agent prompt` はテキストとEnterを一括送信する。**改行を含む長文を直接渡すと途中で送信される**ので、指示書はファイルに書いてパスだけを渡す（スクリプトがこれを行う）
 
 ## 未検証の経路
