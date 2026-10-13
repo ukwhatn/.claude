@@ -8,6 +8,8 @@ Claude Code は言語指定をセッション開始時と compaction 直後に�
 - PostToolUse: 1ターンが長いと UserPromptSubmit の指定が遠くなるので、ツール呼び出し INTERVAL 回ごとに出す
   （毎回だと長いターンで同じ文が数十回文脈に積まれる）
 """
+from __future__ import annotations
+
 import json
 import os
 import re
