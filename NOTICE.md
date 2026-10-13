@@ -67,6 +67,13 @@ SOFTWARE.
 - plugin や `npx skills add` で導入しない（サプライチェーン攻撃を避けるため）。更新するときは上流を clone し、`diff -r` で差分を全文読んでからコピーし、上の参照commitと `vendor/manifest.json` の `commit` を書き換える
 - ライセンス全文: `skills/yomiyasu/LICENSE`（MIT License, Copyright (c) 2026 nanaism）
 
+## blader/humanizer
+
+- 出典: https://github.com/blader/humanizer （参照commit: `225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8`）
+- 配置先: `skills/humanizer/`（SKILL.md, LICENSE）。上流のファイルを無改変でコピーしたもので、翻案していない。plugin の定義・README・検証スクリプトは Claude Code の実行に要らないので取り込んでいない。本環境向けの扱いは `skills/ukwhatn-writing/SKILL.md` 側で上書きする
+- plugin や `npx skills add` で導入しない（サプライチェーン攻撃を避けるため）。更新するときは上流を clone し、`diff -r` で差分を全文読んでからコピーし、上の参照commitと `vendor/manifest.json` の `commit` を書き換える
+- ライセンス全文: `skills/humanizer/LICENSE`（MIT License, Copyright (c) 2025 Siqi Chen）
+
 ## shadcn-ui/ui（skills/shadcn）
 
 - 出典: https://github.com/shadcn-ui/ui の `skills/shadcn/` （参照commit: `0e3abd65a97707f4a9cc3ed07bf5006e1cb67b13`）

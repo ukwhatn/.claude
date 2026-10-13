@@ -19,6 +19,17 @@
       ]
     },
     {
+      "name": "humanizer",
+      "repo": "blader/humanizer",
+      "branch": "main",
+      "commit": "225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8",
+      "watch_dirs": [],
+      "files": [
+        {"upstream": "SKILL.md", "local": "skills/humanizer/SKILL.md"},
+        {"upstream": "LICENSE", "local": "skills/humanizer/LICENSE"}
+      ]
+    },
+    {
       "name": "shadcn",
       "repo": "shadcn-ui/ui",
       "branch": "main",
