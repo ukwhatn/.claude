@@ -137,7 +137,7 @@ grep -nE '^\s+"[a-z-]+":' <キュー定義ファイル>
 
 ## 設計判断の記録基準
 
-AskUserQuestionで確定した設計判断を記録する。
+自分で決めた設計判断と、AskUserQuestionで確定した設計判断を記録する。
 
 ### 30_decisions.mdに書く
 
@@ -201,7 +201,7 @@ AskUserQuestionで確定した設計判断を記録する。
 
 以下すべてを満たして完了:
 
-- [ ] Step 2でAskUserQuestionによる要求深掘りを実施し、05_log.mdに記録した
+- [ ] Step 2で7項目を依頼文と照らし、読めない項目だけをAskUserQuestionで確定し、読めた項目の推定内容と合わせて05_log.mdに記録した
 - [ ] Step 3でコードベース調査を実施し、05_log.mdまたは20_implementation_notes.mdに記録した
 - [ ] 01_requirements_skeleton.mdに禁止フレーズが残存していない（grep 0件）
 - [ ] 02_system_requirements.mdに禁止フレーズが残存していない（grep 0件）
