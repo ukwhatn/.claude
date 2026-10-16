@@ -1,6 +1,6 @@
 # `.claude` / `.codex` の管理構成
 
-Read when: `~/.claude` の構成を変更するとき、新しいPCをセットアップするとき、Codexへの配布経路を触るとき。通常の作業では読まなくてよい。
+`~/.claude` リポジトリの管理範囲、Codexへの配布経路、新しいPCのセットアップと検証、CodexへのMCPの追加。
 
 ## 前提
 
@@ -16,30 +16,30 @@ Read when: `~/.claude` の構成を変更するとき、新しいPCをセット�
 | `context/` `skills/` `hooks/` `agents/` `templates/` `output-styles/` `bin/` `vendor/` `.github/` | `.local/`（メモリ・issue） |
 | `statusline-command.sh` `subagent-statusline.py` `codex-usage.py` `README.md` `NOTICE.md` | `plugins/`（marketplaceキャッシュ） |
 
-statusline系スクリプトは**ルート直下**に置く（`bin/` を切らない）。`settings.json` が `statusLine` / `subagentStatusLine` から参照しており、settingsだけ同期されてスクリプトが無いと毎tickで実行失敗するため、allowlistへの追加は必須。
+statusline系スクリプトはルート直下に置く（`bin/` を切らない）。`settings.json` が `statusLine` / `subagentStatusLine` から参照しており、settingsだけ同期されてスクリプトが無いと毎tickで実行失敗するため、allowlistへの追加が要る。
 
 `settings.json` にマシン依存の値はほぼ無く、そのまま3台で共有できている（`extraKnownMarketplaces` / `enabledPlugins` もここに載るため、pluginの導入はsettings.jsonの同期だけで全台に伝播する）。
 
 ## Codexへの配布経路
 
-Codexの走査パスは `~/.codex/skills/` + `~/.agents/skills/` + `<repo>/.agents/skills`。**symlinkを辿る**（公式明記）。
+Codexの走査パスは `~/.codex/skills/` + `~/.agents/skills/` + `<repo>/.agents/skills`。symlinkを辿る（公式明記）。
 
 | 対象 | 配布方法 |
 |---|---|
 | グローバル指示 | `~/.codex/AGENTS.md` → `~/.claude/AGENTS.md`（symlink） |
 | skills | `~/.agents/skills` → `~/.claude/skills`（**ディレクトリごと1本**） |
 | PJ CLAUDE.md | `~/.codex/config.toml` の `project_doc_fallback_filenames = ["CLAUDE.md"]` で自動読込 |
-| context7（公式仕様の確認） | `~/.codex/config.toml` の `[mcp_servers.context7]`（**git管理外なのでマシンごとに設定が必要**） |
+| context7（公式仕様の確認） | `~/.codex/config.toml` の `[mcp_servers.context7]`（git管理外なのでマシンごとに設定が要る） |
 
-`~/.codex/config.toml` は `~/.claude` リポジトリの外にあるため **3PC同期の対象外**。symlinkで済む2項目と違い、マシンごとに手で入れる必要がある（下記セットアップ手順に含めた）。
+`~/.codex/config.toml` は `~/.claude` リポジトリの外にあるため3PC同期の対象外。symlinkで済む2項目と違い、マシンごとに手で入れる（下記セットアップ手順に含めた）。
 
-### CRITICAL: `~/.codex/skills/` に個別symlinkを張らない
+### `~/.codex/skills/` に個別symlinkを張らない
 
-skillごとに `~/.codex/skills/<name>` → `~/.claude/skills/<name>` を張る方式は**ドリフトする**。`.claude/skills` 側でスキルを削除・追加してもCodex側が追従しないため。
+skillごとに `~/.codex/skills/<name>` → `~/.claude/skills/<name>` を張る方式はドリフトする。`.claude/skills` 側でスキルを削除・追加してもCodex側が追従しないため。
 
-個別symlink方式を放置すると、**削除済みskillへの壊れリンク**と**後から追加したskillの未リンク**が混在し、一部のskillだけが使える状態になる。`~/.agents/skills` へのディレクトリsymlink 1本にすれば追従する。
+個別symlink方式を放置すると、削除済みskillへの壊れリンクと後から追加したskillの未リンクが混在し、一部のskillだけが使える状態になる。`~/.agents/skills` へのディレクトリsymlink 1本にすれば追従する。
 
-`~/.codex/skills/.system` はCodex同梱スキル（`imagegen` / `openai-docs` / `plugin-creator` / `review-agent` / `skill-creator` / `skill-installer`）。**触らない**。ディレクトリ丸ごとsymlinkにできないのはこれが理由。
+`~/.codex/skills/.system` はCodex同梱スキル（`imagegen` / `openai-docs` / `plugin-creator` / `review-agent` / `skill-creator` / `skill-installer`）。触らない。ディレクトリ丸ごとsymlinkにできないのはこれが理由。
 
 ## 新PCのセットアップ
 
@@ -65,7 +65,7 @@ http_headers = { CONTEXT7_API_KEY = "ctx7sk-..." }
 
 ### セットアップの検証
 
-symlinkの存在確認では**注入されているかどうかが分からない**（AGENTS.mdがbyte上限でtruncateされる可能性がある）。実機で確認する:
+symlinkの存在確認では注入されているかどうかが分からない（AGENTS.mdがbyte上限でtruncateされる可能性がある）。実機で確認する:
 
 ```bash
 codex mcp list   # context7 が enabled で出るか
@@ -73,29 +73,29 @@ codex exec --sandbox read-only --skip-git-repo-check < /dev/null \
   'ツールを使わず即答。1) グローバル指示の最後のセクション見出しを原文で 2) skill `worktree-audit` は見えるか'
 ```
 
-`## マシンローカル設定（git管理外）`（AGENTS.md末尾）が返れば全文注入、`worktree-audit`（`~/.codex/skills` に無いskill）が見えれば `~/.agents/skills` 経由が機能している。
+AGENTS.md末尾の見出し（`## マシンローカル設定`）が返れば全文注入、`worktree-audit`（`~/.codex/skills` に無いskill）が見えれば `~/.agents/skills` 経由が機能している。
 
-`bin/herdr-delegate.sh` も3台へ配布されるが、**herdr本体のバージョンが古いと依存コマンドが欠けている可能性がある**。symlinkの存在確認と同じく、コマンドの実在は別途確認が要る。スクリプトが依存しているのは次のサブコマンド・オプション:
+`bin/herdr-delegate.sh` も3台へ配布されるが、herdr本体のバージョンが古いと依存コマンドが欠けている可能性がある。symlinkの存在確認と同じく、コマンドの実在は別途確認が要る。スクリプトが依存しているのは次のサブコマンド・オプション:
 
 - `herdr tab create` の `--workspace` / `--cwd` / `--label` / `--no-focus`
 - `herdr agent start` の `--kind` / `--pane` / `--timeout` と `--` 以降のargv渡し
 - `herdr agent prompt` の `--wait` / `--until`（複数指定）/ `--timeout`
 - `herdr pane read` / `herdr pane send-keys` / `herdr pane get` / `herdr tab close`
 
-確認方法は、各コマンドグループを引数なしで実行してusageを出す形（`herdr tab` / `herdr agent` / `herdr pane`）。**bareの `herdr` はTUIを起動するので実行しない**。
+確認方法は、各コマンドグループを引数なしで実行してusageを出す形（`herdr tab` / `herdr agent` / `herdr pane`）。bareの `herdr` はTUIを起動するので実行しない。
 
 ## CodexにMCPサーバーを足す
 
 `~/.codex/config.toml` はマシンごとなので、Codexに使わせたいMCPはPCごとに足す。URL・OAuthのclient id・ポート番号の実値はここに書かない（PJの `CLAUDE.local.md` かメモリに置く）。
 
 - **`codex mcp add <name> --url <url>` はOAuthを検出すると、その場でブラウザでのログインを始めて待つ。** 承認を別の端末で行うと、待ち受けが時間切れ（`timed out waiting for OAuth callback`）になる。追加だけ済ませ、ログインは次の手順でやり直す
-- **ログインは `codex mcp login <name> --no-browser` で行う。** 承認URLを出し、承認後にブラウザが開こうとしたcallbackのURLを標準入力で受け取る。ハーネスのBashは対話入力できないので、FIFOを介して渡す:
+- **ログインは `codex mcp login <name> --no-browser` で行う。** 承認URLを出し、承認後にブラウザが開こうとしたcallbackのURLを標準入力で受け取る。ハーネスのBashは対話入力できないので、FIFOを介して渡す。FIFOとログはscratchpadに置く（`/tmp` は並列のセッションと共有される）:
 
 ```bash
-mkfifo /tmp/codex-login.fifo
-cat /tmp/codex-login.fifo | codex mcp login <name> --no-browser > /tmp/codex-login.log 2>&1 &
+mkfifo "<scratchpad>/codex-login.fifo"
+cat "<scratchpad>/codex-login.fifo" | codex mcp login <name> --no-browser > "<scratchpad>/codex-login.log" 2>&1 &
 # ログに出た承認URLをユーザーに渡し、承認後のcallback URL（ブラウザのアドレス欄）を貼ってもらう
-printf '%s\n' '<貼られたcallback URL>' > /tmp/codex-login.fifo
+printf '%s\n' '<貼られたcallback URL>' > "<scratchpad>/codex-login.fifo"
 ```
 
 - **OAuthの提供元がredirect URIの事前登録を求めるときは、トップレベルの `mcp_oauth_callback_port` / `mcp_oauth_callback_url` でcallbackのポートを固定する**（`[mcp_servers.*]` より前に置く）。同じポートを使うログインは1つずつ行う
@@ -103,23 +103,22 @@ printf '%s\n' '<貼られたcallback URL>' > /tmp/codex-login.fifo
 
 ## 同期の運用
 
-- **user-level設定を変更したら、変更したスキル自身が `/commit --push` でコミット・pushまで行う**（AGENTS.md「コミット・ブランチ・PR」）。手元に残さない
+- commit・pushのタイミングと直コミットの可否はAGENTS.md「コミット・ブランチ・PR」
 - pushがrejectされたら `git pull --rebase --autostash && git push`（3台運用では実際に起きる）
-- `~/.claude` は直コミット可（実装開始前ゲートの判定結果をAGENTS.mdに永続化済み）
 
 ## plugin化しない判断（複数回検討、いずれも見送り）
 
-- pluginは **`CLAUDE.md` / `settings.json` を配布できない**。同期の主な対象は `AGENTS.md` と `context/` なので、plugin化すると経路が「plugin自動更新」と「git」の2本に分かれた上で、最も頻繁に編集するファイルはgit側に残る
-- plugin skillは**名前空間付き**（`/commit` → `/ns:commit`）。指示ファイル内のskill名参照は **116箇所**あり、全書き換えが必要
-- marketplace方式は実体が `plugins/cache/<mp>/<plugin>/<version>/` に入るため、**更新のたびにsymlink先が変わる**
-- 結論: 個人運用ではsymlinkが優位。**他人に配布する必要が出たら再検討する**
+- pluginは `CLAUDE.md` / `settings.json` を配布できない。同期の主な対象は `AGENTS.md` と `context/` なので、plugin化すると経路が「plugin自動更新」と「git」の2本に分かれた上で、最も頻繁に編集するファイルはgit側に残る
+- plugin skillは名前空間付き（`/commit` → `/ns:commit`）。指示ファイル内のskill名参照は多数あり、全書き換えが要る
+- marketplace方式は実体が `plugins/cache/<mp>/<plugin>/<version>/` に入るため、更新のたびにsymlink先が変わる
+- 結論: 個人運用ではsymlinkが優位。他人に配布する必要が出たら再検討する
 - 外部由来で自分が編集しないskill（Cloudflare系等）は公式marketplaceのpluginで導入する、という区分は有効
 
 ## 実機検証で確定している事実（推測しない）
 
-- **`codex exec` にはグローバル指示がフル注入される**（Codex自身にコンテキストを列挙させて確認できる）。このためCodexをレビュアーとして呼ぶとlead用の外部レビュー規約を読んで**別CLIへ再委託する**。役割分岐を `AGENTS.md` と `context/agent-cli-guide.md` に規定して解消済み
+- **`codex exec` にはグローバル指示がフル注入される**（Codex自身にコンテキストを列挙させて確認できる）。このためCodexをレビュアーとして呼ぶとlead用の外部レビュー規約を読んで別CLIへ再委託する。役割分岐を `AGENTS.md` と `context/agent-cli-guide.md` に規定して解消済み
 - **`~/.agents/skills` 経由でskillが読める**（`~/.codex/skills` に存在しないskillがCodexから見えることで確認できる）
-- **AGENTS.mdにはbyte上限がある。** `project_doc_max_bytes` というキーが実在し、超過分は「project doc exceeds remaining budget; truncating」で**警告なく切られる**（公式docsはdefault値を書いていない）。26KBでは全文が注入されたが、**48KBでは末尾が切られることを実測で確認している**（`codex 0.145.0`。検証コマンドが返す「最後のセクション見出し」がAGENTS.mdの実際の末尾より手前になる）。切られた分をCodexは読まないまま動作するので、**AGENTS.mdを伸ばしたら必ず上記「セットアップの検証」で末尾セクションが返るかを確認する**。切れていたら、`~/.codex/config.toml` に `project_doc_max_bytes` を明示して上限を上げるか、内容を `context/` へ移してAGENTS.mdを縮める
-- **配布経路が未設定でもCodexは正常に起動する**（`~/.codex/AGENTS.md` 不在・`~/.agents/` 不在・`config.toml` にfallbackなし、のいずれでもエラーにならない）ため、1台だけ設定が抜けていても気付けない。**セットアップ手順を変えたら全PCで上記の検証コマンドを流す**
+- **AGENTS.mdにはbyte上限がある。** `project_doc_max_bytes` というキーが実在し、超過分は「project doc exceeds remaining budget; truncating」で警告なく切られる（公式docsはdefault値を書いていない）。26KBでは全文が注入されたが、48KBでは末尾が切られることを実測で確認している（`codex 0.145.0`。検証コマンドが返す「最後のセクション見出し」がAGENTS.mdの実際の末尾より手前になる）。切られた分をCodexは読まないまま動作するので、AGENTS.mdを伸ばしたら上記「セットアップの検証」で末尾セクションが返るかを確認する。切れていたら、`~/.codex/config.toml` に `project_doc_max_bytes` を明示して上限を上げるか、内容を `context/` へ移してAGENTS.mdを縮める
+- **配布経路が未設定でもCodexは正常に起動する**（`~/.codex/AGENTS.md` 不在・`~/.agents/` 不在・`config.toml` にfallbackなし、のいずれでもエラーにならない）ため、1台だけ設定が抜けていても気付けない。セットアップ手順を変えたら全PCで上記の検証コマンドを流す
 - `--ignore-rules` はexecpolicy `.rules` 用で、AGENTS.mdの読込抑制ではない
-- Codexにもplugin marketplace機構はあるがClaude Codeとは**別形式**（`~/.codex/config.toml` の `[marketplaces.*]`）
+- Codexにもplugin marketplace機構はあるがClaude Codeとは別形式（`~/.codex/config.toml` の `[marketplaces.*]`）

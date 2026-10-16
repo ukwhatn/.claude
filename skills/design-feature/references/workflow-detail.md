@@ -1,19 +1,19 @@
 # Workflow Detail
 
-`design-feature` スキルのPhase別具体手順。SKILL.mdと併用。
+`design-feature` スキルの Step 別の具体手順。SKILL.md と併せて読む。
 
 ## 目次
 
-- Phase 0: 準備
-- Phase 1: 要求深掘り
-- Phase 2: 既存実装調査（コードベースSSoT）
-- Phase 3: 01ドラフト作成
-- Phase 4: agent reviewループ
-- Phase 5: 02抽出 + 完了報告
+- Step 1: 準備
+- Step 2: 要求深掘り
+- Step 3: 既存実装調査（コードベースが正本）
+- Step 4: 01 ドラフト作成
+- Step 5: 外部レビュー
+- Step 6: 02 抽出 + 完了報告
 
-## Phase 0: 準備
+## Step 1: 準備
 
-### 0.1メモリディレクトリ確定
+### 1.1 メモリディレクトリ確定
 
 ```bash
 # 1. MEMORY_DIR を確認
@@ -27,11 +27,11 @@ ls ${MEMORY_DIR}/memory/ | grep -i "<キーワード>"
 mkdir -p ${MEMORY_DIR}/memory/YYMMDD_<context_name>/
 ```
 
-context_nameはkebab-caseで短く（例: `<機能名>-spec`, `<画面名>-login`, `<機能名>-error`）。日付は **今日の日付**（システムプロンプトのTodayから取得、例示の日付をコピーしない）。
+context_name は kebab-case で短く（例: `<機能名>-spec`, `<画面名>-login`, `<機能名>-error`）。日付はシステムプロンプトの Today's date から取る（例示の日付をコピーしない）。
 
-### 0.2絶対パス固定
+### 1.2 絶対パスの記録
 
-worktree運用時にメモリの書き込み先を誤らないよう、05_log.md冒頭に必ず記録:
+05_log.md の冒頭に記録する。
 
 ```markdown
 # 作業ログ
@@ -42,27 +42,17 @@ worktree運用時にメモリの書き込み先を誤らないよう、05_log.md
 ...
 ```
 
-EnterWorktreeでworktreeに入っても、メモリの読み書きは**必ずこの絶対パスを使う**。worktree内に `.local/` は存在しない。
+EnterWorktree で worktree に入っても、メモリの読み書きはこの絶対パスで行う。worktree 内に `.local/` は無い。
 
-### 0.3タスク管理
+### 1.3 作業項目
 
-本ワークフローのタスクを10_task.mdに構造化する（Codex: plan機構）:
+Step 2〜6 を作業項目として登録する（taskboard が繋がっていれば `/taskboard`、Codex は plan 機構）。Step 3 は Step 2 と並行してよく、Step 4 以降は前の Step の完了を待つ。
 
-```
-Task 1: Phase 1 要求深掘り
-Task 2: Phase 2 既存実装調査（並列）
-Task 3: Phase 3 01 ドラフト作成
-Task 4: Phase 4 agent review ループ
-Task 5: Phase 5 02 抽出 + 完了報告
-```
+## Step 2: 要求深掘り
 
-Task 2はTask 1と並列、Task 3以降は前のTaskの完了を待つ。
+### 2.1 質問テンプレート（AskUserQuestion 用）
 
-## Phase 1: 要求深掘り
-
-### 1.1質問テンプレート（AskUserQuestion用）
-
-抽象要件を受けたら、以下を **1〜2回のAskUserQuestion** で確定する（一度に4つまで、multi-selectで複数項目を一括で聞く）。
+抽象要件を受けたら、以下を1〜2回の AskUserQuestion で確定する。1回に複数の question を出すときは、各 question の文に背景と推奨の理由を1文ずつ入れて自己完結させる（AGENTS.md「確認が要るもの」の質問の出し方）。
 
 #### Q1: スコープ確定（multi-select）
 - 解決したい問題は何か
@@ -85,18 +75,18 @@ Task 2はTask 1と並列、Task 3以降は前のTaskの完了を待つ。
 - メモリディレクトリパス（デフォルト確認）
 - 01 / 02以外に作る必要があるサブドキュメント（PRD、ドキュメントツール投稿用、関係者向けFAQ等）
 
-質問の **粒度は具体的に**。「○○についてどうしますか」ではなく「A / B / C / その他」の選択肢を提示。
+「○○についてどうしますか」ではなく「A / B / C / その他」の選択肢を示す。
 
-### 1.2 「曖昧なまま着手しない」原則
+### 2.2 曖昧なまま着手しない
 
-回答が曖昧（「適当に」「いい感じで」等）の場合、再質問する。**Step 2以降を着手しない**。
+回答が曖昧（「適当に」「いい感じで」等）なら再質問し、Step 3 以降に入らない。
 
-### 1.3 05_log.md記録
+### 2.3 05_log.md への記録
 
-質問内容と回答を逐語記録:
+質問と回答を逐語で記録する。
 
 ```markdown
-## YYYY-MM-DD HH:MM - Phase 1 要求深掘り
+## YYYY-MM-DD HH:MM - Step 2 要求深掘り
 
 **AskUserQuestion Q1: スコープ確定**
 - 質問: ...
@@ -108,84 +98,83 @@ Task 2はTask 1と並列、Task 3以降は前のTaskの完了を待つ。
 - 制約: ...
 ```
 
-## Phase 2: 既存実装調査（コードベースSSoT）
+## Step 3: 既存実装調査（コードベースが正本）
 
-### 2.1並列調査パターン
+### 3.1 並列調査パターン
 
-Explore agentを3-5並列で起動。各agentに **明確な検証クレーム** を渡す（「○○を調べて」ではなく「ドキュメント記述Xが実コードYと一致するか」）。
+Agent tool で `subagent_type: "Explore"`・`model: "sonnet"` を3〜5並列で起動する。各 agent には検証できる主張を渡す（「○○を調べて」ではなく「ドキュメントの記述 X が実コード Y と一致するか」）。
 
 ```text
 Agent 1: 対象機能に関連する既存コードの所在・パターン
-Agent 2: データモデル（schema.prisma / domain 型）の現状
+Agent 2: データモデル（スキーマ定義 / domain 型）の現状
 Agent 3: 既存ガード・procedure 階層・middleware
-Agent 4: 関連する Cloud Task / Scheduler / Webhook（定義ファイル全件 grep で網羅確認、総件数を報告させる）
+Agent 4: 関連する非同期ジョブ / 定期実行 / Webhook（定義ファイルを全件 grep し、総件数を報告させる）
 Agent 5: テンプレート・命名規約・規約同意・通知メール
 ```
 
-各agentへの指示には「特定エントリの調査」と「対象カテゴリ全件の網羅確認」を分けて明記する。網羅確認を省くと一覧表に漏れが出る（§2.5）。
+各 agent への指示には「特定エントリの調査」と「対象カテゴリ全件の網羅確認」を分けて書く。網羅確認を省くと一覧表に漏れが出る（3.5）。各指示の末尾に「列挙した調査項目を全部調べ終えるまで止まらず、終わったら報告して止まる。修正や依頼外の提案はしない」を入れる。
 
-### 2.2 Agent判定の検証
+### 3.2 agent の報告の突き合わせ
 
-Explore agentの判定をそのまま信用しない:
+結論を左右する「差異あり」の報告は、Read で実コードを直接確かめてから採用する。agent が誤りやすい型は次の2つ。
 
-- **重要な「差異あり」報告はReadで実コードを直接確認する**
-- agentは **Phase Xで追加する内容を「現状無いから差異」と誤判定** する傾向あり
-- 関数内部だけ見て**呼び出し元のガードを見落とす**こともある
+- 後続フェーズで足す内容を「現状に無いから差異」と判定する
+- 関数の内部だけ見て、呼び出し元のガードを見落とす
 
-### 2.3公式仕様確認（必須）
+### 3.3 公式仕様の確認
 
-対象技術の仕様はcontext7またはWebSearchで取得:
+対象技術の仕様は context7 か WebSearch で取る。
 
 ```bash
-# 例: Prisma の特定機能の仕様
-context7 → resolve-library-id("prisma") → get-library-docs(...)
+# 例: ORM の特定機能の仕様
+context7 → resolve-library-id("<ライブラリ名>") → get-library-docs(...)
 
-# 例: OIDC backchannel logout の仕様
+# 例: プロトコル仕様
 WebSearch("OIDC backchannel logout token spec")
 ```
 
-SDK型定義 ≠ 実機制約。AI / 外部API系は実呼び出しで検証 or ユーザー判断を仰ぐ。
+SDK の型定義は実機の制約を保証しない。AI・外部 API 系は実際に呼んで確かめるか、ユーザーの判断を仰ぐ。
 
-### 2.4調査結果の記録
+### 3.4 調査結果の記録
 
-結論を左右する発見だけを `05_log.md` に記録:
+結論を左右する発見だけを `05_log.md` に記録する。
 
 ```markdown
-**Phase 2 調査結果:**
+**Step 3 調査結果:**
 - 既存 X は `path/to/file.ts:L<n>` で定義。パターンは ...
 - Y は `path/to/g.ts` で実装されていないことを確認（grep 0 件）
 - 公式仕様 Z: `<source URL>` 参照、要点は ...
 ```
 
-`20_implementation_notes.md` に詳細を別記してもよい（後で01を書くときの参照源）。
+詳細は `20_implementation_notes.md` に別記してよい（01を書くときの参照源）。
 
-### 2.5一覧対象の網羅確認
+### 3.5 一覧対象の網羅確認
 
-01 / 02に一覧表（Cloud Task / Scheduler / Webhook / API / メールテンプレート等）を載せる場合、定義箇所のSSoTファイルを全件grepしてから作る:
+01 / 02に一覧表（非同期ジョブ / 定期実行 / Webhook / API / メールテンプレート等）を載せるなら、定義箇所のファイルを全件 grep してから作る。
 
 ```bash
-# 例: Cloud Scheduler の全 procedure（一覧表のエントリ数と一致するか突合）
-grep -cE 'cloudOidcTokenProcedure' src/server/routers/scheduler.ts
-grep -nE 'path:\s+"/scheduler/' src/server/routers/scheduler.ts
+# 例: 定期実行の全エンドポイント（一覧表のエントリ数と突き合わせる）
+grep -cE '<定期実行の procedure を作る関数名>' <定期実行の router 定義ファイル>
+grep -nE 'path:\s+"/<定期実行のパス接頭辞>/' <定期実行の router 定義ファイル>
 
-# 例: Cloud Task の全 queue
-grep -nE '^\s+"[a-z-]+":' src/server/domain/cloud_task.ts
+# 例: 非同期ジョブの全キュー
+grep -nE '^\s+"[a-z-]+":' <キュー定義ファイル>
 ```
 
-- grep件数 ≠ 一覧表エントリ数 なら漏れ。差分を特定して埋める
-- 検証コマンドと件数を05_log.mdに記録
-- 関連usecaseに複数ハンドラがまとまっているケース（例: `NegativeBalanceUsecase` 配下に3 Scheduler）を見落としやすい。usecase単位ではなく **router定義単位** で数える
-- 部分列挙が意図なら「一部抜粋（全N件中）」と明記
+- grep の件数と一覧表のエントリ数が違えば漏れがある。差分を特定して埋める
+- 検証コマンドと件数を05_log.md に記録する
+- 1つの usecase に複数のハンドラがまとまっていると見落としやすい。usecase 単位ではなく router 定義単位で数える
+- 部分列挙が意図なら「一部抜粋（全N件中）」と書く
 
-## Phase 3: 01ドラフト作成
+## Step 4: 01 ドラフト作成
 
-### 3.1単独 vs 並列
+### 4.1 単独か並列か
 
 #### 単独（通常）
-小〜中規模なら、章順にWriteで書き進める。
+章順に Write で書き進める。
 
 #### 並列化（ユーザー指示時のみ）
-ユーザーが `ultracode` の語を使った、または並列化を明示的に指示した場合のみWorkflowで章別並列ドラフト → 統合する。自己判断（「大規模だから」等）では起動しない:
+ユーザーが `ultracode` の語を使ったか並列化を明示したときだけ、Workflow で章別に並列ドラフトして統合する。規模を理由に自分で起動しない。
 
 ```
 Phase: Draft (parallel)
@@ -199,46 +188,42 @@ Phase: Synthesize
   - Agent F: ドラフト統合・文体統一・章番号通し
 ```
 
-各agentへの共通指示:
+各 agent への共通指示:
 - ライティング規約（/ukwhatn-writing）
 - 禁止フレーズリスト
 - 既存実装の参照源（05_log.md / 20_implementation_notes.md）
-- プロジェクトのアーキテクチャ参照（@.context/architecture-detail.md等）
+- プロジェクトのアーキテクチャ参照（PJ の `.claude/context/` 等）
 
-### 3.2章構成（例。プロジェクトに応じて調整）
+### 4.2 章構成
 
-詳細テンプレ: doc-templates.md §「01実装マスタ」
+プロジェクトに合わせて調整する。テンプレートは doc-templates.md「01実装マスタ」。
 
-### 3.3設計判断の確定
+### 4.3 設計判断の確定
 
-複数案で迷うときはAskUserQuestionで確定。
+複数案で迷うときは AskUserQuestion で確定する。
 
-- 採用案 + 不採用案 + 理由をセット
-- `30_decisions.md` または `99_history.md` に記録（既存ファイルがあれば追記、無ければ新規）
-- 01本文には**結論のみ**書く（背景は30/99に書く）
+- 採用案・不採用案・理由をセットにする
+- `30_decisions.md` か `99_history.md` に記録する（既存ファイルがあれば追記）
+- 01本文には結論だけを書く（背景は30・99に書く）
 
-### 3.4 「別途決定」を残さない
+### 4.4 「別途決定」を残さない
 
-Phase 2調査またはAskUserQuestionで必ず決め切る。残しそうになったら:
+Step 3 の調査か AskUserQuestion で決め切る。残しそうになったら次の順で扱う。
 
-1. 既存パターン（同類実装）をPhase 2で再調査
-2. それでも決まらないならAskUserQuestion
-3. それでも決まらないなら「やらないこと」セクションに移す（理由付き）
+1. 既存パターン（同類の実装）を Step 3 の手順で調べ直す
+2. それでも決まらないなら AskUserQuestion
+3. それでも決まらないなら「やらないこと」セクションに理由付きで移す
 
-## Phase 4: agent reviewループ
+## Step 5: 外部レビュー
 
-@context/agent-cli-guide.mdに従う。要点のみ:
+CLI の選択・呼び出し・`resume` による継続・Severity 別の判断・打ち切り条件は `context/agent-cli-guide.md` に従う（設計文書のラウンド上限は同ガイド「レビューループ」）。
 
-### 4.1 CLI選択
-
-CLI判定・共通呼び出しテンプレートは @context/agent-cli-guide.md「CLIの選択とfallback」「基本コマンド」を使う（codex優先・cursor fallback、両方使えなければfable subagent）。
-
-### 4.2初回プロンプト例
+### 5.1 初回プロンプト例
 
 ```text
 このリポジトリの {ABSOLUTE_PATH}/01_requirements_skeleton.md を読んで、計画をレビューしてください。
-関連する Phase 1 メモ {ABSOLUTE_PATH}/<phase1 関連ファイル> も参照してください。
-コードベース全体（{REPO_ROOT}/src/）も SSoT として参照してください。
+関連する要求深掘りのメモ {ABSOLUTE_PATH}/<関連ファイル> も参照してください。
+コードベース全体（{REPO_ROOT}/src/）も正本として参照してください。
 
 レビュー観点:
 - 抜け漏れ
@@ -254,32 +239,26 @@ CLI判定・共通呼び出しテンプレートは @context/agent-cli-guide.md�
 指摘がなければ「指摘なし」とだけ回答。
 ```
 
-### 4.3打ち切り
+### 5.2 指摘の実コードでの裏取り
 
-コマンドへの組み込み・`--resume` によるセッション継続は @context/agent-cli-guide.md「基本コマンド」に従う。
-
-打ち切り条件は @context/agent-cli-guide.md「レビューループ」に従う（数値をここに複写しない）。**本スキルの成果物は設計文書なので、実装差分より上限が少ない。**
-
-### 4.4指摘の実コード裏取り
-
-agentのAction Requiredを反映する前に、Readで実コードを直接確認する:
+Action Required を反映する前に、Read で実コードを確かめる。
 
 - 関数の処理順序
 - 呼び出し元のガード（関数内部だけでなく）
-- 「Phase 2で追加する内容」を「現状無いから差異」と誤判定していないか
+- 後続フェーズで足す内容を「現状に無いから差異」と判定していないか
 - メソッドのアクセス修飾子（public/private）
 
-事実と異なるAction Requiredは反映せず、05_log.mdに「agent誤判定」として記録。
+事実と異なる Action Required は反映せず、05_log.md に「agent 誤判定」として記録する。
 
-## Phase 5: 02抽出 + 完了報告
+## Step 6: 02 抽出 + 完了報告
 
-### 5.1抽出アプローチ
+### 6.1 抽出のやり方
 
 #### 単独
-01を章順に走査し、Whatだけ抽出して02に書く。
+01 を章順に走査し、What だけを抽出して02に書く。
 
 #### 並列化（ユーザー指示時のみ）
-ユーザーが `ultracode` の語を使った、または並列化を明示的に指示した場合のみWorkflowで章別並列抽出 → 統合する。自己判断では起動しない:
+ユーザーが `ultracode` の語を使ったか並列化を明示したときだけ、Workflow で章別に並列抽出して統合する。
 
 ```
 Phase: Draft chapters (parallel)
@@ -291,11 +270,11 @@ Phase: Synthesize
   - メタ情報表追加、末尾にリリーススケジュール
 ```
 
-### 5.2抽出ルール
+### 6.2 抽出ルール
 
-SKILL.md Phase 5「02抽出ルール」の表を参照。
+SKILL.md「Step 6」の表に従う。
 
-### 5.3完了確認のgrep
+### 6.3 完了確認の grep
 
 ```bash
 # 禁止フレーズ
@@ -309,7 +288,7 @@ grep -nE 'Usecase|Repository|Service|Adapter|procedure\.ts|router\.ts|@injectabl
 
 両方とも0件が完了基準。
 
-### 5.4完了報告フォーマット
+### 6.4 完了報告フォーマット
 
 ```markdown
 ## 完了報告
@@ -322,7 +301,7 @@ grep -nE 'Usecase|Repository|Service|Adapter|procedure\.ts|router\.ts|@injectabl
 - Q1: 採用案 X（不採用案 Y、理由: ...）
 - Q2: ...
 
-### agent review
+### 外部レビュー
 - Round <N> で Action Required = 0 達成
 - 反映件数: 計 <N> 件
 

@@ -13,11 +13,13 @@ allowed-tools: Bash, Read, Grep, Glob
 
 ## ワークフロー
 
+`<scratchpad>` はシステムプロンプトの Scratchpad directory（記載が無ければ `mktemp -d` で作ったディレクトリ）を指す。
+
 ### 1. 棚卸し
 
 ```bash
-bash ~/.claude/skills/worktree-audit/scripts/audit.sh > /tmp/audit.tsv
-column -t -s $'\t' /tmp/audit.tsv
+bash ~/.claude/skills/worktree-audit/scripts/audit.sh > <scratchpad>/audit.tsv
+column -t -s $'\t' <scratchpad>/audit.tsv
 ```
 
 スクリプトはリポジトリ探索 → `git fetch` → 3段判定を行いTSVを返す。**出力だけが文脈に入る**（スクリプト本体は読まなくてよい）。
@@ -55,8 +57,8 @@ verdictをそのまま3群に分ける。
 ```bash
 # ブランチが触ったファイルだけを base と実比較する（差分ゼロなら反映済み）
 cd <worktree>
-git diff --name-only origin/main...HEAD > /tmp/f.txt
-cat /tmp/f.txt | xargs git diff --name-status HEAD origin/main --
+git diff --name-only origin/main...HEAD > <scratchpad>/f.txt
+cat <scratchpad>/f.txt | xargs git diff --name-status HEAD origin/main --
 ```
 
 **完了基準**: 要判断だった全行が「削除可」「削除不可」のどちらかに移っている。判断がつかない行はユーザーに提示する。

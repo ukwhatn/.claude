@@ -1,12 +1,12 @@
 ---
 name: instructions-audit
-description: CLAUDE.md / AGENTS.md・skills・context・rules 等の指示ファイルの静的監査。指示ファイルの「レビューして」「監査して」「スリム化して」等の依頼時、/instructions-audit 実行時に使用。rubric で削除候補・hook/deny 移管・skill 化/Read-when 化・description 強化の4分類の指摘を修正案付きで出す。user-level と project-level 両対応。境界: 指摘の適用や個別追記は update-inst、セッション知見の反映は update-inst の retro モード、コードの監査は codebase-review。
+description: CLAUDE.md / AGENTS.md・skills・context・rules 等の指示ファイルの静的監査。指示ファイルの「レビューして」「監査して」「スリム化して」等の依頼時、/instructions-audit 実行時に使用。rubric で削除候補・hook/deny 移管・skill 化/Read-when 化・description 強化・system prompt との衝突の分類ごとに指摘を修正案付きで出す。user-level と project-level 両対応。境界: 指摘の適用や個別追記は update-inst、セッション知見の反映は update-inst の retro モード、コードの監査は codebase-review。
 allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep:*)
 ---
 
 # Instructions Audit
 
-指示ファイル（CLAUDE.md / skills / context / rules / settings.jsonのガード設定）を @context/claude-customization-guide.mdのrubric（§7）で監査し、4分類の指摘を修正案付きで報告する。**このスキルは指摘のみを行い、修正はユーザー承認後に別途実施する**（read-only）。
+指示ファイル（CLAUDE.md / skills / context / rules / settings.jsonのガード設定）を `~/.claude/context/claude-customization-guide.md` §7 の監査rubricで監査し、rubricの分類ごとに指摘を修正案付きで報告する。rubricの真実源は同ガイドで、本スキルには複写しない。このスキルは指摘だけを行い、修正はユーザー承認後に別途行う（read-only）。
 
 ## 使い方
 
@@ -16,11 +16,6 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 /instructions-audit --project     # project-level（./CLAUDE.md, ./.claude/）を監査
 /instructions-audit <path>        # 指定ディレクトリを監査
 ```
-
-## 既存設定との関係
-
-- **rubricの真実源**: @context/claude-customization-guide.md §7（本スキルはrubricを重複記載しない）
-- **Phase 0-5（@context/workflow-rules.md）**: 独立（監査は単発タスク。指摘の適用が複雑タスク化する場合のみPhase 0-5を適用する）
 
 ## ワークフロー
 
@@ -32,7 +27,7 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 ### Step 2: インベントリ作成
 
 対象の全指示ファイルを列挙し、規模を把握する:
-1. CLAUDE.mdと、そこから`@`importされるファイルを**再帰的に**辿る（@importは毎セッション常駐のため、常駐行数はimport先を全て合算して計算する）
+1. CLAUDE.mdと、そこから`@`importされるファイルを再帰的に辿る（@importは毎セッション常駐のため、常駐行数はimport先を全て合算して計算する）
 2. `skills/*/SKILL.md` の一覧・各行数・frontmatter（description長、allowed-tools有無）・references/の有無
 3. `context/`・`rules/` の一覧と行数、どこから参照されているか（@import / プレーンパス / 未参照）
 4. `settings.json` のhooks / permissions.deny・allow
@@ -41,11 +36,11 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 
 ### Step 3: rubric適用（監査本体）
 
-@context/claude-customization-guide.mdの§7 rubric（4分類）と§1-5の原則を対象に適用する。
+claude-customization-guide.md の§7 rubricと§1-6の原則を対象に適用する。
 
-**対象が大きい場合（合計500行超）はサブエージェントに委譲する**（コンテキスト保護。分割例: CLAUDE.md+context系 / skills系）。**経路はAgent tool**: 委譲先は指摘をleadに返すだけでファイルを書かない（報告のファイル生成はユーザーが求めた場合のみleadが行う）ため、委譲の既定であるherdr paneに当たらない（@context/herdr-delegation.md「経路の選択」）。サブエージェントへの指示に含めること:
+対象が合計500行を超えるなら、サブエージェントに分けて委譲する（コンテキストを守るため。分割例: CLAUDE.md+context系 / skills系）。経路は Agent tool で、`subagent_type: "general-purpose"`・`model: "opus"`（複数観点のレビュー報告）を渡す。委譲先は指摘をleadに返すだけでファイルを書かないので pane は使わない（`context/herdr-delegation.md`「経路の選択」）。サブエージェントへの指示に含めること:
 - 監査rubricとしてclaude-customization-guide.mdを読むこと
-- 指摘ごとに「対象ファイル:行」「4分類のどれか」「根拠となる原則（§番号）」「具体的な修正案」を返すこと
+- 指摘ごとに「対象ファイル:行」「rubricの分類」「根拠となる原則（§番号）」「具体的な修正案」を返すこと
 - 下記Gotchasを遵守すること
 
 - 完了基準: 全対象ファイルが監査済みで、各指摘に分類・根拠・修正案が揃っている
@@ -54,7 +49,7 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 
 以下の構成で報告する（ファイル生成はユーザーが求めた場合のみ）:
 1. **サマリ**: 常駐行数・skill数・指摘件数（分類別）
-2. **指摘一覧**: 4分類ごとに、影響の大きい順。各指摘は「対象 / 内容 / 根拠原則 / 修正案（diffまたは書き換え文）」
+2. **指摘一覧**: rubricの分類ごとに、影響の大きい順。各指摘は「対象 / 内容 / 根拠原則 / 修正案（diffまたは書き換え文）」
 3. **適用の提案**: どの指摘から適用すべきかの推奨順。適用はユーザー承認後（個別の適用は `/update-inst` スキルを実行する）
 
 - 完了基準: ユーザーが各指摘にyes/noで判断できる粒度になっている

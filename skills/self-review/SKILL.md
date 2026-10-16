@@ -11,7 +11,7 @@ allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(rg:*)
 
 ## 既存設定との関係
 
-- **Phase 4品質確認（@context/workflow-rules.md）**: lint/format/typecheck/testを補完する。agent reviewの前に実施すると指摘ノイズが減る
+- **Phase 4品質確認（`context/workflow-rules.md`）**: lint/format/typecheck/testを補完する。外部レビューの前に行うと指摘のノイズが減る
 - **pr-reviewスキル**: 他者PRのレビュー用。本スキルは自分のブランチのPR提出前チェック用
 
 ## ワークフロー
@@ -26,9 +26,9 @@ git diff <BASE_BRANCH>...HEAD
 git status   # 未コミット変更の確認
 ```
 
-diffは省略せず全ファイル確認する。一部だけ確認しても意味がない。
+diffは省略せず全ファイル確認する（一部だけでは消し忘れを拾えない）。
 
-### 2. 消し忘れ・残存の検出（必須）
+### 2. 消し忘れ・残存の検出
 
 diffで**削除・リネームされた識別子**を抽出し、リポジトリ全体で残存検索する:
 
@@ -38,7 +38,7 @@ diffで**削除・リネームされた識別子**を抽出し、リポジトリ
 
 ```bash
 # 例: 削除した識別子ごとに実行
-git grep -n "konbini-payment-requires-action"
+git grep -n "<削除した識別子>"
 ```
 
 - 残存あり → 消し忘れとして報告（削除対象か、意図的に残すのかを判定）
@@ -85,7 +85,3 @@ git grep -n "konbini-payment-requires-action"
 
 - 検出した問題の修正は報告後にユーザー判断を仰ぐ（勝手にファイルを戻さない。特に `git checkout --` はformat副作用と断定できるファイルのみ・判断不能時はユーザー確認）
 - 「漏れなく」は要件に対する漏れの確認であり、無関係な要素の網羅列挙ではない（スコープ膨張禁止）
-
-## 既存設定への参照
-
-- @context/workflow-rules.md

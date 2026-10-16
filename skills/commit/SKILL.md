@@ -1,6 +1,6 @@
 ---
 name: commit
-description: 変更をコミットする。/commit 実行時、「コミットして」「pushして」等の依頼時に使用。--push 引数または「pushして」の依頼で push も行う。
+description: 変更を git-cz 形式でコミットする。リポジトリの直コミット可否の判定手順と、push 後の CI・conflict の確認を含む。/commit 実行時、「コミットして」「pushして」等の依頼時に使用。--push 引数または「pushして」の依頼で push も行う。境界: PR 作成は create-draft-pr、PR コメントへの対応コミットは pr-comment から呼ばれる。
 allowed-tools: Bash(git:*)
 ---
 

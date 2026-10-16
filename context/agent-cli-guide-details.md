@@ -1,14 +1,6 @@
 # agent cli使用ガイド（詳細: cursor・Codex主体・pane・reviewer分離・モデル）
 
-Read when: `context/agent-cli-guide.md` 冒頭の条件に該当したとき（cursorで実行する / 実行主体がCodex / paneでループを回す / reviewerを別agentに分ける / モデルを既定から変える）。プロンプト本文・打ち切り条件・Severity判断・注意事項は本体が真実源で、ここには書かない。
-
-## 目次
-
-- 実行主体がCodexの場合
-- cursor（`agent` / `cursor-agent`）
-- paneでループを回す
-- reviewerを別agentに分ける（Claude Code）
-- モデル選択
+`context/agent-cli-guide.md` の補足で、cursorでの実行・実行主体がCodexのとき・paneでのループ・reviewerの分離・モデルの変更を扱う。プロンプト本文・打ち切り条件・Severity判断・注意事項は本体が真実源で、ここには書かない。
 
 ## 実行主体がCodexの場合
 
@@ -35,9 +27,9 @@ agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-m
 | オプション | 説明 |
 |---|---|
 | `-p, --print` | 非対話モード |
-| `--trust` | **必須**。省略するとワークスペース信頼の対話確認が出てnon-interactiveで失敗する |
+| `--trust` | 省略するとワークスペース信頼の対話確認が出て、non-interactiveで失敗する |
 | `--model <model>` | effort / speedを名前に含む合成slug（例: `gpt-5.6-sol-medium`）。実在は `agent --list-models` で確認し、無ければ一覧で最も近いgpt-5.6-sol系を使う |
-| `--output-format json` | session_idの取得に必須。**`stream-json` はバッファリングでハングし得るので使わない** |
+| `--output-format json` | session_idの取得に要る。`stream-json` はバッファリングでハングし得るので使わない |
 | `--resume <session_id>` | セッション継続 |
 
 - effort表記はモデル系列で異なる（gpt-5.6-sol系・gpt-5.4以前・claude系は `medium` / `xhigh`、gpt-5.5系のxhigh相当のみ `extra-high`）
@@ -46,7 +38,7 @@ agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-m
 
 ## paneでループを回す
 
-`codex exec` 直叩きは1〜2ラウンドで終える単発レビュー向け。**ラウンドが長引く見込み・進捗を画面で追いたい・指摘と修正のやり取りをleadのコンテキストから分離したい**ときはpaneに切り替える（経路選択の一般原則は `context/herdr-delegation.md`「経路の選択」）。
+`codex exec` 直叩きは1〜2ラウンドで終える単発レビュー向け。ラウンドが長引く見込み・進捗を画面で追いたい・指摘と修正のやり取りをleadのコンテキストから分離したいときはpaneに切り替える（経路選択の一般原則は `context/herdr-delegation.md`「経路の選択」）。
 
 1. `bin/herdr-delegate.sh --kind codex` で起動する。tabは既定で残るので、次のラウンドをそのまま送れる（`--close` は付けない）
 2. 初回の指示書に本体「プロンプト」の本文をそのまま渡す
@@ -74,6 +66,8 @@ spawn指示テンプレート:
 reviewerは計画レビューから実装レビューまで存続させてよい。CLIのセッションはPhaseごとに新規に作るが、reviewer自体は再利用してコードベースの理解を保つ。
 
 ## モデル選択
+
+モデルslugは2026-07時点のもの。使用前に `codex --help` 等で実在を確認する。
 
 | CLI | 指定 | 用途 |
 |---|---|---|

@@ -61,7 +61,7 @@ Slack のアプリ連携を認可できないワークスペースで、ユー�
 "drafts": {"mcp": "<Slack MCP のサーバ名>", "channel": "<そのワークスペースの自分の DM の ID>"}
 ```
 
-`drafts` が無い、またはその MCP がセッションに無い（ツール一覧に `mcp__<サーバ名>__*` が無い）ときは、下書きを応答本文にコードブロックで出す。
+`drafts` が無い、またはその MCP がセッションに無い（ツール一覧に `mcp__<サーバ名>__*` が無い）ときは、下書きを応答本文に貼り先の書式のまま出す（コードブロックで包まない。`/ukwhatn-writing` スキルの「下書きの出し方」）。
 
 下書き用の MCP は user スコープに登録しておく（どのプロジェクトのセッションからでも送れるように）。`~/.claude.json` は同期されないので、マシンごとに `claude mcp add --scope user --transport http <サーバ名> https://mcp.slack.com/mcp` を実行する。OAuth の設定（`--client-id`・`--callback-port`）は、既に動いている Slack MCP の設定（`claude mcp get <既存のサーバ名>`）と同じ値にする。登録後、ユーザーが `/mcp` で認証し、送り先のワークスペースを選ぶ。自分の DM の ID は、自分の user ID 宛てに 1 回送ると返る `channel_id` で分かる
 

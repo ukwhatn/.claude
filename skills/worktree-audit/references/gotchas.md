@@ -9,8 +9,8 @@
 反映の有無を見るのはtwo-dot比較。
 
 ```bash
-git diff --name-only origin/main...HEAD > /tmp/f.txt   # ブランチが触ったファイル
-cat /tmp/f.txt | xargs git diff --name-status HEAD origin/main --
+git diff --name-only origin/main...HEAD > <scratchpad>/f.txt   # ブランチが触ったファイル
+cat <scratchpad>/f.txt | xargs git diff --name-status HEAD origin/main --
 ```
 
 出力が空なら、そのブランチの変更は全てbaseに入っている。
@@ -29,7 +29,7 @@ mb=$(git merge-base HEAD origin/main)
 
 ```bash
 mc=$(gh pr view <PR番号> --json mergeCommit -q .mergeCommit.oid)
-git diff --name-status HEAD "$mc" -- $(cat /tmp/f.txt | tr '\n' ' ')
+git diff --name-status HEAD "$mc" -- $(cat <scratchpad>/f.txt | tr '\n' ' ')
 ```
 
 ## 2. squashマージは `--merged` で検出できない

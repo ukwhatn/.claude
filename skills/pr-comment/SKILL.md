@@ -7,13 +7,6 @@ description: PR の特定レビューコメント（discussion）への対応（
 
 PRに付いた特定のレビューコメント（discussion）を取得し、指摘への対応（実装修正）と返信ドラフト作成までを一括で行う。
 
-## 既存設定との関係
-
-- **pr-reviewスキル**: PR全体のレビュー用。本スキルは個別コメントへの対応用
-- **commitスキル**: 対応コミットは/commit準拠（git-cz形式）
-- **ukwhatn-writingスキル**: 返信ドラフト作成時に `/ukwhatn-writing` を実行する（文体を意識するだけではGitHub向けガイドの実体がロードされない）
-- **worktree運用（user-level AGENTS.md）**: コード修正を伴うためworktree運用ルールに従う
-
 ## ワークフロー
 
 ### 1. アカウント確認（EMU誤アカウント防止）
@@ -46,7 +39,7 @@ comment IDが不明（「◯◯という指摘」等の口頭指定）の場合�
 gh pr view <number> --json headRefName,headRefOid,baseRefName
 ```
 
-- 修正を伴う場合: PR headブランチをPJのworktree手段でcheckout（PJ CLAUDE.mdに定義された手段を使用）
+- 修正を伴う場合: PR headブランチをworktreeでcheckoutする（PJ CLAUDE.mdに手段の定義があればそれを使う。作る前に `context/worktree-guide.md` を Read する）
 - 対応方針の検討のみ（修正不要と判断される可能性が高い場合）: `git fetch origin <headRefName>` + FETCH_HEADの読解でも可
 
 ### 4. 指摘内容の理解と対応方針の提示
@@ -57,14 +50,16 @@ gh pr view <number> --json headRefName,headRefOid,baseRefName
 
 ### 5. 実装対応
 
-- 修正を実装し、品質チェック（PJ CLAUDE.mdのコマンド）を実行
-- コミットは/commitスキル準拠（git-cz形式・絵文字なし）。push可否はユーザー指示に従う
+- 修正を実装し、品質チェック（PJ CLAUDE.mdのコマンド）を実行する。変えた挙動はローカルで実際に通して確かめる
+- コミットは `/commit` スキルで作る
+- push: 自分が出した PR のブランチへは、そのまま push してよい（PR を出した承認に含まれる。AGENTS.md「確認が要るもの」）。他人の PR のブランチへの push は、ユーザーの指示があるときだけ
+- push したら、CI の結果と conflict の有無を確かめてから報告する（`gh pr view <number> --json mergeable,mergeStateStatus,statusCheckRollup`）。失敗していれば指摘を待たずに原因を調べる
 
 ### 6. 返信ドラフト作成
 
-`/ukwhatn-writing` スキルを実行して返信ドラフトを作成し、対応コミットのハッシュを添えて提示する。
+`/ukwhatn-writing` スキルを実行して返信ドラフトを作成し、対応コミットのハッシュを添えて提示する（文体を意識するだけでは GitHub 向けガイドの中身が読み込まれないため、スキルを実行する）。
 
-**投稿はユーザー確認後**（対外コミュニケーションのため勝手に投稿しない）:
+投稿はドラフトを見たユーザーの承認を得てから行う（相手に見える対外の文なので）:
 
 ```bash
 # 承認後のみ実行
@@ -73,10 +68,5 @@ gh api repos/<owner>/<repo>/pulls/<number>/comments/<id>/replies -f body='<返�
 
 ## 注意事項
 
-- 返信の自動投稿禁止（必ずドラフト提示→ユーザー承認）
 - 同一PRに複数の指摘対応を依頼された場合は、指摘ごとに対応方針を整理してから着手する（コミットは指摘単位で分割）
 - コメントが解決済み（resolved）またはoutdatedの場合はその旨を報告して指示を仰ぐ
-
-## 既存設定への参照
-
-- @context/workflow-rules.md

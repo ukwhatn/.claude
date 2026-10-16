@@ -6,12 +6,6 @@ allowed-tools: Read, Grep, Bash(gh:*), Bash(git:*)
 
 # PRレビュー
 
-## トリガー条件
-
-- PRのレビューを依頼された場合（「レビューして」「見ておいて」等）
-- 対象はPR番号・URL・ブランチ名・Slack/Confluenceリンクのいずれでも指定され得る
-- 非トリガー: PRのCI状態確認、マージ可否の事務確認、PR作成の相談
-
 ## 実行手順
 
 ### 0. 入力の正規化（対象PRの特定）
@@ -40,29 +34,22 @@ gh pr diff <番号>
 | diff読解 + `git grep`/`rg` での静的確認で足りる | checkout不要（現在のブランチのまま） |
 | ビルド・テスト実行・型チェック等の動的検証が必要 | PJのworktree手段でPR headをcheckout（PJ CLAUDE.mdに定義された手段を使用） |
 
-**注意**: checkoutを省略した場合でも、Step 4の「削除・リネームの残存確認」は必ず全リポジトリ検索で実施する（diffに現れないファイルの見落とし防止）。その際、現在のローカルツリーではなく**PR headのツリーを検索対象にする**こと:
+**注意**: checkoutを省略した場合でも、手順3の「削除・リネームの残存確認」は必ず全リポジトリ検索で実施する（diffに現れないファイルの見落とし防止）。その際、現在のローカルツリーではなく**PR headのツリーを検索対象にする**こと:
 
 ```bash
 git fetch origin pull/<番号>/head
 git grep -n "<identifier>" FETCH_HEAD
 ```
 
-### 3. PJルールの確認
-
-CLAUDE.mdを読み、以下を把握:
-- アーキテクチャルール
-- 命名規則
-- コーディング規約
-
-### 4. Claude Codeによるレビュー
+### 3. Claude Codeによるレビュー
 
 変更された各ファイルについて:
 1. ファイル全体を読む（diffだけでなく）
 2. 既存パターンとの整合性を確認
 3. 問題点を特定
-4. **削除・リネームの残存確認（必須）**: diffで削除・リネームされた識別子（メソッド名・クラス名・定数・env key・docker service名・キュー名・設定キー等）を `git grep` / `rg` で**PR headのツリー全体**から検索する（checkout済みならそのツリー、未checkoutならStep 2の `git grep <pattern> FETCH_HEAD` 方式）。検索対象にはコードだけでなくconfig / docker-compose / .env / CI定義 / docsを含める。残存があればCriticalに昇格（過去実績: diffのみの確認でdocker-compose 2ファイルのキュー定義残存を見落とし）
+4. **削除・リネームの残存確認（必須）**: diffで削除・リネームされた識別子（メソッド名・クラス名・定数・env key・docker service名・キュー名・設定キー等）を `git grep` / `rg` で**PR headのツリー全体**から検索する（checkout済みならそのツリー、未checkoutなら手順2の `git grep <pattern> FETCH_HEAD` 方式）。検索対象にはコードだけでなくconfig / docker-compose / .env / CI定義 / docsを含める。残存があればCriticalに昇格（diff だけを見ると、config・compose・CI 定義に残った参照を見落とすため）
 
-### 4.5棄却と投稿前の裏取り
+### 4. 棄却と投稿前の裏取り
 
 指摘を並べた直後に、投稿・報告する前に2段通す。
 
@@ -75,9 +62,9 @@ CLAUDE.mdを読み、以下を把握:
 - 確かめられなかったものは断定せず `〜ではないかと思います（おそらく）` の表現に弱める。弱められないなら指摘そのものを取り下げる。逆に、ここで確かめた指摘（コードの経路を追った・実測した）は断定で書く。確かめていない部分があるなら、その部分だけをぼかす
 - 設定値・タイムアウト・上限は該当リポジトリの実設定を読んで確認する（フレームワークの既定値を前提にしない）
 
-### 5. 外部CLIによるレビュー（codex優先 / cursor fallback）
+### 5. 外部CLIによるレビュー
 
-別モデルの観点を追加する。CLI判定（codex優先／cursor fallback、両方使えなければfable subagent）・コマンド形式（codexの`-c model_reasoning_effort`・cursorの`--trust`／`--output-format json`・jq抽出等）は @context/agent-cli-guide.md「CLIの選択とfallback」「基本コマンド」に従う。プロンプト本文は共通で以下を渡す:
+別モデルの観点を追加する。実行前に `context/agent-cli-guide.md` を Read し、CLI の選択と fallback・コマンド形式はそれに従う（Agent tool に fallback するときは `model: "fable"` を渡す）。プロンプト本文は共通で以下を渡す:
 
 ```
 gh pr diff <番号> を実行してPR #<番号> の変更内容をレビューしてください。
@@ -116,12 +103,18 @@ Claude Codeとagentの両方の指摘を統合し、以下の形式でレポー�
 ### High
 - [指摘内容]
 
+### Medium
+- [指摘内容]
+
 ## agent（外部CLI）による指摘
 
 ### Critical
 - [指摘内容]
 
 ### High
+- [指摘内容]
+
+### Medium
 - [指摘内容]
 
 ## 統合サマリ
@@ -145,4 +138,3 @@ Claude Codeとagentの両方の指摘を統合し、以下の形式でレポー�
 | Critical | バグ、セキュリティ、破壊的変更 | マージ前に必須修正 |
 | High | アーキテクチャ違反、テスト不足 | 強く推奨 |
 | Medium | 命名、コメント | 改善推奨 |
-| Good | 良い実装 | 賞賛 |

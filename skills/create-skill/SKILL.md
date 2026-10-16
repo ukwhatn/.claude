@@ -5,7 +5,7 @@ description: スキルを新規作成する。「スキルを作って」「こ�
 
 # Create Skill
 
-既存のuser-level/project-level設定と整合性が取れたスキルを自動作成する。
+既存の user-level / project-level 設定と整合したスキルを作る。
 
 ## 使い方
 
@@ -15,65 +15,32 @@ description: スキルを新規作成する。「スキルを作って」「こ�
 /create-skill --project <内容>       # project scope
 ```
 
-## ワークフロー
+## 手順
 
-### Step 1: 引数パース
+### Step 1: 既存設定を読む
 
-```
-入力: /create-skill --project 大規模タスク分割ワークフロー
-→ scope: project
-→ 内容: 大規模タスク分割ワークフロー
-```
+- `~/.claude/AGENTS.md`（user-level の実体。`CLAUDE.md` は互換 symlink）
+- [references/skill-design.md](references/skill-design.md)（スキルの設計原則。作る前に末尾まで読む）
+- `~/.claude/context/claude-customization-guide.md`（置き場所の判定・公開リポジトリに書く内容・書き方・§7 監査 rubric）
+- `~/.claude/skills/*/SKILL.md` の frontmatter（name・description）。同じ機能のスキルが無いか、description の境界が衝突しないかを見る
+- `--project` のときは追加で `./CLAUDE.md`・`./.claude/context/*.md`・`./.claude/rules/*.md`
 
-### Step 2: 既存設定の読み込み（必須）
+### Step 2: 置き場所を決める
 
-**常に読み込む:**
-- `~/.claude/AGENTS.md` - user-level設定（実体。`CLAUDE.md`は互換symlink）
-- `~/.claude/context/*.md` - 特に以下が重要:
-  - `claude-customization-guide.md` - 設計原則、Skills/Commands/CLAUDE.mdの使い分け
-  - `workflow-rules.md` - Phase 0-5ワークフロー
-  - `memory-file-formats.md` - メモリディレクトリ構造
+claude-customization-guide.md「1. 知識の置き場所判定」で、Skill にするか CLAUDE.md に足すかを決める。常時適用するルールで CLAUDE.md が200行以下に収まるなら CLAUDE.md に足す。Commands（`.claude/commands/`）はレガシー形式なので新規には使わない。
 
-**--project時に追加で読み込む:**
-- `./CLAUDE.md` - project-level設定
-- `./.claude/context/*.md` - project-level参照ファイル
-- `./.claude/rules/*.md` - project-levelルール
+スコープ（user / project）も同ガイド「スコープ配置」で決める。既存スキルとの重複・スコープの判断が割れるときは、ユーザーに確かめる（Claude Code: AskUserQuestion）。
 
-**既存スキルの確認:**
-- `~/.claude/skills/*/SKILL.md` のfrontmatter（name, description）を取得
-- 重複・競合がないか確認
+### Step 3: 設計する
 
-### Step 3: Skill vs Command vs CLAUDE.md判定
+設計原則（frontmatter・description・本文の長さ・references の分け方・degrees of freedom）は references/skill-design.md に従う。加えて次を決める。
 
-@context/claude-customization-guide.mdに従い判定:
+- **invocation**: 誰が到達すべきかで選ぶ。モデル自身や他スキルが到達すべきなら model-invoked（既定。description が常時コンテキストに載る）。手動でしか呼ばないなら `disable-model-invocation: true`（description は人間向けの一行要約でよい）
+- **依存する他スキル・context**: 独立の節にせず、読むタイミングと一緒に本文の該当手順に書く（例: 「手順3の前に `context/x.md` を Read する」）。他スキルへの依存は「`/xxx` を実行する」の形にし、他スキルのディレクトリ内のファイルを直接参照しない
+- **委譲**: Agent tool を呼ぶ手順には `model` の値を書く（用途と値の対応は `context/herdr-delegation.md`「モデルの選択」）
 
-| 選択 | 条件 |
-|------|------|
-| **Skill**（推奨） | 自動トリガー、ドメイン知識、スクリプト同梱 |
-| **CLAUDE.md追記** | 常時適用ルール、200行以下に収まる |
+description の例:
 
-**NOTE**: Commands（`.claude/commands/`）はレガシー形式。新規作成時はSkills形式を使用する。
-
-### Step 4: 整合性チェック
-
-1. **ワークフローとの整合**: Phase 0-5、4ステップ構造との関係
-2. **ディレクトリ構造**: MEMORY_DIR、memory/、tasks/等との整合
-3. **既存スキルとの重複**: 同じ機能を持つスキルがないか
-4. **スコープ判定**: user vs project（@context/claude-customization-guide.md参照）
-
-問題があればユーザーに確認する（Claude Code: AskUserQuestion）。
-
-### Step 5: スキル設計
-
-**設計原則（@context/claude-customization-guide.md）:**
-- SKILL.mdは**500行以下**（公式上限）
-- descriptionに「**何をするか**」+「**いつ使うか**」+「**使わない条件**（境界・類似skillとの棲み分け。誤発火と発火漏れの両方を防ぐ）」
-- descriptionに `<` `>` を含めない
-- 詳細は別ファイルに分割（参照は**1階層のみ**。100行超のreferenceには冒頭に目次）
-- 既存設定を`@context/xxx.md`形式で参照（重複記載しない）
-- 後述「スキル設計原則（予測可能性）」に従う
-
-**description例:**
 ```yaml
 # Good
 description: PRレビュー。PR番号・ブランチ名指定時またはレビュー依頼時に使用。境界: ローカル未コミット変更→code-review、自ブランチの提出前確認→self-review。
@@ -82,119 +49,54 @@ description: PRレビュー。PR番号・ブランチ名指定時またはレビ
 description: PRレビュー。
 ```
 
-### Step 6: スキル作成
+### Step 4: 作る
 
-**配置先:**
+配置先:
+
 - `--user`: `~/.claude/skills/<skill-name>/`
 - `--project`: `./.claude/skills/<skill-name>/`
 
-**構造（Progressive Disclosure）:**
 ```
 <skill-name>/
-├── SKILL.md              # Level 2: トリガー時ロード（500行以下）
-└── references/           # Level 3: 必要時のみロード
+├── SKILL.md              # invoke 時にロード（500行未満）
+└── references/           # 必要時のみロード
     └── detail.md
 ```
 
-### Step 7: 確認・検証
-
-作成後、以下を報告:
-- 作成したファイル一覧
-- 既存設定との関係
-- 使い方の例
-
-**検証（evaluation-driven、公式推奨）:**
-- 可能なら代表的な実タスク（作り物でないもの）でスキルを発火させ、挙動を観察する
-- 詰まる箇所・読まれないファイル・予想外の探索順があれば本文に反映する（観察→改善の反復）
-
-### Step 8: コミット
-
-user-level（`~/.claude/skills/`）に作成した場合は、そのターン内で `/commit --push` を実行し、コミットとpushまで完了させる（3PC間で同期しているため、変更を手元に残さない）。
-
-project-level（`<project>/.claude/skills/`）に作成した場合は、実装開始前ゲートの「直コミット可否の判定」（@context/workflow-rules.md）に従う。
-
-## SKILL.mdテンプレート
+テンプレート:
 
 ```yaml
 ---
 name: <skill-name>
-description: <何をするか>。<いつ使うか>。使用タイミング: (1) xxx、(2) yyy。境界: <使わない条件・棲み分け>。
+description: <何をするか>。<いつ使うか>。境界: <使わない条件・棲み分け>。
 # オプション:
-# allowed-tools: Read, Grep, Glob          # ツールの事前承認（permission prompt削減。制限ではない — 制限はdisallowed-tools）
-# disallowed-tools: Write, Edit            # ツールをプールから除去（実際の制限）
-# disable-model-invocation: true           # 手動起動のみ（副作用のある操作向け）
+# allowed-tools: Read, Grep, Glob          # ツールの事前承認（制限ではない。制限は disallowed-tools）
+# disallowed-tools: Write, Edit            # ツールをプールから除去
+# disable-model-invocation: true           # 手動起動のみ
 ---
 
 # <Skill Name>
 
-[1-2文で概要]
+[1〜2文で概要]
 
-## 既存設定との関係
+## 手順
 
-- **Phase 0-5（@context/workflow-rules.md）**: [補完/拡張/独立]
-- **メモリディレクトリ（@context/memory-file-formats.md）**: [既存構造を使用/拡張]
-
-## ワークフロー
-
-[具体的な手順]
-
-## 既存設定への参照
-
-- @context/workflow-rules.md
-- @context/memory-file-formats.md
+[具体的な手順。依存する context・他スキルは、使う手順の中で書く]
 ```
 
-## スキル設計原則（予測可能性）
+### Step 5: 試して報告する
 
-スキルの存在意義は、確率的なシステムから決定性を引き出すこと。根本の価値は**予測可能性**——毎回同じ出力ではなく、毎回同じ**プロセス**を踏ませること。以下はすべてその手段（出典: mattpocock/skillsのwriting-great-skillsを本環境向けに要約）。
+代表的な実タスク（作り物でないもの）でスキルを発火させ、挙動を見る。詰まる箇所・読まれないファイル・予想外の探索順があれば本文に反映する。期待どおり動かないときは次で診断する。
 
-### invocationの選択
+- **早期完了**: 手順の終わりの状態を具体的に書く。それでも直らなければ後続の手順を別ファイルに分ける
+- **重複**: 同じ意味が複数箇所にある → 1か所に集める
+- **堆積**: 追記で溜まった古い層 → 削る
+- **肥大**: 長すぎる → references/ に出すか分割する
+- **no-op**: デフォルト挙動を変えない行 → 削る
 
-- **model-invoked**（デフォルト）: モデルが自律発火でき、他スキルからも到達できる。代償としてdescriptionが常時コンテキストに載る（約100トークン/スキル）
-- **user-invoked**（`disable-model-invocation: true`）: コンテキスト負荷ゼロだが、存在を覚えておく認知負荷をユーザーが払う。descriptionはモデルの発火に使われないため、人間向けの一行要約でよい（トリガー列挙は不要）
-- 判断基準: 「副作用があるか」だけでなく「**誰が到達すべきか**」で選ぶ。モデル自身や他スキルが到達すべきならmodel-invoked、手動でしか呼ばないならuser-invoked
+作ったファイルの一覧と使い方の例を報告する。
 
-### 完了基準（completion criterion）
+### Step 6: コミット
 
-- 各ステップの終わりに、**チェック可能**（done/not-doneが判定できる）で、必要なら**網羅的**（「変更した全ファイルを確認」等）な完了基準を置く
-- 完了基準が曖昧だと早期完了（終わった気になって次へ進む）が起きる
-
-### リーディングワード
-
-- モデルの事前学習に既にある強い一語（relentless、tight等）は、少ないトークンで行動全体を固定する。冗長な言い回し（「速く・決定的で・低オーバーヘッドな」→ tight）は一語にまとめる
-- デフォルト挙動と変わらない弱い語（「丁寧に」等）はno-op。より強い語に置き換えるか削除する
-
-### 失敗モード診断（スキルが期待どおり動かない時）
-
-- **早期完了**: まず完了基準を先鋭化する。それでも直らない場合のみ後続ステップを別スキル/別ファイルに分割して視界から隠す
-- **重複**: 同じ意味が複数箇所にある → 単一の真実源に集約
-- **堆積**: 「追記は安全・削除は怖い」で溜まった古い層 → 定期的に削除する
-- **肥大**: 全行が生きていても長すぎる → references/への開示か分割
-- **no-op**: 「この行はデフォルト挙動を変えるか？」でテストし、変えないなら文ごと削除する
-
-## 禁止事項
-
-- 既存設定との整合性確認なしでスキル作成
-- 既存スキルと重複する機能の作成
-- SKILL.mdに500行以上記載
-- references/内で更にファイル参照（1階層まで）
-- model-invokedスキルのdescriptionに「いつ使うか」がない（user-invokedは人間向け一行要約でよい）
-- 他スキルのディレクトリ内ファイルへの直接パス参照（依存は`/xxx`プロース形式で書く）
-- Commands形式（`.claude/commands/`）での新規作成
-
-## チェックリスト
-
-- [ ] ~/.claude/AGENTS.mdを読んだか
-- [ ] ~/.claude/context/claude-customization-guide.mdを確認したか
-- [ ] 既存スキル一覧を確認したか
-- [ ] Skill/CLAUDE.md追記の判定をしたか
-- [ ] descriptionに「何を」「いつ」「使わない条件（境界）」が含まれるか（model-invokedの場合）
-- [ ] descriptionに `<` `>` を含めていないか
-- [ ] descriptionの同義語トリガー重複を排したか
-- [ ] 各ステップにチェック可能な完了基準があるか
-- [ ] no-op行（デフォルト挙動を変えない行）がないか
-- [ ] SKILL.mdは500行以下か
-- [ ] @context/xxx.md形式で参照を記載したか
-- [ ] read-onlyスキルならallowed-tools（事前承認）を付与したか
-- [ ] 新フロントマター（disallowed-tools, disable-model-invocation等）を検討したか
-- [ ] Gotchas（既知の注意点）・入出力例の追加を検討したか
+- user-level（`~/.claude/skills/`）に作ったら、そのターンで `/commit --push` を実行する（AGENTS.md「コミット・ブランチ・PR」）
+- project-level に作ったら、`/commit` の直コミット可否の判定に従う

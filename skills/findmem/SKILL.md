@@ -1,17 +1,12 @@
 ---
 name: findmem
-description: メモリディレクトリの過去タスク・issue をキーワードや変更対象ファイルのパスで検索し、関連する作業履歴を表示する。/findmem 実行時、Phase 1.0 の過去タスク・issue 参照時、編集予定のファイルに既知の指摘が無いか確認する時に使用。
+description: メモリディレクトリの過去タスク・issue をキーワードや変更対象ファイルのパスで検索し、関連する作業履歴を表示する。/findmem 実行時、Phase 0・1 の過去タスク・issue 参照時、PR 番号・チケット番号・機能名で対象が特定できる依頼を受けた時、編集予定のファイルに既知の指摘が無いか確認する時に使用。境界: セッションの引き継ぎ文書を書くのは handoff、コードベース全体の指摘を新しく洗い出すのは codebase-review。
 allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(grep:*)
 ---
 
 # findmem - メモリディレクトリ探索
 
 過去の作業メモリとissueファイルをキーワードで横断検索し、関連する知見を素早く見つける。
-
-## 既存設定との関係
-
-- **Phase 0-5（@context/workflow-rules.md）**: Phase 1.0「過去タスク・issueの参照」を支援
-- **メモリディレクトリ（@context/memory-file-formats.md）**: `${MEMORY_DIR}/memory/` と `${MEMORY_DIR}/issues/` を検索対象とする
 
 ## 引数
 
