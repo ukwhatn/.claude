@@ -127,7 +127,7 @@ Step 6: 02 抽出         → 01 から What だけ抽出して書き、完了�
 
 調査手段:
 
-- Agent tool で `subagent_type: "Explore"`・`model: "sonnet"` を3〜5並列で起動し、ファイル・関数を洗い出す（Explore は書き込まず結果を返すだけなので、pane でなく Agent tool を使う。`context/herdr-delegation.md`「経路の選択」）
+- Agent tool で `subagent_type: "Explore"`・`model: "sonnet"` を3〜5並列で起動し、ファイル・関数を洗い出す（Explore は書き込まず結果を返すだけなので、pane でなく Agent tool を使う。`context/delegation.md`「経路の選択」）
 - 公式仕様は context7 / WebSearch で確かめる
 
 並列調査のパターンは references/workflow-detail.md「Step 3」。

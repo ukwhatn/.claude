@@ -37,7 +37,7 @@ claude-customization-guide.md「1. 知識の置き場所判定」で、Skill に
 
 - **invocation**: 誰が到達すべきかで選ぶ。モデル自身や他スキルが到達すべきなら model-invoked（既定。description が常時コンテキストに載る）。手動でしか呼ばないなら `disable-model-invocation: true`（description は人間向けの一行要約でよい）
 - **依存する他スキル・context**: 独立の節にせず、読むタイミングと一緒に本文の該当手順に書く（例: 「手順3の前に `context/x.md` を Read する」）。他スキルへの依存は「`/xxx` を実行する」の形にし、他スキルのディレクトリ内のファイルを直接参照しない
-- **委譲**: Agent tool を呼ぶ手順には `model` の値を書く（用途と値の対応は `context/herdr-delegation.md`「モデルの選択」）
+- **委譲**: Agent tool を呼ぶ手順には `model` の値を書く（用途と値の対応は `context/delegation.md`「モデルの選択」）
 
 description の例:
 

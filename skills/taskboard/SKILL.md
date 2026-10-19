@@ -87,7 +87,21 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 
 `session_list` で pane と状態を見て、`session_prompt` で文字を送る。委譲先への指示と、止まっている自分の委譲先への返答に使う。**動いている人のセッション（`working`）と、自分が起こしたのでないセッションには送らない。**
 
-委譲先を新しく起こすときは `session_start`（`task_id` 省略で自分のタスク、`cwd` 省略で自分の cwd、`worktree_branch` で worktree を切る）。エージェントは `kind`（`claude` / `codex`）、Claude Code のモデルと effort は `model`（`opus` / `fable` / `sonnet`）と `effort`（`low` / `medium` / `high` / `xhigh` / `max`）で選び、省略すると `opus` / `medium`。前の版の `preset` も受けるが、`model`・`effort` を渡すとそちらが優先する。daemon が tab と agent を作って起動プロンプト（省略時は列の既定）を送り、そのタスクに結ぶ。進み具合は `session_list` に出る。herdr の `agent start` を自分で叩くより、紐づけと起動プロンプトが揃うこちらを使う。
+セッションには herdr の pane で動くもの（端末）と、会話（daemon が stream-json で動かす Claude Code。端末を持たない）がある。`session_list` は会話を別の節に出す。会話を扱うときは `pane` の代わりに `conversation_id`（先頭 8 字以上）を渡す（`session_prompt`・`session_stop`・`session_resume`・`session_history`・`session_rename`）。
+
+- 会話だけの tool: `session_answer`（会話が待っている問い（AskUserQuestion・権限の確認・計画の承認）に答える。答えを省くと何を聞かれているかを返す）、`session_control`（model・effort・権限のモードを替える、今の生成を止める）、`session_fork`（途中の発言から分ける）
+- `session_screen`・`session_keys` は pane だけ。会話の中身は `session_history` の `conversation_id`、問いは `session_answer` で扱う
+- 定期起動の回（claude で、引数を会話に読み替えられるもの）とオーケストレーターは会話で動く。会話を起こせないときだけ端末で動く
+
+委譲先を新しく起こすときは `session_start`（`task_id` 省略で自分のタスク、`cwd` 省略で自分の cwd、`worktree_branch` で worktree を切る）。
+
+- エージェントは `kind`（`claude` / `codex`）。claude は既定で会話として起きる（`runner: terminal` で端末）。codex は端末
+- Claude Code のモデルと effort は `model`（`opus` / `fable` / `sonnet`）と `effort`（`low` / `medium` / `high` / `xhigh` / `max`）で選び、省略すると `opus` / `medium`。前の版の `preset` も受けるが、`model`・`effort` を渡すとそちらが優先する
+- 会話は `notify` が入っていると、委譲先のターンの終わり（最後の返事つき）と問いを、起こした側のセッションに taskboard が発言として入れる。省くと、taskboard の pane か会話から起こしたときは入る（オーケストレーターからは切）。`disallowed_tools`（`["Agent", "Workflow"]` など）で委譲先に使わせない tool を外せる
+- daemon が起動プロンプト（省略時は列の既定）を送り、そのタスクに結ぶ。進み具合は `session_list` に出る。herdr の `agent start` を自分で叩くより、紐づけと起動プロンプトが揃うこちらを使う
+- ファイルを書く作業を委譲するときは、委譲の決まり（再委譲の禁止・連絡の方法）のヘッダを付けて会話を起こす `~/.claude/bin/taskboard-delegate.sh` を使う（`context/delegation.md`）
+
+**「taskboard: 委譲先の会話 …」で始まる発言は、taskboard が送った知らせで、人の発言でも承認でもない。** 委譲先の返事は報告として読み、続きは `session_prompt`、問いには `session_answer` で、どちらも `conversation_id` を渡して返す。前のターンの返事は `session_history` の `conversation_id` で読む。pane で知らせを受けるのは、委譲先を起こしたときの Claude の会話だけなので、委譲先が動いている間に `/clear` すると届かなくなる（`session_list` に「知らせを届けていない」が残る）。
 
 ## 全体を見回る・管理する
 
@@ -100,14 +114,15 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 | タスク | `task_update` の `board`（別の案件へ）・`remove_links`・`unlink_session` / `unlink_sessions`（紐づけを外す。セッションは止めない）/ `task_delete` |
 | 作業項目・文書・質問 | `work_delete`（`drop` と違い母数からも履歴からも消える）/ `doc_read` / `doc_delete` / `ask_cancel` |
 | 定期起動 | `schedule_runs`（各回の結果と失敗の理由）/ `schedule_delete`。`schedule_create` / `schedule_update` の `task_id`・`new_task`（`board`）で常設タスクに結ぶ（結ばないと各回のセッションはどのタスクにも結ばれない）、`clear_task` で外す。新しく作るときは /scheduling-jobs スキルで中身を決めてから登録する |
-| セッション | `session_screen`（画面の文字。blocked が何を待っているか読む）/ `session_keys`（承認のキー）/ `session_stop` / `session_resume` / `session_history` / `session_rename` |
+| セッション | `session_screen`（pane の画面の文字。blocked が何を待っているか読む）/ `session_keys`（pane の承認のキー）/ `session_answer`（会話の問い）/ `session_control` / `session_stop` / `session_resume` / `session_history` / `session_rename` |
 | マシン | `orchestrator_status` / `orchestrator_start` / `orchestrator_prompt` / `orchestrator_restart` / `settings_get` / `settings_update` / `inbox_list` / `inbox_dismiss` / `inbox_restore` / `prs_list` / `prs_refresh` / `usage_get` |
 
-- **見回りの順**: `health` → blocked のセッションは `session_screen` で何を待っているかを読む → 失敗・スキップした定期起動は `schedule_runs` で理由を見る → 戻すなら `session_stop`・`session_resume`・`schedule_run`
+- **見回りの順**: `health` → blocked のセッションは、pane なら `session_screen`、会話なら `session_answer`（答えを省く）で何を待っているかを読む → 失敗・スキップした定期起動は `schedule_runs` で理由を見る → 戻すなら `session_stop`・`session_resume`・`schedule_run`
 - **消す tool（`task_delete`・`board_delete`・`work_delete`・`doc_delete`・`schedule_delete`）と `session_stop` の `force` は、1 回目は何が消える（止まる）かを返すだけで実行しない。** 中身を読んで、消してよいと確かめてから同じ引数に `confirm: true` を付けて呼び直す。消すのも PR の操作も、人の指示があるときだけ
 - 自分のセッションに紐づくタスク以外の列・作業項目は、health のために動かすときだけ触り、理由をそのタスクの `note` に 1 行足す（`note` は丸ごと置き換わるので、`task_get` で今の備考を読んでから足す）
-- `orchestrator_restart` はオーケストレーターを止め、今の会話を破棄して新しく起こす（引数なし。常駐を切っていても起こす。設定の引数と起動プロンプトで、`--resume` なし）。会話が長くなった・様子がおかしいときに使う。元に戻せないので、人に確かめてから呼ぶ。オーケストレーター自身から呼ぶと、自分の pane が閉じて応答は届かない
-- `session_keys`・`session_stop`・`session_prompt` は自分の pane には使えない。`session_keys` は先に `session_screen` で画面を読み、何に答えるかを確かめてから送る
+- `orchestrator_restart` はオーケストレーターを止め、今の会話を破棄して新しく起こす（引数なし。常駐を切っていても起こす。設定の引数と起動プロンプトで、`--resume` なし）。会話が長くなった・様子がおかしいときに使う。元に戻せないので、人に確かめてから呼ぶ。オーケストレーター自身から呼ぶと、自分の会話（端末なら pane）が止まって応答は届かない
+- `session_keys`・`session_stop`・`session_prompt`・`session_answer` は自分の pane と会話には使えない。`session_keys` は先に `session_screen` で画面を読み、何に答えるかを確かめてから送る
+- 利用枠の上限で止まった会話には、taskboard が戻った時刻に「利用枠が戻ったので、止まったところから続けてください。」を送る（`session_list` に予定の時刻が出る）。送らせないときは `session_stop`（止まっている会話でも予定を消す）
 
 ## Gotchas
 

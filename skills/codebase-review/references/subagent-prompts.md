@@ -1,7 +1,7 @@
 # codebase-review委譲先向け指示書テンプレート
 
 各観点の委譲先（herdr pane上のClaude Code）に渡す指示書のテンプレート。
-SKILL.md本文のPhase 1でこのファイルをReadし、`## あなたの担当観点` にreferences/review-aspects.mdの該当観点を挿入し、`{...}` を実値で埋めて、観点ごとに1ファイルずつ書き出す。委譲の経路・起動・結果の回収は `context/herdr-delegation.md` に従う。
+SKILL.md本文のPhase 1でこのファイルをReadし、`## あなたの担当観点` にreferences/review-aspects.mdの該当観点を挿入し、`{...}` を実値で埋めて、観点ごとに1ファイルずつ書き出す。委譲の経路・起動・結果の回収は `context/delegation.md` に従う。
 
 ## 目次
 

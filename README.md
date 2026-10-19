@@ -41,7 +41,7 @@ git clone <this-repo> ~/.claude
 
 | ファイル | Read するタイミング |
 |---|---|
-| `herdr-delegation.md` | 作業の委譲を検討した時点（経路・モデル・指示書・結果の回収） |
+| `delegation.md` | 作業の委譲を検討した時点（経路・モデル・指示書・結果の回収） |
 | `code-review-checklist.md` | PR 提出前・レビュー実行前 |
 | `agent-cli-guide.md` | 外部 CLI（codex / cursor）でレビューする前 |
 | `worktree-guide.md` | worktree の作成・片付け前 |

@@ -1,13 +1,13 @@
 ---
 name: herdr
-description: Herdr（コーディングエージェント向けターミナルマルチプレクサ）の操作と、herdr CLI の構文・ID 規約・agent 状態モデル（idle / working / blocked / done）の真実源。pane・tab・workspace・terminal・command の確認や操作、別 pane での agent 起動、pane 上の agent との通信の時に使用。HERDR_ENV=1 必須。境界: pane へ委譲するかどうか・経路・モデル・指示書・結果回収の方針は context/herdr-delegation.md（本スキルは CLI のみ）。
+description: Herdr（コーディングエージェント向けターミナルマルチプレクサ）の操作と、herdr CLI の構文・ID 規約・agent 状態モデル（idle / working / blocked / done）の真実源。pane・tab・workspace・terminal・command の確認や操作、別 pane での agent 起動、pane 上の agent との通信の時に使用。HERDR_ENV=1 必須。境界: pane へ委譲するかどうか・経路・モデル・指示書・結果回収の方針は context/delegation.md（本スキルは CLI のみ）。
 ---
 
 # Herdr
 
 Herdr is a terminal multiplexer and runtime for coding agents. It organizes terminals into workspaces, tabs, and panes, detects agent identity and status, and exposes the running session through the `herdr` CLI.
 
-This skill is the truth source for the CLI itself: command syntax, ID conventions, and the agent status model. Delegating work to a pane is a separate concern. The route, the agent kind and model, the instruction file handed to the agent, and how its output files come back are governed by `context/herdr-delegation.md`, and delegated agents are launched through `bin/herdr-delegate.sh` rather than by the manual sequences below. Read that file when the task is to delegate; read this one when the task is to drive the CLI.
+This skill is the truth source for the CLI itself: command syntax, ID conventions, and the agent status model. Delegating work to a pane is a separate concern. The route, the agent kind and model, the instruction file handed to the agent, and how its output files come back are governed by `context/delegation.md`, and delegated agents are launched through `bin/taskboard-delegate.sh` (a taskboard conversation) or `bin/herdr-delegate.sh` (a pane) rather than by the manual sequences below. Read that file when the task is to delegate; read this one when the task is to drive the CLI.
 
 Before issuing any control command, check that this agent is running inside a Herdr-managed pane:
 
@@ -94,7 +94,7 @@ Focusing a pane, switching to its tab, or regaining outer terminal focus marks t
 
 ## Start agents interactively
 
-This section covers starting an agent the user will watch and talk to. For delegated work, use `bin/herdr-delegate.sh`: it creates its own tab, injects the instruction file, waits for the output files, and cleans up (`context/herdr-delegation.md`).
+This section covers starting an agent the user will watch and talk to. For delegated work, use the scripts in `context/delegation.md`. `bin/herdr-delegate.sh` creates its own tab, injects the instruction file, waits for the output files, and cleans up.
 
 Default to a sibling pane in the current tab and current working directory. Do not create a workspace, tab, worktree, or different cwd unless the user explicitly requests that topology or location.
 

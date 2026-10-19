@@ -1,7 +1,7 @@
 ---
 name: codebase-review
 description: コードベース全体のレビュー・監査。perf/sec/test/arch/cq/docs の6観点を並列委譲し、優先度付き issue ファイルと観点サマリをメモリディレクトリに生成する。コードベース全体の監査・定期レビュー・リリース前品質確認の依頼時、/codebase-review 実行時に使用。境界: PR 単位は pr-review、自ブランチの提出前確認は self-review。
-allowed-tools: Read, Write, Grep, Glob, Bash(mkdir:*), Bash(find:*), Bash(ls:*), Bash(~/.claude/bin/herdr-delegate.sh:*), Bash(herdr:*)
+allowed-tools: Read, Write, Grep, Glob, Bash(mkdir:*), Bash(find:*), Bash(ls:*), Bash(~/.claude/bin/taskboard-delegate.sh:*), Bash(~/.claude/bin/herdr-delegate.sh:*), Bash(herdr:*)
 ---
 
 # コードベース包括的レビュー
@@ -40,7 +40,7 @@ allowed-tools: Read, Write, Grep, Glob, Bash(mkdir:*), Bash(find:*), Bash(ls:*),
 
 ### Phase 1: 6観点の並列委譲
 
-各観点の担当は issue ファイルと観点サマリを自分で書くので、herdr pane へ委譲する。経路・起動・結果の回収・失敗時の調査は `context/herdr-delegation.md` に従う。Herdr 外では同ファイル「Herdr外でのフォールバック」に従い、Claude Code では Agent tool の `subagent_type: "general-purpose"`・`model: "opus"` で代替する（`Explore` はファイルを書けない）。並列の機構が無い環境（Codex 等）では、6観点を同じテンプレートで逐次実行する。
+各観点の担当は issue ファイルと観点サマリを自分で書くので、taskboard の会話か pane へ委譲する。経路・起動・結果の回収・失敗時の調査は `context/delegation.md` に従う。どちらも使えなければ同ファイル「フォールバック」に従い、Claude Code では Agent tool の `subagent_type: "general-purpose"`・`model: "opus"` で代替する（`Explore` はファイルを書けない）。並列の機構が無い環境（Codex 等）では、6観点を同じテンプレートで逐次実行する。
 
 **指示書の組み立て（観点ごとに1ファイル）:**
 

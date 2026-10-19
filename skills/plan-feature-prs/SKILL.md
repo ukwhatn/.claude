@@ -29,7 +29,7 @@ description: 要件が確定した大きな機能開発（epic）を、並列調
 
 ### Step 2: 既存実装調査（並列委譲 + lead検証）
 
-1. 調査領域を機能ドメイン単位で2〜4に分割し、Explore agent を Agent tool で並列に起こす。`model: "sonnet"` を渡す（調査の用途。表は `context/herdr-delegation.md`「モデルの選択」）。`Explore` は書き込まずに結果を返すだけなので、委譲の既定である herdr pane ではなく Agent tool を使う（同「経路の選択」）
+1. 調査領域を機能ドメイン単位で2〜4に分割し、Explore agent を Agent tool で並列に起こす。`model: "sonnet"` を渡す（調査の用途。表は `context/delegation.md`「モデルの選択」）。`Explore` は書き込まずに結果を返すだけなので、ファイルを書く委譲の経路（会話・pane）ではなく Agent tool を使う（同「経路の選択」）
 2. 各 agent への指示に含める:
    - 対象リポジトリとアーキテクチャ概要
    - 調査項目の列挙

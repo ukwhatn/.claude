@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PreToolUse hook: Agent tool の呼び出しに model が無ければ拒否する。
 
-委譲先のモデルは用途で選ぶ規則（context/herdr-delegation.md「モデルの選択」）の強制側。
+委譲先のモデルは用途で選ぶ規則（context/delegation.md「モデルの選択」）の強制側。
 Agent tool は model を省略すると親セッションのモデルを継承するため、省略を許すと
 調査にも親と同じ上位モデルが使われる。意図は context 側、強制はこの hook。
 
@@ -26,7 +26,7 @@ def main() -> int:
     reason = (
         "Agent tool には model を用途で選んで渡す（コードを書かない調査: sonnet / "
         "レビュー報告・単発判定: opus / 前例のない難所: fable。"
-        "表は ~/.claude/context/herdr-delegation.md「モデルの選択」）。"
+        "表は ~/.claude/context/delegation.md「モデルの選択」）。"
         "親セッションと同じモデルが要ると判断したときは、そのモデル名を model に明示し、"
         "判断を 05_log.md に書く。"
     )

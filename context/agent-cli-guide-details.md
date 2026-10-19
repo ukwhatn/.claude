@@ -38,14 +38,14 @@ agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-m
 
 ## paneでループを回す
 
-`codex exec` 直叩きは1〜2ラウンドで終える単発レビュー向け。ラウンドが長引く見込み・進捗を画面で追いたい・指摘と修正のやり取りをleadのコンテキストから分離したいときはpaneに切り替える（経路選択の一般原則は `context/herdr-delegation.md`「経路の選択」）。
+`codex exec` 直叩きは1〜2ラウンドで終える単発レビュー向け。ラウンドが長引く見込み・進捗を画面で追いたい・指摘と修正のやり取りをleadのコンテキストから分離したいときはpaneに切り替える（経路選択の一般原則は `context/delegation.md`「経路の選択」）。
 
 1. `bin/herdr-delegate.sh --kind codex` で起動する。tabは既定で残るので、次のラウンドをそのまま送れる（`--close` は付けない）
 2. 初回の指示書に本体「プロンプト」の本文をそのまま渡す
 3. 2ラウンド目以降は `herdr agent prompt <name> "<次のプロンプト>"` で同じセッションへ送る（`--resume` 不要）
 4. 各ラウンドの結果は別パスに出させ、収束したら `herdr tab close <tab_id>` で閉じる
 
-codexはClaude Codeのセッションではないため `SendMessage` は届かない。追加指示も `herdr agent prompt` で送る。モデル・枠の節約の判断軸は `context/herdr-delegation.md`「モデルの選択」。
+codexはClaude Codeのセッションではないため `SendMessage` は届かない。追加指示も `herdr agent prompt` で送る。モデル・枠の節約の判断軸は `context/delegation.md`「モデルの選択」。
 
 ## reviewerを別agentに分ける（Claude Code）
 

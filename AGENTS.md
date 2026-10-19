@@ -85,7 +85,7 @@ Phase: 0 準備（メモリディレクトリ・`/findmem`）→ 1 調査 → 2 
 該当する作業を始める前に Read する（常駐させないため `@` を付けない）。読むときは見出しで節を選ばず末尾まで読む（手順の節と、その手順が壊れる条件の節は別の場所にある）。
 
 - メモリディレクトリを作る前・05_log や issue を書く前: `context/memory-file-formats.md`
-- 委譲を決めた時点: `context/herdr-delegation.md`
+- 委譲を決めた時点: `context/delegation.md`
 - 外部レビューの前: `context/agent-cli-guide.md`
 - PR を出す前・レビューの前: `context/code-review-checklist.md`
 - 大量ページの `gh api`・PR の状態の棚卸し・PR / issue への画像添付・多バイト文字列の集計の前: `context/github-cli-notes.md`

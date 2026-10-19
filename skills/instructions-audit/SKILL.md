@@ -38,7 +38,7 @@ allowed-tools: Read, Grep, Glob, Bash(ls:*), Bash(wc:*), Bash(find:*), Bash(grep
 
 claude-customization-guide.md の§7 rubricと§1-6の原則を対象に適用する。
 
-対象が合計500行を超えるなら、サブエージェントに分けて委譲する（コンテキストを守るため。分割例: CLAUDE.md+context系 / skills系）。経路は Agent tool で、`subagent_type: "general-purpose"`・`model: "opus"`（複数観点のレビュー報告）を渡す。委譲先は指摘をleadに返すだけでファイルを書かないので pane は使わない（`context/herdr-delegation.md`「経路の選択」）。サブエージェントへの指示に含めること:
+対象が合計500行を超えるなら、サブエージェントに分けて委譲する（コンテキストを守るため。分割例: CLAUDE.md+context系 / skills系）。経路は Agent tool で、`subagent_type: "general-purpose"`・`model: "opus"`（複数観点のレビュー報告）を渡す。委譲先は指摘をleadに返すだけでファイルを書かないので pane は使わない（`context/delegation.md`「経路の選択」）。サブエージェントへの指示に含めること:
 - 監査rubricとしてclaude-customization-guide.mdを読むこと
 - 指摘ごとに「対象ファイル:行」「rubricの分類」「根拠となる原則（§番号）」「具体的な修正案」を返すこと
 - 下記Gotchasを遵守すること

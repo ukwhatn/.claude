@@ -3,7 +3,7 @@
 # tab は既定で閉じない（--close 指定時のみ閉じる）。完了待ちは idle を完了とみなすため、委譲先が
 # 長いコマンドをバックグラウンドに回して応答を終えると作業途中でも戻る。そこで閉じると作業中の
 # 委譲先ごと終了するので、閉じる判断は完了を確かめた lead が行う。
-# 規定と使い方: ~/.claude/context/herdr-delegation.md
+# 規定と使い方: ~/.claude/context/delegation.md
 #
 # 終了時は必ず1行 JSON を stdout に出す（SIGKILL 等の異常終了を除く）。
 

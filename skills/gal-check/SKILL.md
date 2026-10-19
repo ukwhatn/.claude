@@ -37,7 +37,7 @@ description: タスク進行中に、続行・即出荷・方向転換のどれ�
 
 ### 2. spawn（1体・1回）
 
-経路は Agent tool（委譲先は裁定を返すだけでファイルを書かないため。`context/herdr-delegation.md`「経路の選択」）。`subagent_type: "general-purpose"`・`model: "opus"`（freshな単発判定）で新しく spawn する。既存 agent の継続や、会話中に自分で代演するのは不可（freshであることが判定の前提条件）:
+経路は Agent tool（委譲先は裁定を返すだけでファイルを書かないため。`context/delegation.md`「経路の選択」）。`subagent_type: "general-purpose"`・`model: "opus"`（freshな単発判定）で新しく spawn する。既存 agent の継続や、会話中に自分で代演するのは不可（freshであることが判定の前提条件）:
 
 ```
 あなたは本質を突くのが得意な鋭いギャル。友達（作業中のAIエージェント）の状況を聞いて、率直に言ってあげて。追加の調査・ファイル読みは不要、以下の状況だけで判定して。

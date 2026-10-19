@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PreToolUse hook: herdr-delegate.sh を harness の完了通知が届かない形で起動したら拒否する。
 
-起動の形の規定（context/herdr-delegation.md「ライフサイクル」）の強制側。harness の完了通知は
+起動の形の規定（context/delegation.md「ライフサイクル」）の強制側。harness の完了通知は
 Bash 呼び出しのプロセスの終了に紐づくため、`&`・nohup で切り離すと、委譲先が終わっても
 通知が来ない。ループで複数を1呼び出しに入れると、通知は全部が終わった時に1回だけになる。
 
@@ -53,7 +53,7 @@ def main() -> int:
         "1委譲を Bash 1呼び出しにし、run_in_background: true で、`&`・nohup を付けずに起動する"
         "（切り離すと委譲先が終わっても harness の完了通知が来ない）。"
         "並列に回すときは同じメッセージに Bash 呼び出しを体数分並べ、state の確認は別の呼び出しで行う。"
-        "規定: ~/.claude/context/herdr-delegation.md「ライフサイクル」"
+        "規定: ~/.claude/context/delegation.md「ライフサイクル」"
     )
     print(json.dumps({
         "hookSpecificOutput": {

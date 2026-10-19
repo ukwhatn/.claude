@@ -84,6 +84,8 @@ AGENTS.md末尾の見出し（`## マシンローカル設定`）が返れば全
 
 確認方法は、各コマンドグループを引数なしで実行してusageを出す形（`herdr tab` / `herdr agent` / `herdr pane`）。bareの `herdr` はTUIを起動するので実行しない。
 
+`bin/taskboard-delegate.sh` は taskboard の CLI の `conversation start --parent-from-env` に依存する。入っていない版では自分で `taskboard_outdated` を返すので、PCごとの確認は要らない。
+
 ## CodexにMCPサーバーを足す
 
 `~/.codex/config.toml` はマシンごとなので、Codexに使わせたいMCPはPCごとに足す。URL・OAuthのclient id・ポート番号の実値はここに書かない（PJの `CLAUDE.local.md` かメモリに置く）。
