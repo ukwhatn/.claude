@@ -120,8 +120,9 @@ SOFTWARE.
 
 ## nanaism/yomiyasu
 
-- 出典: https://github.com/nanaism/yomiyasu （参照commit: `986da6ffc89316a90e509d007c1efe1fc59057e6`）
-- 配置先: `skills/yomiyasu/`（SKILL.md, LICENSE, references/, scripts/yomiyasu_lint.py, scripts/yomiyasu_diff.py）。上流のファイルを無改変でコピーしたもので、翻案していない。本環境向けの扱いは `skills/ukwhatn-writing/SKILL.md` 側で上書きする
+- 出典: https://github.com/nanaism/yomiyasu の `skills/yomiyasu/` （参照commit: `5b7cacc7749e9195338d7305635c06871fc6daf1`）
+- 配置先: `skills/yomiyasu/`（SKILL.md, LICENSE, UNICODE-LICENSE.txt, references/, scripts/）。上流のファイルを無改変でコピーしたもので、翻案していない。`.codex-plugin/` と `assets/` は Claude Code の実行に要らないので取り込んでいない。本環境向けの扱いは `skills/ukwhatn-writing/SKILL.md` 側で上書きする
+- `scripts/yomiyasu_hook.py` は設定ファイルに手で登録したときだけ動く hook で、本環境では登録していない
 - plugin や `npx skills add` で導入しない（サプライチェーン攻撃を避けるため）。更新するときは上流を clone し、`diff -r` で差分を全文読んでからコピーし、上の参照commitと `vendor/manifest.json` の `commit` を書き換える
 - ライセンス全文: `skills/yomiyasu/LICENSE`（MIT License, Copyright (c) 2026 nanaism）
 
