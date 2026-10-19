@@ -48,6 +48,7 @@ git grep -n "<identifier>" FETCH_HEAD
 2. 既存パターンとの整合性を確認
 3. 問題点を特定
 4. **削除・リネームの残存確認（必須）**: diffで削除・リネームされた識別子（メソッド名・クラス名・定数・env key・docker service名・キュー名・設定キー等）を `git grep` / `rg` で**PR headのツリー全体**から検索する（checkout済みならそのツリー、未checkoutなら手順2の `git grep <pattern> FETCH_HEAD` 方式）。検索対象にはコードだけでなくconfig / docker-compose / .env / CI定義 / docsを含める。残存があればCriticalに昇格（diff だけを見ると、config・compose・CI 定義に残った参照を見落とすため）
+5. **削れるものの確認**: 追加されたコードのうち、消せるもの（使われないコード・誰も設定しないオプション・先回りの機能）、リポジトリの既存の helper で置き換えられるもの（その helper のパスを示す）、標準ライブラリやプラットフォームの機能で足りるもの・数行のための新しい依存、実装が1つしかない抽象や素通しの wrapper、一緒に変える必要がある近い複製を挙げる。既定は Medium（バグ・セキュリティより優先しない）
 
 ### 4. 棄却と投稿前の裏取り
 

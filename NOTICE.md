@@ -60,6 +60,64 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## DietrichGebert/ponytail
+
+- 出典: https://github.com/DietrichGebert/ponytail （参照commit: `09c434ab73ca43761c5d8b0c5d341926c2fba710`）
+- 翻案先: `AGENTS.md`（進め方の既定「新しく作る前に」）、`skills/writing-code/SKILL.md`（設計原則7、コメントの近道の書式）、`skills/pr-review/SKILL.md`（手順3の5）、`skills/self-review/SKILL.md`（手順4の3）
+
+```
+MIT License
+
+Copyright (c) 2026 DietrichGebert
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+## cursor/plugins（pstack）
+
+- 出典: https://github.com/cursor/plugins の `pstack/` （参照commit: `8838150c6b4829ea3c01782631213776d86df14a`）
+- 翻案先: `AGENTS.md`（事実の扱いの数値の確かめ、進め方の既定の前提の書き出しとスクリプト化）、`output-styles/ukwhatn-style.md`（推奨と判断軸の率直な評価）、`skills/writing-code/SKILL.md`（設計原則8、テストの2つの想像上の変更、再実行に耐える操作、アンチパターン表の Scattered State）
+
+```
+MIT License
+
+Copyright (c) 2026 Lauren Tan
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
 ## nanaism/yomiyasu
 
 - 出典: https://github.com/nanaism/yomiyasu （参照commit: `986da6ffc89316a90e509d007c1efe1fc59057e6`）
@@ -84,4 +142,4 @@ SOFTWARE.
 
 ## 上流の更新の検出
 
-`vendor/manifest.json` に、取り込んだ外部 skill の上流リポジトリ・固定した commit・取り込んだファイルを置く。`bin/vendor-check.py` は、固定した commit と上流の最新とで取り込んだファイルの内容が変わったか、取り込み元のディレクトリにファイルが増えたか、手元の複製が固定した commit と一致するか（改変したファイルを除く）を調べる。`.github/workflows/vendor-check.yml` が週次で実行し、差分があれば issue を立てて ukwhatn に割り当てる（既にあれば本文を更新する）。翻案したもの（obra/superpowers・mattpocock/skills）は台帳に載せていない。
+`vendor/manifest.json` に、取り込んだ外部 skill の上流リポジトリ・固定した commit・取り込んだファイルを置く。`bin/vendor-check.py` は、固定した commit と上流の最新とで取り込んだファイルの内容が変わったか、取り込み元のディレクトリにファイルが増えたか、手元の複製が固定した commit と一致するか（改変したファイルを除く）を調べる。`.github/workflows/vendor-check.yml` が週次で実行し、差分があれば issue を立てて ukwhatn に割り当てる（既にあれば本文を更新する）。翻案したもの（obra/superpowers・mattpocock/skills・DietrichGebert/ponytail・cursor/plugins の pstack）は台帳に載せていない。
