@@ -76,8 +76,8 @@ SOFTWARE.
 
 ## shadcn-ui/ui（skills/shadcn）
 
-- 出典: https://github.com/shadcn-ui/ui の `skills/shadcn/` （参照commit: `0e3abd65a97707f4a9cc3ed07bf5006e1cb67b13`）
-- 配置先: `skills/shadcn/`（SKILL.md, cli.md, customization.md, mcp.md, registry.md, rules/*.md）。`agents/`・`assets/`・`evals/` は Claude Code の実行に要らないので取り込んでいない
+- 出典: https://github.com/shadcn-ui/ui の `skills/shadcn/` （参照commit: `daaf156ee00ed91cc7e6bdd937c1b4973152d141`）
+- 配置先: `skills/shadcn/`（SKILL.md, cli.md, customization.md, mcp.md, registry.md, design-system.md, design-system-page.md, rules/*.md, assets/showcase/*, scripts/showcase-coverage.mjs）。`agents/`・`evals/` と、`assets/` の直下にあるロゴ画像は Claude Code の実行に要らないので取り込んでいない
 - 改変: `SKILL.md` の、読み込み時に `npx shadcn@latest info --json` を自動で実行する行と、`npx shadcn@latest` の `allowed-tools`（事前承認）を外し、必要なときに実行する手順の文に置き換えた（版を固定しないパッケージが、要らない場面でも確認なしに実行されるのを避けるため）。自動実行の結果を前提にしていた2行も合わせて直した。改変の全体は `vendor/patches/shadcn.patch`。それ以外のファイルは無改変
 - 更新するときは、上流の参照commitから最新までの差分を全文読み、上流のファイルを無改変でコピーしてから `git apply vendor/patches/shadcn.patch` で改変を当て直す。当たらなければ改変の趣旨（自動実行と事前承認を外す）に沿ってパッチを作り直す。上の参照commitと `vendor/manifest.json` の `commit` を書き換える
 - ライセンス全文: `skills/shadcn/LICENSE.md`（MIT License, Copyright (c) 2023 shadcn）
