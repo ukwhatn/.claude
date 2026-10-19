@@ -181,7 +181,7 @@ AIが書きがちな文 → ukwhatnならこう書く、の対比。推敲時は
 
 ## 参照
 
-- @references/slack.md — Slack（社内の目上・公的 / 業務の依頼・確認・報告）と、社外とのチャットの書き分け、MCP 経由で投稿するときの書式
+- @references/slack.md — Slack（社内の目上・公的 / 業務の依頼・確認・報告）と、社外とのチャットの書き分け、MCP 経由で投稿するとき・markdown のまま貼る下書きの書式
 - @references/github.md — PR概要テンプレ / レビュー指摘 / レビュー返信
 - @references/confluence.md — 設計書 / 手順 / 告知 / 相談 / 負債メモ / リサーチ
 - @references/email.md — 対外ビジネスメール（宛名・名乗り・構成・お礼/詫び・依頼・締めの型、AIが外しやすい5ポイント）
