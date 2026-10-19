@@ -34,6 +34,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash|mcp__slack.*|mcp__google-workspace__.*_draft|mcp__github.*|mcp__atlassian.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/skill-gate.py\"",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -53,6 +63,16 @@
           {
             "type": "command",
             "command": "if [ -x \"$HOME/.local/bin/taskboard\" ]; then \"$HOME/.local/bin/taskboard\" hook session; else exit 0; fi",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/skill-gate.py\"",
             "timeout": 10
           }
         ]
@@ -106,6 +126,16 @@
           {
             "type": "command",
             "command": "if [ -n \"$CLAUDE_CODE_SESSION_ID\" ] && [ -e \"$HOME/Library/Application Support/taskboard/feedback-pending/$CLAUDE_CODE_SESSION_ID\" ] && [ -x \"$HOME/.local/bin/taskboard\" ]; then \"$HOME/.local/bin/taskboard\" hook tool; else exit 0; fi",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/skill-gate.py\"",
             "timeout": 10
           }
         ]
