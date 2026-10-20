@@ -433,8 +433,18 @@ if [ "$APPLY" = 1 ]; then
   echo "$now" > "$STATE_DIR/last_run"
   if [ "$FAILED" = 0 ]; then rm -f "$STATE_DIR/retry_at"
   else echo $((now + 86400)) > "$STATE_DIR/retry_at"; fi
-  review_count=$(wc -l < "$REVIEW" | tr -d ' ')
-  osascript -e 'on run argv' -e 'display notification (item 1 of argv) with title "ディスク棚卸し"' -e 'end run' \
-    "空き ${free_before}G → ${free_after}G。判断が必要なもの ${review_count}件（${STATE_DIR}/latest.md）" >/dev/null 2>&1
+  # 判断が必要なものの顔ぶれが前回の通知から変わったときだけ知らせる（空き不足の間は毎日走るため）
+  review_key=$(cut -f2- "$REVIEW" | sort | shasum | cut -d' ' -f1)
+  if [ -s "$REVIEW" ] && [ "$review_key" != "$(cat "$STATE_DIR/notified_review" 2>/dev/null)" ]; then
+    review_count=$(wc -l < "$REVIEW" | tr -d ' ')
+    message="空き ${free_before}G → ${free_after}G。判断が必要なもの ${review_count}件"
+    # Why not osascript: display notification はクリックしても報告を開けない
+    # terminal-notifier は通知の許可が無いと失敗するので、そのときも知らせが消えないよう osascript に落とす
+    if ! terminal-notifier -title "ディスク棚卸し" -message "$message" -group disk-inventory -open "file://$REPORT" >/dev/null 2>&1; then
+      osascript -e 'on run argv' -e 'display notification (item 1 of argv) with title "ディスク棚卸し"' -e 'end run' \
+        "$message（$REPORT）" >/dev/null 2>&1
+    fi
+    echo "$review_key" > "$STATE_DIR/notified_review"
+  fi
 fi
 echo "$REPORT"
