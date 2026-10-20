@@ -95,7 +95,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 
 委譲先を新しく起こすときは `session_start`（`task_id` 省略で自分のタスク、`cwd` 省略で自分の cwd、`worktree_branch` で worktree を切る）。
 
-- エージェントは `kind`（`claude` / `codex`）。claude は既定で会話として起きる（`runner: terminal` で端末）。codex は端末
+- エージェントは `kind`（`claude` / `codex`）。claude は既定で会話として起きる（`runner: terminal` で端末）。codex は既定で端末で、`runner: conversation` を渡すと会話として起きる（`model`・`effort` は codex の名前のまま）
 - Claude Code のモデルと effort は `model`（`opus` / `fable` / `sonnet`）と `effort`（`low` / `medium` / `high` / `xhigh` / `max`）で選び、省略すると `opus` / `medium`。前の版の `preset` も受けるが、`model`・`effort` を渡すとそちらが優先する
 - 会話は `notify` が入っていると、委譲先のターンの終わり（最後の返事つき）と問いを、起こした側のセッションに taskboard が発言として入れる。省くと、taskboard の pane か会話から起こしたときは入る（オーケストレーターからは切）。`disallowed_tools`（`["Agent", "Workflow"]` など）で委譲先に使わせない tool を外せる
 - daemon が起動プロンプト（省略時は列の既定）を送り、そのタスクに結ぶ。進み具合は `session_list` に出る。herdr の `agent start` を自分で叩くより、紐づけと起動プロンプトが揃うこちらを使う
