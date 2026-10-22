@@ -185,11 +185,9 @@
   "feedbackDrafts": "off",
   "modelSettings": {
     "claude-opus-5-5": {
-      "effortLevel": "xhigh",
-      "autoCompactWindow": 600000
+      "effortLevel": "high"
     }
   },
-  "autoCompactWindow": 450000,
   "promptSuggestionEnabled": false,
   "askUserQuestionTimeout": "never",
   "tui": "fullscreen",
