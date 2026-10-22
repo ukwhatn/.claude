@@ -22,21 +22,21 @@ taskboard の MCP の tool の使い方は `skills/taskboard/SKILL.md`、herdr C
 
 ## モデルの選択
 
-委譲先のモデルは経路によらず用途で決め、毎回明示する。会話は `--model` と `--effort`、paneは `--model`（effort は `--agent-arg --effort --agent-arg <値>`）、Agent toolは `model` パラメータで渡す。Agent toolは `model` を省略すると親セッションのモデルを継承し、調査1本に親と同じ大きいモデルを使うことになるため。親と同じモデルが要ると判断したときは、そのモデル名を明示して判断を05_log.mdに書く。`model` の無いAgent tool呼び出しはPreToolUse hook（`hooks/agent-model-required.py`）が拒否する（`fork` は常に親モデルで動くので対象外）。
+委譲先のモデルと effort は経路によらず用途で決め、毎回明示する。会話もpaneも `--model` と `--effort` で渡し（effort を省くとスクリプトが `effort_invalid` で止める。省いて起こすと user settings に保存された effort で動くため）、Agent toolは `model` パラメータで渡す。Agent toolは `model` を省略すると親セッションのモデルを継承し、調査1本に親と同じ大きいモデルを使うことになるため。親と同じモデルが要ると判断したときは、そのモデル名を明示して判断を05_log.mdに書く。`model` の無いAgent tool呼び出しはPreToolUse hook（`hooks/agent-model-required.py`）が拒否する（`fork` は常に親モデルで動くので対象外）。
 
 委譲は基本Claudeで行い、codexは別ベンダーであること自体が要件になる用途（外部レビュー）に温存する。PCによってはcodexの枠が月間のcredit上限しか無く、調査で使い切ると外部レビューまで止まるため。コードを書かない調査をcodexに振るのは、ユーザーが指示したときだけにする。枠に余裕があっても、Claudeで足りる委譲をcodexに振らない。委譲先を同時に6体以上起こす確認（`context/tool-claude-code.md`「委譲判断」）では、Claudeとcodexの枠の残量を並べ、一部をcodexに振る案を添えて聞く。振るときは下の「codexに委譲するとき」に従う。
 
 | 用途 | 会話・pane の Claude | Agent tool |
 |---|---|---|
-| 設計判断を含む実装・文書生成・監督しない長時間の実行 | `opus`、effort `medium` | 会話かpaneで行う（ファイルを書く委譲はAgent toolを使わない） |
-| パターンが確立した実装・横展開（リネーム・既知パターンの適用） | `opus`、effort `low` | 同上 |
+| 設計判断を含む実装・原因の分からない不具合の修正・文書生成・監督しない長時間の実行 | `opus`、effort `medium` | 会話かpaneで行う（ファイルを書く委譲はAgent toolを使わない） |
+| 受け入れ条件と変更箇所が指示書で決まっている実装（原因の分かった不具合の修正・既知パターンの適用・リネームや横展開） | `sonnet`、effort `medium` | 同上 |
 | コードを書かない調査（コード内のファイル探し・ログ / テスト出力の読み取り・Web / 文書の収集と要約） | `sonnet` | `model: "sonnet"`。コード内の探索は `subagent_type: "Explore"`、Web / 外部資料は `general-purpose` |
 | 複数観点のレビュー報告・freshな単発判定（結果をleadが検証する） | — | `model: "opus"` |
 | 前例のない難所・壁打ち | `fable` | `model: "fable"` |
 | 外部レビュー（別ベンダーのbias独立性が要る） | paneの `--kind codex` | —（`context/agent-cli-guide.md`） |
 | コードを書かない調査をユーザーの指示でcodexに振る | paneの `--kind codex` | — |
 
-Sonnetにはコードを書かせない。小さいモデルが読み違えるとleadが誤った前提で進むため、結果の誤りに気づきやすい作業に限る。調査の報告は一次ソースと突き合わせてから採用する（`context/tool-claude-code.md`「委譲後の実務」）。opusのmediumで同じ問題に2回詰まったら、effort `high` かfableで委譲し直す。
+Sonnetにコードを書かせるのは、指示書に受け入れ条件と、変更を確かめるコマンド（テスト・型検査・ビルド）があるときだけにする。Sonnetは手順と完了条件が具体的な作業ではOpusと同じ結果をより安く出すが、曖昧な問題では読み違えやすく、leadが誤った前提で進むため。コードを書く委譲にはeffort `low` を使わない（変更を確かめずに完了と報告しやすくなる）。調査の報告は一次ソースと突き合わせてから採用する（`context/tool-claude-code.md`「委譲後の実務」）。sonnetで同じ問題に2回詰まったらopusで、opusのmediumで2回詰まったらeffort `high` かfableで委譲し直す。
 
 codexを起動する前に枠を確認する（`python3 ~/.claude/codex-usage.py --refresh` → `--show`。taskboardの `usage_get` でも見える）。枯渇していれば `context/agent-cli-guide.md` のfallback規定に従う。
 
@@ -142,7 +142,7 @@ lead の pane では、知らせは起こしたときの lead の Claude の会�
 
 ```bash
 ~/.claude/bin/herdr-delegate.sh \
-  --kind claude --model opus \
+  --kind claude --model opus --effort medium \
   --task "<指示書の絶対パス>" \
   --out "<成果物の絶対パス>" \
   --state "<state の絶対パス>" --run-id "<lead が採番した ID>" \
@@ -250,7 +250,7 @@ tabはleadが閉じる。閉じてよいのは、上の「結果の受け取り�
 | herdr-delegate.sh | `herdr_unavailable` | `herdr` がPATHに無い | Agent toolへ |
 | herdr-delegate.sh | `workspace_missing` | workspaceを特定できない | Agent toolへ |
 | herdr-delegate.sh | `agent_cli_unavailable` | `--kind` に対応するCLIが無い | **条件付き**（下記） |
-| 両方 | `task_invalid` / `task_id_invalid` / `model_invalid` / `arg_invalid` / `python3_unavailable` | 呼び出し側の誤り | 直して再実行する |
+| 両方 | `task_invalid` / `task_id_invalid` / `model_invalid` / `effort_invalid` / `arg_invalid` / `python3_unavailable` | 呼び出し側の誤り | 直して再実行する |
 
 フォールバックは、元のタスクが要求するモデル・ベンダーの条件を保てるときに限る。`--kind codex` が別ベンダーによる外部レビューを目的にしているなら、ClaudeのAgent toolへ切り替えるとbias独立性という品質ゲートを満たさないまま進むことになる。外部レビュー用途では `context/agent-cli-guide.md` のfallback規定（fable subagentで暫定。別ベンダーのレビューとはみなさず、不可逆な変更を含むときは復旧後に裏取り）が優先する。
 

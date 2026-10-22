@@ -12,6 +12,7 @@ set -u
 KIND=""
 TASK=""
 MODEL=""
+EFFORT=""
 NAME=""
 LABEL=""
 CWD="$PWD"
@@ -38,6 +39,7 @@ usage() {
 usage: herdr-delegate.sh --kind <claude|codex> --task <指示書の絶対パス> [options]
 
   --model MODEL        claude: opus|sonnet|haiku|fable / codex: -m に渡す値
+  --effort EFFORT      claude で必須: low|medium|high|xhigh|max（codex では受け付けない）
   --agent-arg VALUE    エージェントの argv に透過で渡す（複数回指定可）
                        ※ 承認のバイパスは既定で付く
                           claude: --dangerously-skip-permissions
@@ -155,6 +157,7 @@ while [ $# -gt 0 ]; do
     --kind)          KIND="${2:-}"; shift 2 ;;
     --task)          TASK="${2:-}"; shift 2 ;;
     --model)         MODEL="${2:-}"; shift 2 ;;
+    --effort)        EFFORT="${2:-}"; shift 2 ;;
     --agent-arg)     AGENT_ARGS="${AGENT_ARGS}${2:-}
 "; shift 2 ;;
     --name)          NAME="${2:-}"; shift 2 ;;
@@ -186,6 +189,21 @@ case "$KIND" in
   *) finalize invalid_input 2 arg_invalid ;;
 esac
 command -v "$KIND" >/dev/null 2>&1 || finalize invalid_input 2 agent_cli_unavailable
+
+# 省くと user settings に保存された effort で起きるため、表で決めた値を毎回渡させる
+if [ "$KIND" = "claude" ]; then
+  case "$EFFORT" in
+    low|medium|high|xhigh|max) ;;
+    *) finalize invalid_input 2 effort_invalid ;;
+  esac
+else
+  [ -z "$EFFORT" ] || finalize invalid_input 2 arg_invalid
+fi
+case "
+$AGENT_ARGS" in
+  *"
+--effort"*) finalize invalid_input 2 arg_invalid ;;
+esac
 
 [ -n "$WORKSPACE" ] || finalize invalid_input 2 workspace_missing
 
@@ -385,6 +403,7 @@ if [ "$KIND" = "codex" ]; then
   START_CMD=("${START_CMD[@]}" -c check_for_update_on_startup=false --dangerously-bypass-approvals-and-sandbox)
 else
   [ -n "$MODEL" ] && START_CMD=("${START_CMD[@]}" --model "$MODEL")
+  START_CMD=("${START_CMD[@]}" --effort "$EFFORT")
   # 委譲先に子エージェントを起動させない。子は使用量を lead・他の委譲先と分け合い、上限に当たると
   # 待たずに作業途中で失敗する（pane は autoContinueAtUsageLimit で待って再開する）。
   # 散文の禁止だけでは、委譲先も user-level の「並列に分けられるなら委譲する」を読んで分割する。

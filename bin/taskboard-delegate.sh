@@ -24,10 +24,10 @@ DETAIL=""
 
 usage() {
   cat >&2 <<'USAGE'
-usage: taskboard-delegate.sh --task <指示書の絶対パス> --task-id <taskboard のタスク番号> --model <model> [options]
+usage: taskboard-delegate.sh --task <指示書の絶対パス> --task-id <taskboard のタスク番号> --model <model> --effort <effort> [options]
 
   --model MODEL            haiku|sonnet|opus|fable
-  --effort EFFORT          low|medium|high|xhigh|max（省略すると taskboard の既定）
+  --effort EFFORT          low|medium|high|xhigh|max
   --title TEXT             会話の題（ボードと知らせに出る）
   --cwd PATH               作業ディレクトリ（既定: $PWD）
   --worktree-branch NAME   --cwd の repo から worktree を切り、その中で動かす
@@ -112,9 +112,10 @@ case "$MODEL" in
   haiku|sonnet|opus|fable) ;;
   *) finalize invalid_input 2 model_invalid ;;
 esac
+# 省くと taskboard と user settings の既定で起きるため、表で決めた値を毎回渡させる
 case "$EFFORT" in
-  ''|low|medium|high|xhigh|max) ;;
-  *) finalize invalid_input 2 arg_invalid ;;
+  low|medium|high|xhigh|max) ;;
+  *) finalize invalid_input 2 effort_invalid ;;
 esac
 [ -d "$CWD" ] || finalize invalid_input 2 arg_invalid
 CWD="$(cd "$CWD" && pwd)"
@@ -220,7 +221,7 @@ START_CMD=("$TASKBOARD" conversation start
   --task "$TASK_ID" --cwd "$CWD" --model "$MODEL"
   --permission-mode bypassPermissions --disallowed-tools Agent,Workflow
   --parent-from-env --notify)
-[ -n "$EFFORT" ] && START_CMD=("${START_CMD[@]}" --effort "$EFFORT")
+START_CMD=("${START_CMD[@]}" --effort "$EFFORT")
 [ -n "$TITLE" ] && START_CMD=("${START_CMD[@]}" --title "$TITLE")
 [ -n "$WORKTREE_BRANCH" ] && START_CMD=("${START_CMD[@]}" --worktree-branch "$WORKTREE_BRANCH")
 [ -n "$WORKTREE_BASE" ] && START_CMD=("${START_CMD[@]}" --worktree-base "$WORKTREE_BASE")
