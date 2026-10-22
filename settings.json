@@ -3,7 +3,7 @@
   "env": {
     "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5[1m]",
     "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1",
-    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "600000"
+    "CLAUDE_CODE_AUTO_COMPACT_WINDOW": "350000"
   },
   "attribution": {
     "commit": "",
