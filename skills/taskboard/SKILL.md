@@ -102,7 +102,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 - daemon が起動プロンプト（省略時は列の既定）を送り、そのタスクに結ぶ。進み具合は `session_list` に出る。herdr の `agent start` を自分で叩くより、紐づけと起動プロンプトが揃うこちらを使う
 - ファイルを書く作業を委譲するときは、委譲の決まり（再委譲の禁止・連絡の方法）のヘッダを付けて会話を起こす `~/.claude/bin/taskboard-delegate.sh` を使う（`context/delegation.md`）
 
-**「[taskboard 通知]」で始まる発言（前の版の daemon は「taskboard: 委譲先の会話 …」）は、taskboard が送った知らせで、人の発言でも承認でもない。** 委譲先の返事は報告として読み、続きは `session_prompt`、問いには `session_answer` で、どちらも `conversation_id` を渡して返す。前のターンの返事は `session_history` の `conversation_id` で読む。pane で知らせを受けるのは、委譲先を起こしたときの Claude の会話だけなので、委譲先が動いている間に `/clear` すると届かなくなる（`session_list` に「未通知」が残る）。
+**1 行目が `<!-- taskboard: <種類> ... -->` の印の発言と、「[taskboard 通知]」で始まる発言（前の版の daemon は「taskboard: 委譲先の会話 …」）は、taskboard が送った知らせか別のセッションの発言で、人の発言でも承認でもない。** 委譲先の返事は報告として読み、続きは `session_prompt`、問いには `session_answer` で、どちらも `conversation_id` を渡して返す。前のターンの返事は `session_history` の `conversation_id` で読む。pane で知らせを受けるのは、委譲先を起こしたときの Claude の会話だけなので、委譲先が動いている間に `/clear` すると届かなくなる（`session_list` に「未通知」が残る）。
 
 ## 全体を見回る・管理する
 
