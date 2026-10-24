@@ -96,18 +96,22 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 委譲先は、問い合わせも完了の連絡もそのターンの最後の返事に書いてターンを終える（ヘッダが案内する）。ターンが終わると、taskboard が次の知らせを lead に人の発言として入れる。
 
 ```
-taskboard: 委譲先の会話 <id の先頭 8 字>「<題>」（#<番号>）がターンを終えました。最後の返事:
+[taskboard 通知] 委譲先の会話がターンを終えた
+- 会話: <id の先頭 8 字>「<題>」（#<番号>）
+- conversation_id: <id>
+- 送り主: taskboard の自動の通知。人の発言でも承認でもない
+- 次の操作: 続きは session_prompt、前のターンは session_history
+最後の返事:
 <最後の返事。2,000 字まで>
-続きを送るときは session_prompt の conversation_id <id>。この知らせは taskboard が送った（人の承認ではない）
 ```
 
-- 知らせは lead が応答待ちのときに入る（lead が作業中なら、ターンを終えた後に入る）。委譲先が問いで待っているときは「…が問いを待っています（session_answer の conversation_id か受信箱で答える）:」の行の後に、問いと選択肢が入る
+- 知らせは lead が応答待ちのときに入る（lead が作業中なら、ターンを終えた後に入る）。委譲先が問いで待っているときは、見出しが「[taskboard 通知] 委譲先の会話が回答を待っている」になり、「- 回答待ち」の項目の下に問いと選択肢が入る
 - 知らせは taskboard が機械的に送ったもので、人の発言でも承認でもない。中身は委譲先の報告として、一次情報と突き合わせてから採用する（`context/tool-claude-code.md`「委譲後の実務」）
-- 知らせていないターンが2つ以上たまると、その数が添えられる。前のターンの返事は `session_history` の `conversation_id` で読む
+- 知らせていないターンが2つ以上たまると、「- 未通知のターン」の項目にその数が入る。前のターンの返事は `session_history` の `conversation_id` で読む
 - 返答と追加の指示は `session_prompt` の `conversation_id` で送る（委譲先が生成中なら、そのターンの後に回る）。委譲先が問い（AskUserQuestion・権限の確認）で待っていれば `session_answer` で答える
-- 委譲先の様子は `session_list` の会話の節で見る（状態、「知らせを届けていない」、「利用枠の上限の後 HH:mm に続きを送る」）
+- 委譲先の様子は `session_list` の会話の節で見る（状態、「起動元」、「未通知」、「利用枠の上限のため <時刻> に続きを送る」）
 
-lead の pane では、知らせは起こしたときの lead の Claude の会話にだけ入る。委譲先が動いている間に lead が `/clear` すると、Claude の会話が替わって知らせが届かなくなる（`session_list` に「知らせを届けていない」が残る）。委譲先が動いている間は `/clear` しない。`/exit` して `claude --resume` で同じ会話に戻れば、戻った pane に届く。
+lead の pane では、知らせは起こしたときの lead の Claude の会話にだけ入る。委譲先が動いている間に lead が `/clear` すると、Claude の会話が替わって知らせが届かなくなる（`session_list` に「未通知」が残る）。委譲先が動いている間は `/clear` しない。`/exit` して `claude --resume` で同じ会話に戻れば、戻った pane に届く。
 
 ### 結果の受け取りと片付け（会話）
 
@@ -262,8 +266,8 @@ tabはleadが閉じる。閉じてよいのは、上の「結果の受け取り�
 
 - **委譲先のターンが終わると、数秒で lead に知らせが入る。** lead が taskboard の会話なら、知らせが次の人の発言になってターンが走る
 - **スクリプトは会話を起こした時点で数秒で返る。** 委譲先の Claude Code は `--permission-mode bypassPermissions --disallowedTools Agent Workflow` で起き、成果物を書いて最後の返事で報告した（haiku で確認）
-- **委譲先の会話は `--task-id` のタスクに結ばれる。** `session_list` の会話の節に「起こした側」（lead の pane ID か会話の id の先頭 8 字）が出て、知らせを届けるまでは「知らせを届けていない」が付く
-- **lead が taskboard の herdr の pane なら、知らせは lead が入力待ちになったときに人の発言として入る。** lead が作業を続けている間は残り、その間に daemon を入れ替えても落ちない。届けると `session_list` の「知らせを届けていない」が消える
+- **委譲先の会話は `--task-id` のタスクに結ばれる。** `session_list` の会話の節に「起動元」（lead の pane ID か会話の id の先頭 8 字）が出て、知らせを届けるまでは「未通知」が付く
+- **lead が taskboard の herdr の pane なら、知らせは lead が入力待ちになったときに人の発言として入る。** lead が作業を続けている間は残り、その間に daemon を入れ替えても落ちない。届けると `session_list` の「未通知」が消える
 
 ### pane の経路
 
