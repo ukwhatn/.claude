@@ -90,6 +90,8 @@ AGENTS.md末尾の見出し（`## マシンローカル設定`）が返れば全
 
 `~/.codex/config.toml` はマシンごとなので、Codexに使わせたいMCPはPCごとに足す。URL・OAuthのclient id・ポート番号の実値はここに書かない（PJの `CLAUDE.local.md` かメモリに置く）。
 
+Claude Code のディレクトリ別 MCP 登録を Codex に写すときは `python3 ~/.claude/bin/sync-codex-mcp.py` を実行する。`~/.claude.json` の project ごとの登録と、workspace 内の `.mcp.json` / `.claude/settings.json` の登録を対応する `.codex/config.toml` へ生成する。生成ファイルはローカルの `git/info/exclude` に登録し、秘密値を含む場合も git に載せない。既存の手書き `.codex/config.toml` は上書きせず停止する。Codex は信頼済み project の設定だけを読むため、新しい project は `~/.codex/config.toml` の `[projects."<絶対パス>"]` で信頼設定を確認する。OAuth の認証は Claude Code と共有されないため、登録後に各 Codex 接続で確認する。
+
 - **`codex mcp add <name> --url <url>` はOAuthを検出すると、その場でブラウザでのログインを始めて待つ。** 承認を別の端末で行うと、待ち受けが時間切れ（`timed out waiting for OAuth callback`）になる。追加だけ済ませ、ログインは次の手順でやり直す
 - **ログインは `codex mcp login <name> --no-browser` で行う。** 承認URLを出し、承認後にブラウザが開こうとしたcallbackのURLを標準入力で受け取る。ハーネスのBashは対話入力できないので、FIFOを介して渡す。FIFOとログはscratchpadに置く（`/tmp` は並列のセッションと共有される）:
 
