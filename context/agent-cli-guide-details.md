@@ -67,11 +67,11 @@ reviewerは計画レビューから実装レビューまで存続させてよい
 
 ## モデル選択
 
-モデルslugは2026-07時点のもの。使用前に `codex --help` 等で実在を確認する。
+モデルslugは2026-10時点のもの。codexでの実在は `~/.codex/models_cache.json` の slug で確認する。cursorにはgpt-6.1-solが無い（2026-10時点）ので、fallbackはgpt-5.6-sol系のまま使う。
 
 | CLI | 指定 | 用途 |
 |---|---|---|
-| codex | `--model gpt-5.6-sol -c model_reasoning_effort="medium"` | レビュー標準 |
+| codex | `--model gpt-6.1-sol -c model_reasoning_effort="high"` | レビュー標準。medium より時間は延びるが、レビューは見落としの損失のほうが大きいので high にする。xhigh 以上は時間がさらに延び、効果の裏付けが割れている |
 | codex | `--model gpt-5.4` | 軽量・低コストの簡易チェック |
 | cursor | `--model gpt-5.6-sol-medium`（合成slug） | fallback時の標準 |
 | fable subagent | `Agent(model: "fable")` | 外部CLIが両方使えないときの暫定（同一ベンダー） |

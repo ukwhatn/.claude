@@ -40,7 +40,7 @@ fable subagentはleadと同一ベンダーでbiasの独立性を持たないた�
 
 ```bash
 # 初回
-codex exec --model gpt-5.6-sol -c model_reasoning_effort="medium" \
+codex exec --model gpt-6.1-sol -c model_reasoning_effort="high" \
   -o "<出力先>/review.txt" "$(cat "<プロンプトファイル>")" \
   < /dev/null > "<出力先>/review.log" 2>&1
 
