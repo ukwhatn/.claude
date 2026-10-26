@@ -1,6 +1,6 @@
 ---
 name: slack-browser
-description: playwright の常駐 Chrome にログイン済みの Slack Web クライアントを scripts/slack_browser.py で操作し、チャンネル一覧・履歴・スレッド・検索の取得を行い、投稿文は Slack MCP が繋がる別ワークスペースの自分の DM へ下書きとして送る（直接投稿は明示の指示があるときだけ）。Slack の MCP・アプリ連携を繋げないワークスペース（guest 権限など）で、Slack のパーマリンクを読む・Slack を検索する・Slack に投稿や返信をする依頼時に使用。境界: Slack MCP が繋がるワークスペースはそちらを使う、投稿する日本語の文面の作成は ukwhatn-writing、ブラウザ経路の選び方と共有コンテキストの規則は context/browser-automation.md。
+description: playwright の常駐 Chrome にログイン済みの Slack Web クライアントを scripts/slack_browser.py で操作し、チャンネル一覧・履歴・スレッド・検索の取得を行い、投稿文は Slack MCP が繋がる別ワークスペースの自分の DM へ下書きとして送る（直接投稿は明示の指示があるときだけ）。Slack の MCP・アプリ連携を繋げないワークスペース（guest 権限など）で、Slack のパーマリンクを読む・Slack を検索する・Slack に投稿や返信をする依頼時に使用。境界: Slack MCP が繋がるワークスペースはそちらを使う、投稿する日本語の文面の作成は writing-prose、ブラウザ経路の選び方と共有コンテキストの規則は context/browser-automation.md。
 ---
 
 # Slack をブラウザ経由で読み書きする
@@ -49,7 +49,7 @@ Slack のアプリ連携を認可できないワークスペースで、ユー�
 
 既定では、対象のワークスペースへ直接は投稿しない。**Slack MCP が繋がる別ワークスペースの自分の DM に下書きを送り、ユーザーがそれを貼る**。MCP 経由なら mrkdwn の書式が正しく付き、人が最後に目を通してから送れる。
 
-1. 日本語の文面は `/ukwhatn-writing` スキルで書く
+1. 日本語の文面は `/writing-prose` スキルで書く
 2. 対応表の `drafts`（下記）にある MCP の送信ツール（`mcp__<サーバ名>__slack_send_message`）で、`drafts.channel` へ送る。1 行目に送り先（ワークスペース・チャンネル名・返信ならスレッドのパーマリンク）を書き、空行を挟んで本文を置く。本文の書式は標準の Markdown（`**太字**`・`` `code` ``・コードブロック・`- 箇条書き`・`[text](url)`）で書くと Slack の書式に変換される。`---` の行は消えるので区切りに使わない。自分の DM への送信は相手に見えないので、承認を待たずに送ってよい
 3. 完了基準: 送信ツールが成功を返す。ユーザーには「下書きを DM に送った」と送り先を 1 行で伝える
 
@@ -61,7 +61,7 @@ Slack のアプリ連携を認可できないワークスペースで、ユー�
 "drafts": {"mcp": "<Slack MCP のサーバ名>", "channel": "<そのワークスペースの自分の DM の ID>"}
 ```
 
-`drafts` が無い、またはその MCP がセッションに無い（ツール一覧に `mcp__<サーバ名>__*` が無い）ときは、下書きを応答本文に貼り先の書式のまま出す（コードブロックで包まない。`/ukwhatn-writing` スキルの「下書きの出し方」）。
+`drafts` が無い、またはその MCP がセッションに無い（ツール一覧に `mcp__<サーバ名>__*` が無い）ときは、下書きを応答本文に貼り先の書式のまま出す（コードブロックで包まない。`/writing-prose` スキルの「下書きの出し方」）。
 
 下書き用の MCP は user スコープに登録しておく（どのプロジェクトのセッションからでも送れるように）。`~/.claude.json` は同期されないので、マシンごとに `claude mcp add --scope user --transport http <サーバ名> https://mcp.slack.com/mcp` を実行する。OAuth の設定（`--client-id`・`--callback-port`）は、既に動いている Slack MCP の設定（`claude mcp get <既存のサーバ名>`）と同じ値にする。登録後、ユーザーが `/mcp` で認証し、送り先のワークスペースを選ぶ。自分の DM の ID は、自分の user ID 宛てに 1 回送ると返る `channel_id` で分かる
 

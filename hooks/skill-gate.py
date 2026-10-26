@@ -109,7 +109,7 @@ def commits(tool_name: str, tool_input: dict, data: dict) -> bool:
 # (スキル名, きっかけの判定, 止めたときに示す対象)
 RULES: list[tuple[str, Callable[[str, dict, dict], bool], str]] = [
     ("writing-code", edits_production_code, "コードファイルの編集"),
-    ("ukwhatn-writing", sends_text_outward,
+    ("writing-prose", sends_text_outward,
      "人に宛てた文章を外へ出す操作。日本語なら続けて /yomiyasu、英語なら /humanizer も発動する"),
     ("commit", commits, "git commit。コミットは /commit の手順で行う"),
 ]

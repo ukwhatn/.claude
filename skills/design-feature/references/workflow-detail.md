@@ -189,7 +189,7 @@ Phase: Synthesize
 ```
 
 各 agent への共通指示:
-- ライティング規約（/ukwhatn-writing）
+- ライティング規約（/writing-prose）
 - 禁止フレーズリスト
 - 既存実装の参照源（05_log.md / 20_implementation_notes.md）
 - プロジェクトのアーキテクチャ参照（PJ の `.claude/context/` 等）

@@ -1,6 +1,6 @@
 ---
 name: pr-comment
-description: PR の特定レビューコメント（discussion）への対応（実装修正と返信）。PR URL に discussion の id を添えて「この指摘に対応して」と依頼された時、PR 番号と特定の指摘内容を示された時に使用。境界: PR 全体のレビューは pr-review、返信文の作成のみは ukwhatn-writing。
+description: PR の特定レビューコメント（discussion）への対応（実装修正と返信）。PR URL に discussion の id を添えて「この指摘に対応して」と依頼された時、PR 番号と特定の指摘内容を示された時に使用。境界: PR 全体のレビューは pr-review、返信文の作成のみは writing-prose。
 ---
 
 # pr-comment - PRレビューコメント対応
@@ -57,7 +57,7 @@ gh pr view <number> --json headRefName,headRefOid,baseRefName
 
 ### 6. 返信ドラフト作成
 
-`/ukwhatn-writing` スキルを実行して返信ドラフトを作成し、対応コミットのハッシュを添えて提示する（文体を意識するだけでは GitHub 向けガイドの中身が読み込まれないため、スキルを実行する）。
+`/writing-prose` スキルを実行して返信ドラフトを作成し、対応コミットのハッシュを添えて提示する（文体を意識するだけでは GitHub 向けガイドの中身が読み込まれないため、スキルを実行する）。
 
 投稿はドラフトを見たユーザーの承認を得てから行う（相手に見える対外の文なので）:
 
