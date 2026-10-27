@@ -40,19 +40,22 @@ fable subagentはleadと同一ベンダーでbiasの独立性を持たないた�
 
 ```bash
 # 初回
-codex exec --model gpt-6.1-sol -c model_reasoning_effort="high" \
+codex exec --dangerously-bypass-approvals-and-sandbox \
+  --model gpt-6.1-sol -c model_reasoning_effort="high" \
   -o "<出力先>/review.txt" "$(cat "<プロンプトファイル>")" \
   < /dev/null > "<出力先>/review.log" 2>&1
 
 # 2回目以降（CWD の直近セッションを継続。特定セッションは resume <SESSION_ID>）
-codex exec resume --last -o "<出力先>/review-2.txt" "$(cat "<プロンプトファイル>")" \
+codex exec resume --last --dangerously-bypass-approvals-and-sandbox \
+  -o "<出力先>/review-2.txt" "$(cat "<プロンプトファイル>")" \
   < /dev/null > "<出力先>/review-2.log" 2>&1
 ```
 
 起動後はAGENTS.md「バックグラウンドプロセス」に従い、進んでいる証拠を確かめる。確実に短く終わる確認だけは、`--json "<プロンプト>" < /dev/null 2>/dev/null | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'` の前景実行でよい。
 
 - `-c model_reasoning_effort` は既定値に依存せず明示する。`gpt-5.6-sol-medium` のような合成slugはcodexには存在しない（cursor側の表記）
-- 既定のread-only sandbox・承認なしで完走するので、レビューでは `--sandbox` を変えない
+- sandboxを使わずに起動する（`--dangerously-bypass-approvals-and-sandbox`）。sandboxはネットワークを止めるので、レビュー中にcodexが依存を取りに行くコマンド（テスト前の依存確認など）を流すと途中で切れ、依存が半端に消えた作業ツリーが残る。指定を省くと、`~/.codex/config.toml` で信頼済みのディレクトリかどうかでsandboxが変わり、挙動が起動場所で揺れる
+- 書き込みの制限が無いので、起動はレビュー対象のworktreeか作業ツリーの外（メモリディレクトリ）で行い、ほかの作業が使う本体のチェックアウトでは起動しない。プロンプトには「ファイルを編集しない」と書く
 - 認証は保存済みログインを再利用する。CI等では `CODEX_API_KEY` を当該コマンド限定で付与する
 
 ## プロンプト
