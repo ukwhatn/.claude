@@ -98,6 +98,7 @@ Phase: 0 準備（メモリディレクトリ・`/findmem`）→ 1 調査 → 2 
 - gws MCP の `drive_download_file` / `get_attachment` を呼ぶ前、`get_message` の戻り値がファイルに退避されたとき、gws MCP で下書きを作る前: `context/gws-mcp-notes.md`
 - `~/.claude` の構成変更・新しい PC のセットアップ・Codex への配布経路を触る前: `context/multi-agent-setup.md`
 - worktree を作る前・片付ける前・並列の bg session を設計する前: `context/worktree-guide.md`
+- Wikidot のページを作成・保存・編集する前（スクリプト経由・検証用ページ・モックを含む）: `context/wikidot-editing.md`
 
 ## メモリ・issue ディレクトリ
 
