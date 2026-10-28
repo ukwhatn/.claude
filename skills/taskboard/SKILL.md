@@ -89,7 +89,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 
 セッションには herdr の pane で動くもの（端末）と、会話（daemon が stream-json で動かす Claude Code。端末を持たない）がある。`session_list` は会話を別の節に出す。会話を扱うときは `pane` の代わりに `conversation_id`（先頭 8 字以上）を渡す（`session_prompt`・`session_stop`・`session_resume`・`session_history`・`session_rename`）。
 
-- 会話だけの tool: `session_answer`（会話が待っている問い（AskUserQuestion・権限の確認・計画の承認）に答える。答えを省くと何を聞かれているかを返す）、`session_control`（model・effort・権限のモードを替える、今の生成を止める）、`session_fork`（途中の発言から分ける）
+- 会話だけの tool: `session_answer`（会話が待っている問い（AskUserQuestion・権限の確認・計画の承認）に答える。答えを省くと何を聞かれているかを返す）、`session_control`（model・effort・権限のモード・起こした側への通知（`notify`）を替える、今の生成を止める）、`session_fork`（途中の発言から分ける）
 - `session_screen`・`session_keys` は pane だけ。会話の中身は `session_history` の `conversation_id`、問いは `session_answer` で扱う
 - 定期起動の回（claude で、引数を会話に読み替えられるもの）とオーケストレーターは会話で動く。会話を起こせないときだけ端末で動く
 
