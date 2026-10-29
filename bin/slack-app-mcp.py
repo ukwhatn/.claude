@@ -32,11 +32,13 @@ import json
 import os
 import pathlib
 import re
+import select
 import shutil
 import sqlite3
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.parse
 import urllib.request
 
@@ -44,6 +46,11 @@ SLACK_SUPPORT = os.path.expanduser("~/Library/Application Support/Slack")
 COOKIES_DB = os.path.join(SLACK_SUPPORT, "Cookies")
 LOCAL_STORAGE = os.path.join(SLACK_SUPPORT, "Local Storage", "leveldb")
 KEYCHAIN_SERVICE = "Slack Safe Storage"
+# keychain は gui(Aqua) セッションでしか読めない。taskboard/herdr 経由の Claude Code は
+# Background セッションで動くため、gui ドメインに登録したこの LaunchAgent(ブローカー)を
+# kickstart し、FIFO 経由で d cookie を受け取る
+BROKER_LABEL = "uk.whatn.slack-cookie-broker"
+COOKIE_FIFO = os.path.expanduser("~/.claude/local/.slack-cookie.fifo")
 CONFIG = os.path.expanduser(
     os.environ.get("SLACK_APP_MCP_CONFIG", "~/.claude/local/slack-app-mcp.json")
 )
@@ -126,6 +133,77 @@ def _read_d_cookie() -> str:
     )
 
 
+def _d_cookie_via_broker(timeout: float = 30.0) -> str:
+    """gui ドメインの LaunchAgent を kickstart し、FIFO 経由で d cookie を受け取る。
+
+    Background セッション（taskboard/herdr 経由）では keychain を読めないので、その
+    フォールバック。cookie 値は FIFO(カーネル)を一瞬通るだけでディスクには残さない。
+    """
+    os.makedirs(os.path.dirname(COOKIE_FIFO), exist_ok=True)
+    try:
+        os.remove(COOKIE_FIFO)
+    except FileNotFoundError:
+        pass
+    os.mkfifo(COOKIE_FIFO, 0o600)
+    try:
+        # reader を先に開く(非ブロッキング)。ブローカーの write open を受けられるようにする
+        fd = os.open(COOKIE_FIFO, os.O_RDONLY | os.O_NONBLOCK)
+        try:
+            uid = os.getuid()
+            r = subprocess.run(
+                ["launchctl", "kickstart", "-k", f"gui/{uid}/{BROKER_LABEL}"],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            if r.returncode != 0:
+                raise SlackAuthError(
+                    "cookie ブローカーを起動できなかった"
+                    f"（launchctl kickstart rc={r.returncode}）。"
+                    f"LaunchAgent {BROKER_LABEL} を gui ドメインに登録する必要がある: {r.stderr.strip()}"
+                )
+            deadline = time.monotonic() + timeout
+            buf = b""
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                rl, _, _ = select.select([fd], [], [], remaining)
+                if not rl:
+                    continue
+                chunk = os.read(fd, 4096)
+                if not chunk:
+                    break  # writer が閉じた(EOF)
+                buf += chunk
+            value = buf.decode("utf-8", "replace").strip()
+            if value.startswith("xoxd-"):
+                return value
+            raise SlackAuthError(
+                "cookie ブローカーから d cookie を受け取れなかった（タイムアウトか空応答）。"
+                f"{os.path.expanduser('~/.claude/local/slack-cookie-broker.err')} を確認する"
+            )
+        finally:
+            os.close(fd)
+    finally:
+        try:
+            os.remove(COOKIE_FIFO)
+        except FileNotFoundError:
+            pass
+
+
+def cookie_serve() -> int:
+    """gui ドメインの LaunchAgent から kickstart される。keychain を読んで d cookie を
+    reader が待つ FIFO に書く。reader がいなければ何もせず終わる。"""
+    value = _read_d_cookie()
+    try:
+        fd = os.open(COOKIE_FIFO, os.O_WRONLY | os.O_NONBLOCK)
+    except OSError:
+        return 0  # reader がいない(タイムアウト後など)
+    with os.fdopen(fd, "w") as f:
+        f.write(value)
+    return 0
+
+
 def read_local_config() -> dict:
     """Local Storage(leveldb) の localConfig_v2 を読んで返す。teams に token を含む。
 
@@ -198,7 +276,15 @@ class Session:
     @property
     def d_cookie(self) -> str:
         if self._d_cookie is None:
-            self._d_cookie = _read_d_cookie()
+            try:
+                self._d_cookie = _read_d_cookie()
+            except SlackAuthError as direct_err:
+                # Background セッションでは keychain を読めない。gui ドメインの
+                # ブローカー経由で取り直す（それも駄目なら直読みのエラーを投げる）
+                try:
+                    self._d_cookie = _d_cookie_via_broker()
+                except SlackAuthError:
+                    raise direct_err
         return self._d_cookie
 
     @property
@@ -462,6 +548,8 @@ def main() -> int:
         return cmd_doctor()
     if cmd == "diag":
         return cmd_diag()
+    if cmd == "cookie-serve":
+        return cookie_serve()
     if cmd == "server":
         build_server().run()
         return 0

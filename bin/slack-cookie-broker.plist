@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- slack-app-mcp の cookie ブローカー。gui(Aqua) ドメインに登録し、Background
+     セッションの MCP から launchctl kickstart で起動して keychain を読む。
+     各マシンで ~/Library/LaunchAgents にコピーして
+     `launchctl bootstrap gui/$(id -u) <plist>` する(手順は context/multi-agent-setup.md)。 -->
+<plist version="1.0"><dict>
+  <key>Label</key><string>uk.whatn.slack-cookie-broker</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/ukwhatn/.claude/bin/slack-app-mcp.py</string>
+    <string>cookie-serve</string>
+  </array>
+  <!-- LaunchAgent は最小 PATH で動くため、shebang の uv を解決できるよう候補を網羅する -->
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/Users/ukwhatn/.local/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>ProcessType</key><string>Interactive</string>
+  <key>RunAtLoad</key><false/>
+  <key>KeepAlive</key><false/>
+  <key>StandardErrorPath</key><string>/Users/ukwhatn/.claude/local/slack-cookie-broker.err</string>
+</dict></plist>
