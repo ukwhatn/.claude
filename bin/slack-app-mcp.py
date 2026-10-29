@@ -481,30 +481,6 @@ def build_server():
         r = session.call(ws["domain"], "chat.getPermalink", channel=channel, message_ts=message_ts)
         return {"permalink": r.get("permalink")}
 
-    @mcp.tool()
-    def slack_schedule(
-        workspace: str,
-        channel: str,
-        text: str,
-        delay_minutes: int = 3,
-        post_at: int | None = None,
-        thread_ts: str | None = None,
-    ) -> dict:
-        """投稿を予約する（擬似下書き）。既定は3分後、post_at（Unix秒）を渡すとその時刻。
-        クライアントの『スケジュール済み』に出るので送信前に編集・取り消しできる。post_allow で許可したチャンネルだけ通る。"""
-        ws = session.resolve(workspace)
-        _require_post_allowed(ws["domain"], channel)
-        when = post_at if post_at is not None else int(time.time()) + delay_minutes * 60
-        r = session.call(
-            ws["domain"], "chat.scheduleMessage", channel=channel, text=text, post_at=when, thread_ts=thread_ts
-        )
-        return {
-            "ok": True,
-            "scheduled_message_id": r.get("scheduled_message_id"),
-            "post_at": r.get("post_at"),
-            "channel": r.get("channel"),
-        }
-
     return mcp
 
 
