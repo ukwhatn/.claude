@@ -86,6 +86,31 @@ AGENTS.md末尾の見出し（`## マシンローカル設定`）が返れば全
 
 `bin/taskboard-delegate.sh` は taskboard の CLI の `conversation start --parent-from-env` に依存する。入っていない版では自分で `taskboard_outdated` を返すので、PCごとの確認は要らない。
 
+## slack-app-mcp のセットアップ（Mac・Slack.app ログイン済みのPCだけ）
+
+`bin/slack-app-mcp.py` は Slack.app のディスク上のログイン情報（leveldb の xoxc トークン + keychain の d cookie）で、MCP・アプリ連携を繋げないワークスペースも Web API で読む user スコープの MCP。Slack.app にログイン済みの Mac でのみ動く。登録は `~/.claude.json`・keychain・LaunchAgent に載るのでマシンごとに手で行う（同期対象外）。
+
+1. **MCP を user スコープで登録**（`~/.claude.json` の top-level に入る）:
+
+```bash
+claude mcp add --scope user slack-app-mcp -- ~/.claude/bin/slack-app-mcp.py server
+```
+
+2. **cookie ブローカーを gui ドメインに登録**。keychain の UI 保護項目は Aqua(gui) セッションでしか読めず、taskboard/herdr 経由の Claude Code は Background セッションで動く。Background から keychain を読むため、gui ドメインのワンショット LaunchAgent（ブローカー）を `launchctl kickstart` で起こして FIFO 経由で d cookie を受け取る:
+
+```bash
+cp ~/.claude/bin/slack-cookie-broker.plist ~/Library/LaunchAgents/uk.whatn.slack-cookie-broker.plist
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/uk.whatn.slack-cookie-broker.plist
+```
+
+plist 内の絶対パスと `PATH`（shebang の `uv` を最小 PATH で解決するための候補列挙）はこの Mac のユーザー用。別ユーザーの PC ではパスを直す。
+
+3. **keychain の初回許可**。初めて d cookie を読むとき keychain のダイアログが出る。GUI セッションで「常に許可」する（この許可は Aqua セッションでしか通らない）。
+
+4. **疎通を検証**。GUI セッションで `~/.claude/bin/slack-app-mcp.py doctor` を実行し、全ワークスペースで auth.test が OK になるか確認する。Background セッション（taskboard の子など）では、同じ doctor がブローカー経由で d cookie を読めるかも確認する。
+
+投稿は既定で無効（`~/.claude/local/slack-app-mcp.json` が無ければ全拒否＝読み取り専用）。投稿を許可するワークスペースは `{"post_allow": {"<domain>": "*"}}` をこのファイルに書く（同期対象外）。読み取り経路を優先し slack-browser(playwright) を fallback にする使い分けは `skills/slack-browser/SKILL.md`。
+
 ## CodexにMCPサーバーを足す
 
 `~/.codex/config.toml` はマシンごとなので、Codexに使わせたいMCPはPCごとに足す。URL・OAuthのclient id・ポート番号の実値はここに書かない（PJの `CLAUDE.local.md` かメモリに置く）。
