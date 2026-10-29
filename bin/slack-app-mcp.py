@@ -385,6 +385,14 @@ def _post_allowed(domain: str, channel: str) -> bool:
     return chans == "*" or (isinstance(chans, list) and channel in chans)
 
 
+def _require_post_allowed(domain: str, channel: str) -> None:
+    if not _post_allowed(domain, channel):
+        raise SlackAuthError(
+            f"{domain} の {channel} への投稿は許可されていない。"
+            f"{CONFIG} の post_allow に channel を足すと通る"
+        )
+
+
 # --- MCP サーバ ---
 
 
@@ -454,15 +462,48 @@ def build_server():
     def slack_post(workspace: str, channel: str, text: str, thread_ts: str | None = None) -> dict:
         """チャンネルかスレッドに投稿する。post_allow で明示許可したチャンネルだけ通る。"""
         ws = session.resolve(workspace)
-        if not _post_allowed(ws["domain"], channel):
-            raise SlackAuthError(
-                f"{ws['domain']} の {channel} への投稿は許可されていない。"
-                f"{CONFIG} の post_allow に channel を足すと通る"
-            )
+        _require_post_allowed(ws["domain"], channel)
         r = session.call(
             ws["domain"], "chat.postMessage", channel=channel, text=text, thread_ts=thread_ts
         )
         return {"ok": True, "ts": r.get("ts"), "channel": r.get("channel")}
+
+    @mcp.tool()
+    def slack_resolve_users(workspace: str, user_ids: list[str]) -> dict:
+        """user ID（U...）のリストを表示名に解決して {id: name} で返す。history/search の author が ID のままのとき使う。"""
+        ws = session.resolve(workspace)
+        return _user_names(session, ws["domain"], set(user_ids))
+
+    @mcp.tool()
+    def slack_permalink(workspace: str, channel: str, message_ts: str) -> dict:
+        """メッセージ（channel と ts）の permalink を返す。"""
+        ws = session.resolve(workspace)
+        r = session.call(ws["domain"], "chat.getPermalink", channel=channel, message_ts=message_ts)
+        return {"permalink": r.get("permalink")}
+
+    @mcp.tool()
+    def slack_schedule(
+        workspace: str,
+        channel: str,
+        text: str,
+        delay_minutes: int = 3,
+        post_at: int | None = None,
+        thread_ts: str | None = None,
+    ) -> dict:
+        """投稿を予約する（擬似下書き）。既定は3分後、post_at（Unix秒）を渡すとその時刻。
+        クライアントの『スケジュール済み』に出るので送信前に編集・取り消しできる。post_allow で許可したチャンネルだけ通る。"""
+        ws = session.resolve(workspace)
+        _require_post_allowed(ws["domain"], channel)
+        when = post_at if post_at is not None else int(time.time()) + delay_minutes * 60
+        r = session.call(
+            ws["domain"], "chat.scheduleMessage", channel=channel, text=text, post_at=when, thread_ts=thread_ts
+        )
+        return {
+            "ok": True,
+            "scheduled_message_id": r.get("scheduled_message_id"),
+            "post_at": r.get("post_at"),
+            "channel": r.get("channel"),
+        }
 
     return mcp
 
