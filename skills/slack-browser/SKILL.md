@@ -1,9 +1,11 @@
 ---
 name: slack-browser
-description: playwright の常駐 Chrome にログイン済みの Slack Web クライアントを scripts/slack_browser.py で操作し、チャンネル一覧・履歴・スレッド・検索の取得を行い、投稿文は Slack MCP が繋がる別ワークスペースの自分の DM へ下書きとして送る（直接投稿は明示の指示があるときだけ）。Slack の MCP・アプリ連携を繋げないワークスペース（guest 権限など）で、Slack のパーマリンクを読む・Slack を検索する・Slack に投稿や返信をする依頼時に使用。境界: Slack MCP が繋がるワークスペースはそちらを使う、投稿する日本語の文面の作成は writing-prose、ブラウザ経路の選び方と共有コンテキストの規則は context/browser-automation.md。
+description: playwright の常駐 Chrome にログイン済みの Slack Web クライアントを scripts/slack_browser.py で操作し、チャンネル一覧・履歴・スレッド・検索の取得を行い、投稿文は Slack MCP が繋がる別ワークスペースの自分の DM へ下書きとして送る（直接投稿は明示の指示があるときだけ）。Slack の MCP・アプリ連携を繋げないワークスペース（guest 権限など）で、Slack のパーマリンクを読む・Slack を検索する・Slack に投稿や返信をする依頼時に使用。境界: Slack MCP が繋がるワークスペースはそちらを使う、Slack.app にログイン済みのワークスペースは slack-app-mcp（Slack.app のセッションで Web API を叩く user スコープ MCP）を先に使い本スキルはその fallback、投稿する日本語の文面の作成は writing-prose、ブラウザ経路の選び方と共有コンテキストの規則は context/browser-automation.md。
 ---
 
 # Slack をブラウザ経由で読み書きする
+
+まず slack-app-mcp を試す。Slack.app にログイン済みのワークスペースは、`mcp__slack-app-mcp__*`（Slack.app のセッションで Web API を叩く user スコープ MCP）が履歴・スレッド・検索を画面を開かずに読め、既読も付けない。本スキル（ブラウザ経路）は、Slack.app にログインしていない・slack-app-mcp が使えないワークスペースの fallback にする。
 
 Slack のアプリ連携を認可できないワークスペースで、ユーザーがログインした自動化 Chrome の画面を操作して読み書きする。操作は全部 `scripts/slack_browser.py` を Bash で実行して行い、結果は JSON で受け取る（スナップショットを読まない）。
 
