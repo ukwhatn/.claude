@@ -460,7 +460,10 @@ def build_server():
 
     @mcp.tool()
     def slack_post(workspace: str, channel: str, text: str, thread_ts: str | None = None) -> dict:
-        """チャンネルかスレッドに投稿する。post_allow で明示許可したチャンネルだけ通る。"""
+        """チャンネルかスレッドに投稿する。post_allow で明示許可したチャンネルだけ通る。
+        text は Slack mrkdwn で解釈される（`*太字*`・`_斜体_`・`~打ち消し~`・`` `code` ``・
+        ```code block```・`<url|text>`・`>引用`）。標準 Markdown の `**太字**`・`[text](url)` は
+        付かず字面のまま出る（URL のみ自動リンク）。"""
         ws = session.resolve(workspace)
         _require_post_allowed(ws["domain"], channel)
         r = session.call(
