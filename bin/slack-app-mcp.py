@@ -2,7 +2,7 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#   "mcp>=1.2",
+#   "mcp>=1.2,<2",
 #   "pycryptodome>=3.20",
 #   "ccl_chromium_reader @ git+https://github.com/cclgroupltd/ccl_chromium_reader@ad37443541dd91dac3ac1fb2eecaeb8693f36815",
 # ]
