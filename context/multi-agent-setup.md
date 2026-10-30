@@ -111,6 +111,17 @@ plist 内の絶対パスと `PATH`（shebang の `uv` を最小 PATH で解決�
 
 投稿は既定で無効（`~/.claude/local/slack-app-mcp.json` が無ければ全拒否＝読み取り専用）。投稿を許可するワークスペースは `{"post_allow": {"<domain>": "*"}}` をこのファイルに書く（同期対象外）。読み取り経路を優先し slack-browser(playwright) を fallback にする使い分けは `skills/slack-browser/SKILL.md`。
 
+## discord-app-mcp のセットアップ（Mac・Discord.app を入れたPCだけ）
+
+`bin/discord-app-mcp.py` は、普段使いとは別に起動した MCP 専用の Discord.app に CDP で入り、アプリ本体の関数で読み書きする user スコープの MCP。外から token で API を叩く形にしないのは、Discord ではそれが self-bot として規約で禁じられ、送り元もクライアントと変わるため。専用インスタンスは Discord.app の `--multi-instance` と `DISCORD_USER_DATA_DIR` で別データ・別ウィンドウとして動き、デバッグポートはこちらにだけ開く（普段使いを再起動しない・画面を動かさないため）。登録は `~/.claude.json`・LaunchAgent・専用データ置き場に載るのでマシンごとに手で行う（同期対象外）。
+
+1. **MCP を user スコープで登録**: `claude mcp add --scope user discord-app -- ~/.claude/bin/discord-app-mcp.py server`
+2. **専用インスタンスを起動してログインする**: `~/.claude/bin/discord-app-mcp.py launch`（`--dry-run` で実行内容だけ出す）。2つ目の Discord の窓が開くので一度だけログインし、その窓の通知を切る（普段使いと2重に届くため）
+3. **ログイン時の起動を登録**: `bash ~/.claude/bin/discord-app-cdp-setup.sh`。ログイン時に1回だけ `launch --at-login` を走らせる（普段使いの起動を待ってから専用を起動する）。定期実行にしないのは、使用中の Discord を再起動させないため。専用が落ちたら `launch` を手で実行する
+4. **疎通を検証**: `~/.claude/bin/discord-app-mcp.py doctor`
+
+書き込み（送信・編集・削除）は既定で無効（`~/.claude/local/discord-app-mcp.json` の `write_allow` が空なら全拒否）。許可するチャンネルの id を `write_allow` に並べる（`"*"` で全許可。同期対象外）。
+
 ## CodexにMCPサーバーを足す
 
 `~/.codex/config.toml` はマシンごとなので、Codexに使わせたいMCPはPCごとに足す。URL・OAuthのclient id・ポート番号の実値はここに書かない（PJの `CLAUDE.local.md` かメモリに置く）。
