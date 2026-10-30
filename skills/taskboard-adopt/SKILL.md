@@ -11,7 +11,7 @@ taskboard の外で始まった作業を、taskboard のタスク 1 件に載せ
 
 ツール一覧に `mcp__taskboard__*` があること。無ければ「taskboard の MCP が繋がっていない（`claude mcp list` で確認）」と伝えて止まる。
 
-このセッションは、taskboard の herdr の pane なら pane で、それ以外は Claude Code が MCP に渡すセッション ID で見分けられる。どちらでもないセッション（Codex、`claude -p` の単発）は結べないので、以後の tool に毎回 `task_id` を渡すよう伝えて、手順 2 までで止める。
+このセッションは、taskboard の会話なら会話の id で、それ以外は Claude Code が MCP に渡すセッション ID で見分けられる。どちらでもないセッション（Codex、`claude -p` の単発）は結べないので、以後の tool に毎回 `task_id` を渡すよう伝えて、手順 2 までで止める。
 
 ## 手順
 

@@ -18,7 +18,7 @@ taskboard の MCP の tool の使い方は `skills/taskboard/SKILL.md`、herdr C
 
 書き込みの有無で切るのは、中断したときに失われるものが違うため。`Explore` は書き込み不可なので、中断してもやり直せば同じ結論に戻れる。ファイルを書く委譲が中断すると、書きかけの作業文脈が失われ、成果物が不完全な状態でディスクに残る（どこまで書けているかをleadが読み直して判断することになる）。会話とpaneなら、委譲先が利用枠の上限に当たっても、戻ったときに続きから再開する（会話は taskboard が続きを送り、pane は Claude Code の `autoContinueAtUsageLimit` が続ける）。
 
-ファイルを書く委譲で会話を先に選ぶのは、完了を taskboard が lead に届けるため。lead はスクリプトの完了を Bash で持ち続けなくてよく、委譲先の返事と履歴は端末の画面でなく `session_history` で読める。会話は taskboard の daemon が動かす Claude Code（stream-json）なので、lead が taskboard の herdr の pane か taskboard の会話の中にいるときだけ使える。そうでないときはスクリプトが `not_in_taskboard` を返すので、pane の経路に移る（下の「フォールバック」）。
+ファイルを書く委譲で会話を先に選ぶのは、完了を taskboard が lead に届けるため。lead はスクリプトの完了を Bash で持ち続けなくてよく、委譲先の返事と履歴は端末の画面でなく `session_history` で読める。会話は taskboard の daemon が動かす Claude Code（stream-json）なので、lead が taskboard の会話の中にいるときだけ使える。そうでないときはスクリプトが `not_in_taskboard` を返すので、pane の経路に移る（下の「フォールバック」）。
 
 ## モデルの選択
 
@@ -117,8 +117,6 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 - 知らせていないターンが2つ以上たまると、「- 未通知のターン」の項目にその数が入る。前のターンの返事は `session_history` の `conversation_id` で読む
 - 返答と追加の指示は `session_prompt` の `conversation_id` で送る（委譲先が生成中なら、そのターンの後に回る）。委譲先が問い（AskUserQuestion・権限の確認）で待っていれば `session_answer` で答える
 - 委譲先の様子は `session_list` の会話の節で見る（状態、「起動元」、「未通知」、「利用枠の上限のため <時刻> に続きを送る」）
-
-lead の pane では、知らせは起こしたときの lead の Claude の会話にだけ入る。委譲先が動いている間に lead が `/clear` すると、Claude の会話が替わって知らせが届かなくなる（`session_list` に「未通知」が残る）。委譲先が動いている間は `/clear` しない。`/exit` して `claude --resume` で同じ会話に戻れば、戻った pane に届く。
 
 ### 結果の受け取りと片付け（会話）
 
@@ -252,7 +250,7 @@ tabはleadが閉じる。閉じてよいのは、上の「結果の受け取り�
 
 | スクリプト | reason | 意味 | 扱い |
 |---|---|---|---|
-| taskboard-delegate.sh | `not_in_taskboard` | lead が taskboard の会話でも taskboard の herdr の pane でもない | pane へ |
+| taskboard-delegate.sh | `not_in_taskboard` | lead が taskboard の会話でない | pane へ |
 | taskboard-delegate.sh | `taskboard_unavailable` | `taskboard` が無い | pane へ |
 | taskboard-delegate.sh | `taskboard_outdated` | taskboard が知らせの届け先を受け付けない古い版 | pane へ |
 | taskboard-delegate.sh | `start_failed` | 会話を起こせなかった。`detail` に taskboard の文が入る（会話の枠の上限・確かめた版が無いなど） | `detail` を読む。枠や版の問題なら pane へ |
@@ -273,8 +271,8 @@ tabはleadが閉じる。閉じてよいのは、上の「結果の受け取り�
 
 - **委譲先のターンが終わると、数秒で lead に知らせが入る。** lead が taskboard の会話なら、知らせが次の人の発言になってターンが走る
 - **スクリプトは会話を起こした時点で数秒で返る。** 委譲先の Claude Code は `--permission-mode bypassPermissions --disallowedTools Agent Workflow` で起き、成果物を書いて最後の返事で報告した（haiku で確認）
-- **委譲先の会話は `--task-id` のタスクに結ばれる。** `session_list` の会話の節に「起動元」（lead の pane ID か会話の id の先頭 8 字）が出て、知らせを届けるまでは「未通知」が付く
-- **lead が taskboard の herdr の pane なら、知らせは lead が入力待ちになったときに人の発言として入る。** lead が作業を続けている間は残り、その間に daemon を入れ替えても落ちない。届けると `session_list` の「未通知」が消える
+- **委譲先の会話は `--task-id` のタスクに結ばれる。** `session_list` の会話の節に「起動元」（lead の会話の id の先頭 8 字）が出て、知らせを届けるまでは「未通知」が付く
+- **知らせは lead が入力待ちになったときに入る。** lead が作業を続けている間は残り、その間に daemon を入れ替えても落ちない。届けると `session_list` の「未通知」が消える
 
 ### pane の経路
 
@@ -302,7 +300,6 @@ tabはleadが閉じる。閉じてよいのは、上の「結果の受け取り�
 - 委譲先が問いで待っているときの知らせと `session_answer`、知らせていないターンが2つ以上たまったときの数
 - `--allow-review`
 - 委譲先が利用枠の上限に当たった後の続きの送信（taskboard のテストでだけ確かめた）
-- lead の pane で `/clear` した後に知らせが残ること、`/exit` と `claude --resume` で戻った pane に届くこと
 - `start_failed`・`unexpected_output`
 - `done_close_failed`（`--close` 指定時のtab closeの失敗）
 - 起動タイムアウトによる `blocked_unknown`

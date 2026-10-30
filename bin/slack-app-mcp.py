@@ -46,7 +46,7 @@ SLACK_SUPPORT = os.path.expanduser("~/Library/Application Support/Slack")
 COOKIES_DB = os.path.join(SLACK_SUPPORT, "Cookies")
 LOCAL_STORAGE = os.path.join(SLACK_SUPPORT, "Local Storage", "leveldb")
 KEYCHAIN_SERVICE = "Slack Safe Storage"
-# keychain は gui(Aqua) セッションでしか読めない。taskboard/herdr 経由の Claude Code は
+# keychain は gui(Aqua) セッションでしか読めない。taskboard の agent host 経由の Claude Code は
 # Background セッションで動くため、gui ドメインに登録したこの LaunchAgent(ブローカー)を
 # kickstart し、FIFO 経由で d cookie を受け取る
 BROKER_LABEL = "uk.whatn.slack-cookie-broker"
@@ -136,7 +136,7 @@ def _read_d_cookie() -> str:
 def _d_cookie_via_broker(timeout: float = 30.0) -> str:
     """gui ドメインの LaunchAgent を kickstart し、FIFO 経由で d cookie を受け取る。
 
-    Background セッション（taskboard/herdr 経由）では keychain を読めないので、その
+    Background セッション（taskboard の agent host 経由）では keychain を読めないので、その
     フォールバック。cookie 値は FIFO(カーネル)を一瞬通るだけでディスクには残さない。
     """
     os.makedirs(os.path.dirname(COOKIE_FIFO), exist_ok=True)

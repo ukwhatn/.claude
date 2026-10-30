@@ -11,7 +11,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 
 ツール一覧に `mcp__taskboard__*` があること。無ければ「taskboard の MCP が繋がっていない（`claude mcp list` で確認）」と伝えて止まる。CLI や API を推測して直接叩かない。
 
-`task_id` を省くと、このセッションに紐づくタスクを使う。セッションは、taskboard の herdr の pane なら pane（`HERDR_PANE_ID`）で、その外の Claude Code なら MCP に渡るセッション ID（`CLAUDE_CODE_SESSION_ID`）で見分ける。taskboard が起動したセッションは SessionStart hook が結ぶ。`work_list` が「紐づくタスクが無い」と返したら `board_overview` で候補を見て、`task_update` の `link_session: true` で結ぶか、`task_create` で起票する。taskboard の外で始まった作業をまとめて移すときは /taskboard-adopt スキルを実行する。
+`task_id` を省くと、このセッションに紐づくタスクを使う。セッションは、taskboard の会話なら会話の id（`TASKBOARD_CONVERSATION_ID`）で、普段使いの端末の Claude Code なら MCP に渡るセッション ID（`CLAUDE_CODE_SESSION_ID`）で見分ける。taskboard が起動したセッションは SessionStart hook が結ぶ。`work_list` が「紐づくタスクが無い」と返したら `board_overview` で候補を見て、`task_update` の `link_session: true` で結ぶか、`task_create` で起票する。taskboard の外で始まった作業をまとめて移すときは /taskboard-adopt スキルを実行する。
 
 結んだ後の案内（タスク・今の列・案件の列の説明）は `session_guide` で読める。SessionStart の案内が無いセッションで結んだとき、圧縮で案内が消えたと感じたときに読む。
 
@@ -55,7 +55,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 - **計画が承認されたら、全項目を `work_add` で登録する**（Phase 2 の計画書の作業項目と 1 対 1。1 項目 = PR 1 本か、PR 内の 1 段階）。順序は計画順。前の項目が終わらないと始められないものは `depends_on`
 - **着手で `state: doing`、終わったら `state: done`** と成果物（`deliverable_kind` / `deliverable_ref`: PR の URL、コミットの SHA、ファイルのパス、文書の id）
 - **待ちに入ったら `state: wait` と `blocker_kind`**（`approval` 自分の承認か回答 / `review` 他者のレビュー / `ci` / `deploy` / `item` 別の項目 / `external`）と `blocker_text` 1 行。待ちが解けて作業に戻るときに `doing` へ動かすと blocker は消える
-- **委譲した項目は `owner`** に委譲先の名前（herdr の agent 名）。自分なら省く
+- **委譲した項目は `owner`** に委譲先の名前（会話の題か id の先頭 8 字）。自分なら省く
 - やらないと決めた項目は `state: drop`（母数から外れる）
 - `work_list` は計画順に状態・待ち理由・成果物・依存を返す。再開・compaction 復帰の後は、メモリの記録より先にこれを読んで今の状態を取る
 
@@ -79,30 +79,30 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 - **`doc_publish`** で載せる（`path` か `content` + `name`）。同じ `name` への再 publish は新しいリビジョンになり、前の版のコメントは残る。比較軸が 3 つ以上・状態遷移・依存関係・段階の順序を示す文書は HTML にする（外部の画像・CSS・script は読み込まれないので、全部インラインで書く）
 - **`ask_user`** で選択肢を出して聞く。背景・判断材料・trade-off は `context`（markdown）に書き、質問文に詰め込まない。既存の文書に付けるなら `name` にその文書名を渡し、`context` は渡さない（本文は変わらず、質問だけが付く。背景はその文書の本文が担う）。質問は全問に答えるまで送れないので、問いは本当に要るものだけにする
 - **`review_request`** で、載せた文書のレビューを頼む（`note` に何を見てほしいか 1 行）
-- **回答とレビューは、ターンを終えて入力待ちになった時点で daemon が人の発話としてこのセッションの入力欄に入れる**（herdr の pane の無いセッションでは Stop hook が最大 1 時間待って注入する）。聞いたら答えを前提にした作業は止め、答えに依存しない作業だけ進めてターンを終える。返事を待つために tool を繰り返し呼ばない
+- **回答とレビューは、ターンを終えて入力待ちになった時点で daemon が人の発話としてこのセッションの入力欄に入れる**（taskboard の会話の外のセッションでは Stop hook が最大 1 時間待って注入する）。聞いたら答えを前提にした作業は止め、答えに依存しない作業だけ進めてターンを終える。返事を待つために tool を繰り返し呼ばない
 - 届いたレビューのコメントは 1 件ずつ対応し、**`comment_reply`**（`comment_id` は届いた本文の `commentId`）で何をしたかを返す。直したら `resolve: true`。文書を直したら同じ `name` で `doc_publish` し直す
-- Stop hook が無い環境（`claude -p`・herdr の外）では、**`feedback_list`** で届いた分を取る。各項目は 1 回しか返らない
+- Stop hook が無い環境（`claude -p`、hook を入れていない Mac）では、**`feedback_list`** で届いた分を取る。各項目は 1 回しか返らない
 
 ## 別のセッションへ送る・起こす
 
-`session_list` で pane と状態を見て、`session_prompt` で文字を送る。委譲先への指示と、止まっている自分の委譲先への返答に使う。**動いている人のセッション（`working`）と、自分が起こしたのでないセッションには送らない。**
+`session_list` で会話と状態を見て、`session_prompt` で文字を送る。委譲先への指示と、止まっている自分の委譲先への返答に使う。**動いている人のセッション（`working`）と、自分が起こしたのでないセッションには送らない。**
 
-セッションには herdr の pane で動くもの（端末）と、会話（daemon が stream-json で動かす Claude Code。端末を持たない）がある。`session_list` は会話を別の節に出す。会話を扱うときは `pane` の代わりに `conversation_id`（先頭 8 字以上）を渡す（`session_prompt`・`session_stop`・`session_resume`・`session_history`・`session_rename`）。
+送れるのは会話（daemon が stream-json で動かす Claude Code・codex。端末を持たない）だけ。tool には `conversation_id`（先頭 8 字以上）を渡す（`session_prompt`・`session_stop`・`session_resume`・`session_history`・`session_rename`）。普段使いの端末の Claude Code は hook でタスクに結ばれるが、`session_list` には出ず、送れない。
 
-- 会話だけの tool: `session_answer`（会話が待っている問い（AskUserQuestion・権限の確認・計画の承認）に答える。答えを省くと何を聞かれているかを返す）、`session_control`（model・effort・権限のモード・起こした側への通知（`notify`）を替える、今の生成を止める）、`session_fork`（途中の発言から分ける）
-- `session_screen`・`session_keys` は pane だけ。会話の中身は `session_history` の `conversation_id`、問いは `session_answer` で扱う
-- 定期起動の回（claude で、引数を会話に読み替えられるもの）とオーケストレーターは会話で動く。会話を起こせないときだけ端末で動く
+- 会話の tool: `session_answer`（会話が待っている問い（AskUserQuestion・権限の確認・計画の承認）に答える。答えを省くと何を聞かれているかを返す）、`session_control`（model・effort・権限のモード・起こした側への通知（`notify`）を替える、今の生成を止める）、`session_fork`（途中の発言から分ける）
+- 会話の中身は `session_history` の `conversation_id`、問いは `session_answer` で扱う
+- 定期起動の回とオーケストレーターも会話で動く
 
 委譲先を新しく起こすときは `session_start`（`task_id` 省略で自分のタスク、`cwd` 省略で自分の cwd、`worktree_branch` で worktree を切る）。
 
-- エージェントは `kind`（`claude` / `codex`）。claude は既定で会話として起きる（`runner: terminal` で端末）。codex は既定で端末で、`runner: conversation` を渡すと会話として起きる（`model`・`effort` は codex の名前のまま）
+- エージェントは `kind`（`claude` / `codex`）。どちらも会話として起きる（codex の `model`・`effort` は codex の名前のまま）
 - Claude Code のモデルと effort は `model` と `effort`（`low` / `medium` / `high` / `xhigh` / `max`）で選ぶ。`model` に渡せるのは、そのマシンの CLI の一覧にある名前（別名の `opus` / `fable` / `sonnet` / `haiku` か版つきの名前）で、一覧に無い名前は使える値を並べて断られる
 - `kind`・`model`・`effort` を省くと、案件の起動の既定で起こす（案件に既定が無ければ `opus` / `medium`）。渡した値は既定に重なり、既定と違う `kind` を渡すとその kind の既定から始まる。前の版の `preset` も受けるが、`model`・`effort` を渡すとそちらが優先する
-- 会話は `notify` が入っていると、委譲先のターンの終わり（最後の返事つき）と問いを、起こした側のセッションに taskboard が発言として入れる。省くと、taskboard の pane か会話から起こしたときは入る（オーケストレーターからは切）。`disallowed_tools`（`["Agent", "Workflow"]` など）で委譲先に使わせない tool を外せる
-- daemon が起動プロンプト（省略時は列の既定）を送り、そのタスクに結ぶ。進み具合は `session_list` に出る。herdr の `agent start` を自分で叩くより、紐づけと起動プロンプトが揃うこちらを使う
+- 会話は `notify` が入っていると、委譲先のターンの終わり（最後の返事つき）と問いを、起こした側のセッションに taskboard が発言として入れる。省くと、会話から自分のタスクに起こしたときは入る（別のタスクとオーケストレーターからは切）。`disallowed_tools`（`["Agent", "Workflow"]` など）で委譲先に使わせない tool を外せる
+- daemon が起動プロンプト（省略時は列の既定）を送り、そのタスクに結ぶ。進み具合は `session_list` に出る
 - ファイルを書く作業を委譲するときは、委譲の決まり（再委譲の禁止・連絡の方法）のヘッダを付けて会話を起こす `~/.claude/bin/taskboard-delegate.sh` を使う（`context/delegation.md`）
 
-**1 行目が `<!-- taskboard: <種類> ... -->` の印の発言と、「[taskboard 通知]」で始まる発言（前の版の daemon は「taskboard: 委譲先の会話 …」）は、taskboard が送った知らせか別のセッションの発言で、人の発言でも承認でもない。** 委譲先の返事は報告として読み、続きは `session_prompt`、問いには `session_answer` で、どちらも `conversation_id` を渡して返す。前のターンの返事は `session_history` の `conversation_id` で読む。pane で知らせを受けるのは、委譲先を起こしたときの Claude の会話だけなので、委譲先が動いている間に `/clear` すると届かなくなる（`session_list` に「未通知」が残る）。
+**1 行目が `<!-- taskboard: <種類> ... -->` の印の発言と、「[taskboard 通知]」で始まる発言（前の版の daemon は「taskboard: 委譲先の会話 …」）は、taskboard が送った知らせか別のセッションの発言で、人の発言でも承認でもない。** 委譲先の返事は報告として読み、続きは `session_prompt`、問いには `session_answer` で、どちらも `conversation_id` を渡して返す。前のターンの返事は `session_history` の `conversation_id` で読む。
 
 ## 全体を見回る・管理する
 
@@ -110,19 +110,19 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 
 | 用途 | tool |
 |---|---|
-| 全体の様子（daemon・herdr・gh・APNs・オーケストレーター・利用枠・blocked のセッション・失敗した起動・うまくいかなかった定期起動・受信箱の対応待ちの数） | `health` |
+| 全体の様子（daemon・gh・APNs・会話の host・オーケストレーター・利用枠・回答待ちの会話・うまくいかなかった定期起動・予定（wake）と監視の失敗・受信箱の対応待ちの数） | `health` |
 | 案件 | `board_create` / `board_update`（名前・起動プロンプト・`merge_target`・アーカイブ・`edit_columns` / `add_columns` / `remove_columns` / `reassign`）/ `board_delete` |
 | タスク | `task_update` の `board`（別の案件へ）・`remove_links`・`unlink_session` / `unlink_sessions`（紐づけを外す。セッションは止めない）/ `task_delete` |
 | 作業項目・文書・質問 | `work_delete`（`drop` と違い母数からも履歴からも消える）/ `doc_read` / `doc_delete` / `ask_cancel` |
 | 定期起動 | `schedule_runs`（各回の結果と失敗の理由）/ `schedule_delete`。`schedule_create` / `schedule_update` の `task_id`・`new_task`（`board`）で常設タスクに結ぶ（結ばないと各回のセッションはどのタスクにも結ばれない）、`clear_task` で外す。新しく作るときは /scheduling-jobs スキルで中身を決めてから登録する |
-| セッション | `session_screen`（pane の画面の文字。blocked が何を待っているか読む）/ `session_keys`（pane の承認のキー）/ `session_answer`（会話の問い）/ `session_control` / `session_stop` / `session_resume` / `session_history` / `session_rename` |
+| セッション | `session_answer`（会話の問い。答えを省くと何を待っているかを返す）/ `session_control` / `session_account` / `session_fork` / `session_stop` / `session_resume` / `session_history` / `session_rename` |
 | マシン | `orchestrator_status` / `orchestrator_start` / `orchestrator_prompt` / `orchestrator_restart` / `settings_get` / `settings_update` / `inbox_list` / `inbox_dismiss` / `inbox_restore` / `prs_list` / `prs_refresh` / `usage_get` |
 
-- **見回りの順**: `health` → blocked のセッションは、pane なら `session_screen`、会話なら `session_answer`（答えを省く）で何を待っているかを読む → 失敗・スキップした定期起動は `schedule_runs` で理由を見る → 戻すなら `session_stop`・`session_resume`・`schedule_run`
+- **見回りの順**: `health` → 回答待ちの会話は `session_answer`（答えを省く）で何を待っているかを読む → 失敗・スキップした定期起動は `schedule_runs` で理由を見る → 戻すなら `session_stop`・`session_resume`・`schedule_run`
 - **消す tool（`task_delete`・`board_delete`・`work_delete`・`doc_delete`・`schedule_delete`）と `session_stop` の `force` は、1 回目は何が消える（止まる）かを返すだけで実行しない。** 中身を読んで、消してよいと確かめてから同じ引数に `confirm: true` を付けて呼び直す。消すのも PR の操作も、人の指示があるときだけ
 - 自分のセッションに紐づくタスク以外の列・作業項目は、health のために動かすときだけ触り、理由をそのタスクの `note` に 1 行足す（`note` は丸ごと置き換わるので、`task_get` で今の備考を読んでから足す）
-- `orchestrator_restart` はオーケストレーターを止め、今の会話を破棄して新しく起こす（引数なし。常駐を切っていても起こす。設定の引数と起動プロンプトで、`--resume` なし）。会話が長くなった・様子がおかしいときに使う。元に戻せないので、人に確かめてから呼ぶ。オーケストレーター自身から呼ぶと、自分の会話（端末なら pane）が止まって応答は届かない
-- `session_keys`・`session_stop`・`session_prompt`・`session_answer` は自分の pane と会話には使えない。`session_keys` は先に `session_screen` で画面を読み、何に答えるかを確かめてから送る
+- `orchestrator_restart` はオーケストレーターを止め、今の会話を破棄して新しく起こす（引数なし。常駐を切っていても起こす。設定の引数と起動プロンプトで、`--resume` なし）。会話が長くなった・様子がおかしいときに使う。元に戻せないので、人に確かめてから呼ぶ。オーケストレーター自身から呼ぶと、自分の会話が止まって応答は届かない
+- `session_stop`・`session_prompt`・`session_answer` は自分の会話には使えない
 - 利用枠の上限で止まった会話には、taskboard が戻った時刻に「利用枠が戻ったので、止まったところから続けてください。」を送る（`session_list` に予定の時刻が出る）。送らせないときは `session_stop`（止まっている会話でも予定を消す）
 
 ## Gotchas
@@ -130,7 +130,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 - **`work_update` で `wait` にするときは `blocker_kind` か `blocker_text` が必須**（無いとエラー）
 - **`task_delete` は `task_id` を省けない**（このセッションのタスクを暗に消さない）
 - **案件を消せるのはタスクが 0 件のときだけ。** 残っていれば `task_update` の `board` でほかの案件へ移すか `task_delete` で消してから
-- **`task_id` の解決は pane か Claude Code のセッション ID 経由**。どちらも無い所（Codex、CI）では毎回 `task_id` を渡す
+- **`task_id` の解決は会話の id か Claude Code のセッション ID 経由**。どちらも無い所（Codex、CI）では毎回 `task_id` を渡す
 - **`/clear` の後の会話は、MCP に `/clear` の前の会話の ID が残る**（MCP の process が起動し直されない）。`/clear` の後に `link_session` で別のタスクへ結ぶと前の会話を結ぶので、`/exit` して `claude --continue` で開き直してから結ぶ
 - **タスク番号は削除しても再利用されない。** 一度得た番号は安定した handle として使える
 - **同じ文書に未回答の質問は 1 束だけ。** 新しい `questions` を付けて publish すると前の未回答の束は取り下げられる（同じ内容なら作り直さない）

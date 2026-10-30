@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # taskboard の会話（daemon が stream-json で動かす Claude Code）へ作業を委譲する。
 # 指示書に委譲ヘッダを前置きして一時ファイルに置き、会話を起こして最初の発言で読ませる。完了は待たない。
-# 委譲先のターンが終わるたびに、taskboard が最後の返事を lead（この pane か会話）に人の発言として入れる。
+# 委譲先のターンが終わるたびに、taskboard が最後の返事を lead（この会話）に人の発言として入れる。
 # 規定と使い方: ~/.claude/context/delegation.md
 #
 # 終了時は必ず1行 JSON を stdout に出す（SIGKILL 等の異常終了を除く）。
@@ -36,7 +36,7 @@ usage: taskboard-delegate.sh --task <指示書の絶対パス> --task-id <taskbo
                            （Agent / Workflow tool は外したまま）
 
   承認は bypassPermissions、Agent と Workflow の tool は外して起こす（再委譲の禁止）。
-  lead はこのスクリプトを呼んだ taskboard の herdr の pane か、taskboard の会話。
+  lead はこのスクリプトを呼んだ taskboard の会話。
 USAGE
 }
 
@@ -97,8 +97,8 @@ TASKBOARD="$(command -v taskboard 2>/dev/null)"
 [ -n "$TASKBOARD" ] || finalize invalid_input 2 taskboard_unavailable
 # 知らせの届け先（parent）を受け付けない古い taskboard では、委譲先が終わっても lead に届かない
 "$TASKBOARD" conversation start --help 2>&1 | grep -q -- '--parent-from-env' || finalize invalid_input 2 taskboard_outdated
-# 届け先は taskboard の会話か taskboard の herdr の pane だけ。どちらの印も無ければ CLI に聞くまでもない
-[ -n "${TASKBOARD_CONVERSATION_ID:-}" ] || [ -n "${HERDR_PANE_ID:-}" ] || finalize invalid_input 2 not_in_taskboard
+# 届け先は taskboard の会話だけ。印が無ければ CLI に聞くまでもない
+[ -n "${TASKBOARD_CONVERSATION_ID:-}" ] || finalize invalid_input 2 not_in_taskboard
 
 case "$TASK" in
   /*) ;;
@@ -233,7 +233,7 @@ rc=$?
 DETAIL="$(head -c 500 "$err_file" 2>/dev/null | tr '\n' ' ' | sed 's/ *$//')"
 rm -f "$err_file"
 if [ $rc -ne 0 ]; then
-  # この pane が taskboard の herdr でない（普段使いの herdr の pane など）と CLI が断る
+  # このシェルが taskboard の会話でないと CLI が断る
   case "$DETAIL" in
     *--parent-from-env:*) abort invalid_input 2 not_in_taskboard ;;
   esac

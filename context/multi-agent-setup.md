@@ -96,7 +96,7 @@ AGENTS.md末尾の見出し（`## マシンローカル設定`）が返れば全
 claude mcp add --scope user slack-app-mcp -- ~/.claude/bin/slack-app-mcp.py server
 ```
 
-2. **cookie ブローカーを gui ドメインに登録**。keychain の UI 保護項目は Aqua(gui) セッションでしか読めず、taskboard/herdr 経由の Claude Code は Background セッションで動く。Background から keychain を読むため、gui ドメインのワンショット LaunchAgent（ブローカー）を `launchctl kickstart` で起こして FIFO 経由で d cookie を受け取る:
+2. **cookie ブローカーを gui ドメインに登録**。keychain の UI 保護項目は Aqua(gui) セッションでしか読めず、taskboard の agent host 経由の Claude Code は Background セッションで動く。Background から keychain を読むため、gui ドメインのワンショット LaunchAgent（ブローカー）を `launchctl kickstart` で起こして FIFO 経由で d cookie を受け取る:
 
 ```bash
 cp ~/.claude/bin/slack-cookie-broker.plist ~/Library/LaunchAgents/uk.whatn.slack-cookie-broker.plist
