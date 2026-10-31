@@ -25,7 +25,7 @@ Bot を入れられない（が自分は参加している）サーバーのチ�
 
 安全:
 - 送信・編集・削除は、~/.claude/local/discord-app-mcp.json の write_allow に明示した
-  チャンネルだけ通る（既定は空）。1 件ずつの確認は呼び出し側（Claude Code）が行う前提。
+  チャンネルか、write_allow_guilds に明示したサーバー内のチャンネル（スレッドを含む）だけ通る（既定は空）。1 件ずつの確認は呼び出し側（Claude Code）が行う前提。
 - トークンは renderer の外へ出さない。この MCP はトークンを読まない。
 
 使い方:
@@ -81,7 +81,7 @@ def _instance_dir() -> str:
 # チャンネルでは内部キューで pending のまま）ので await せず、ストアをポーリングして確定する。
 AGENT_JS = r"""
 (() => {
-  const V = "3";  // api の形を変えたら上げる（古いエージェントを張り直させる）
+  const V = "4";  // api の形を変えたら上げる（古いエージェントを張り直させる）
   if (window.__DMCP && window.__DMCP.v === V) return { ok:true, cached:true };
   const chunks = window.webpackChunkdiscord_app;
   if (!Array.isArray(chunks)) return { ok:false, missing:["webpackChunkdiscord_app"] };
@@ -135,6 +135,7 @@ AGENT_JS = r"""
   const api = {
     whoami(){ return fmtUser(S.UserStore.getCurrentUser()); },
     listGuilds(){ return Object.values(S.GuildStore.getGuilds()).map(x=>({id:x.id,name:x.name})); },
+    guildOf(cid){ return channelOf(cid).guild_id||null; },
     listChannels(gid){ const c=S.ChannelStore.getMutableGuildChannelsForGuild(gid)||{};
       return Object.values(c).filter(ch=>ch&&ch.guild_id===gid)
         .map(ch=>({id:ch.id,name:ch.name,type:ch.type,parent:ch.parent_id,topic:ch.topic||null,nsfw:!!ch.nsfw}))
@@ -289,18 +290,20 @@ class CDP:
 # --- 書き込みゲート ---
 
 
-def _write_allowed(channel_id: str) -> bool:
-    allow = _config().get("write_allow")
-    if allow == "*":
+def _write_allowed(cdp: CDP, channel_id: str) -> bool:
+    config = _config()
+    allow = config.get("write_allow")
+    if allow == "*" or (isinstance(allow, list) and channel_id in allow):
         return True
-    return isinstance(allow, list) and channel_id in allow
+    guilds = config.get("write_allow_guilds")
+    return isinstance(guilds, list) and bool(guilds) and cdp.call_api("guildOf", channel_id) in guilds
 
 
-def _require_write_allowed(channel_id: str) -> None:
-    if not _write_allowed(channel_id):
+def _require_write_allowed(cdp: CDP, channel_id: str) -> None:
+    if not _write_allowed(cdp, channel_id):
         raise DiscordAppError(
             f"チャンネル {channel_id} への書き込みは許可されていない。"
-            f"{CONFIG} の write_allow に channel id を足すと通る"
+            f"{CONFIG} の write_allow に channel id か、write_allow_guilds に guild id を足すと通る"
         )
 
 
@@ -387,21 +390,21 @@ def build_server(cdp: CDP):
 
     @mcp.tool()
     def discord_send_message(channel_id: str, content: str) -> dict:
-        """チャンネルにメッセージを送る。write_allow に入れたチャンネルだけ通る。
+        """チャンネルにメッセージを送る。write_allow か write_allow_guilds で許可したチャンネルだけ通る。
         送信は外に出る操作なので、呼ぶ前に送り先と本文を利用者に確認すること。"""
-        _require_write_allowed(channel_id)
+        _require_write_allowed(cdp, channel_id)
         return cdp.call_api("sendMessage", channel_id, content)
 
     @mcp.tool()
     def discord_edit_message(channel_id: str, message_id: str, content: str) -> dict:
-        """自分のメッセージの本文を書き換える。write_allow に入れたチャンネルだけ通る。"""
-        _require_write_allowed(channel_id)
+        """自分のメッセージの本文を書き換える。write_allow か write_allow_guilds で許可したチャンネルだけ通る。"""
+        _require_write_allowed(cdp, channel_id)
         return cdp.call_api("editMessage", channel_id, message_id, content)
 
     @mcp.tool()
     def discord_delete_message(channel_id: str, message_id: str) -> dict:
-        """メッセージを削除する。write_allow に入れたチャンネルだけ通る。"""
-        _require_write_allowed(channel_id)
+        """メッセージを削除する。write_allow か write_allow_guilds で許可したチャンネルだけ通る。"""
+        _require_write_allowed(cdp, channel_id)
         return cdp.call_api("deleteMessage", channel_id, message_id)
 
     return mcp

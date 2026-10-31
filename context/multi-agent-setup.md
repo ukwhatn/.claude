@@ -120,7 +120,7 @@ plist 内の絶対パスと `PATH`（shebang の `uv` を最小 PATH で解決�
 3. **ログイン時の起動を登録**: `bash ~/.claude/bin/discord-app-cdp-setup.sh`。ログイン時に1回だけ `launch --at-login` を走らせる（普段使いの起動を待ってから専用を起動する）。定期実行にしないのは、使用中の Discord を再起動させないため。専用が落ちたら `launch` を手で実行する
 4. **疎通を検証**: `~/.claude/bin/discord-app-mcp.py doctor`
 
-書き込み（送信・編集・削除）は既定で無効（`~/.claude/local/discord-app-mcp.json` の `write_allow` が空なら全拒否）。許可するチャンネルの id を `write_allow` に並べる（`"*"` で全許可。同期対象外）。
+書き込み（送信・編集・削除）は既定で無効（`~/.claude/local/discord-app-mcp.json` の `write_allow` が空なら全拒否）。許可するチャンネルの id を `write_allow` に、サーバー全体を許可するなら guild id を `write_allow_guilds` に並べる（`write_allow` を `"*"` にすると全許可。同期対象外）。
 
 ## CodexにMCPサーバーを足す
 
