@@ -19,10 +19,11 @@ self-bot（ユーザートークンで外から API を叩く）ではない。
   同時に動く。CDP のポート（`--remote-debugging-port`）はこちらにだけ開く。初回だけログインが要る。
 - CDP で renderer に入り、`webpackChunkdiscord_app` に chunk を 1 つ push して webpack require を
   受け取る。ページにはランタイムが複数あるので、モジュールキャッシュが最大のもの（アプリ本体）を使う。
-- その require から Flux ストア（GuildStore / MessageStore / …）と MessageActions
-  （fetchMessages / sendMessage / editMessage / deleteMessage）を取り出して呼ぶ。履歴は
-  fetchMessages（UI がスクロールで古い履歴を読むのと同じ関数）でストアへ読み込んでから返すので、
-  チャンネルを開かない（専用ウィンドウの表示も変えない）。
+- その require から Flux ストア（GuildStore / ChannelStore / MessageStore / …）と、本体の認証つき
+  HTTP クライアントを取り出す。メッセージの読み書きは HTTP クライアントで REST を直接呼ぶ（ストアは
+  読み込み済みの古い範囲だけを持っていることがあり、送信の反映も遅れるため）。チャンネルを開かないので、
+  専用ウィンドウの表示も変えない。interaction の応答（ephemeral を含む）は gateway 経由で MessageStore
+  にだけ届くので、そこから読む。
 
 安全:
 - 書き込み（送信・編集・削除・スレッド作成・コマンド実行・ボタン・モーダル・汎用 REST の GET 以外）は、
@@ -126,11 +127,12 @@ AGENT_JS = r"""
   const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const store=cid=>S.MessageStore.getMessages(cid);
   const arr=cid=>{ try{ return store(cid).toArray(); }catch{ return []; } };
-  const older=(a,b)=>BigInt(a)<BigInt(b);
-  const fmtUser=u=>u?{id:u.id, name:(u.globalName||u.username), bot:!!u.bot}:null;
+  // ストアのレコード（camelCase）と REST の JSON（snake_case）の両方を整形する
+  const fmtUser=u=>u?{id:u.id, name:(u.globalName||u.global_name||u.username), bot:!!u.bot}:null;
   const fmtMsg=m=>({ id:m.id, author:fmtUser(m.author), content:m.content||"",
      ts:(()=>{try{return new Date(m.timestamp).toISOString()}catch{return String(m.timestamp)}})(),
-     edited:!!m.editedTimestamp, ephemeral:!!((m.flags||0)&64), reply_to:(m.messageReference&&m.messageReference.message_id)||null,
+     edited:!!(m.editedTimestamp||m.edited_timestamp), ephemeral:!!((m.flags||0)&64),
+     reply_to:((m.messageReference||m.message_reference||{}).message_id)||null,
      attachments:(m.attachments||[]).map(a=>({name:a.filename,url:a.url})),
      embeds:(m.embeds||[]).length, reactions:(m.reactions||[]).map(r=>({emoji:(r.emoji&&(r.emoji.name||r.emoji.id)),count:r.count})) });
   const channelOf=cid=>{ const ch=S.ChannelStore.getChannel(cid); if(!ch) throw new Error("channel_not_found: "+cid+"（未参加か id 誤り）"); return ch; };
@@ -140,8 +142,6 @@ AGENT_JS = r"""
     await Promise.race([Promise.resolve(p), sleep(10000)]); await sleep(150);
   };
   const ensureLoaded=async cid=>{ channelOf(cid); if(!store(cid).ready) await fetch_(cid, null, 50); };
-  // pred(メッセージ配列) が値を返すまで最大 ~10 秒ポーリング
-  const poll=async (cid, pred)=>{ for(let i=0;i<25;i++){ const v=pred(arr(cid)); if(v) return v; await sleep(400); } return null; };
 
   // Bo は rejectWithError:false でも 4xx/5xx で reject する（値は応答オブジェクト）ので、どちらも {status, body} にそろえる
   const rest=async (method, url, body)=>{
@@ -149,9 +149,14 @@ AGENT_JS = r"""
     if(r==null||r.status==null) throw new Error("http_failed: "+String(r&&r.message||r));
     return { status:r.status, body:r.body??null };
   };
-  const channelInfo=async cid=>{ const ch=S.ChannelStore.getChannel(cid); if(ch) return {type:ch.type, guild_id:ch.guild_id||null};
+  const channelInfo=async cid=>{ const ch=S.ChannelStore.getChannel(cid); if(ch) return {name:ch.name, type:ch.type, guild_id:ch.guild_id||null};
     const r=await rest("get",`/channels/${cid}`); if(r.status>=300) throw new Error("channel_not_found: "+cid+"（未参加か id 誤り）");
-    return {type:r.body.type, guild_id:r.body.guild_id||null}; };
+    return {name:r.body.name||null, type:r.body.type, guild_id:r.body.guild_id||null}; };
+  // ephemeral のメッセージはストアにしか無く、それ以外はストアに無ければ REST で取る（user アカウントは単体 GET を使えないので around）
+  const messageOf=async (cid, mid)=>{ const m=S.MessageStore.getMessage(cid,mid); if(m) return m;
+    const r=await rest("get", `/channels/${cid}/messages?around=${mid}&limit=1`);
+    return (r.status<300&&(r.body||[]).find(x=>x.id===mid))||null; };
+  const restError=(what, r)=>({ ok:false, status:r.status, error:r.body, what });
   const snowflake=()=>((BigInt(Date.now())-1420070400000n)<<22n).toString();
 
   // interaction の結果は gateway でしか届かない（POST は 204 だけ返す）。nonce ごとに集める。
@@ -198,7 +203,7 @@ AGENT_JS = r"""
   };
   const fmtComponents=cs=>(function walk(cs){ return (cs||[]).flatMap(c=>
      Array.isArray(c.components)? walk(c.components) :
-     c.customId? [{custom_id:c.customId, type:c.type, label:c.label||c.placeholder||null, disabled:!!c.disabled,
+     (c.customId||c.custom_id)? [{custom_id:c.customId||c.custom_id, type:c.type, label:c.label||c.placeholder||null, disabled:!!c.disabled,
        options:(c.options||[]).map(o=>({value:o.value,label:o.label}))}] : []); })(cs);
 
   // コマンド定義。サーバーのチャンネルはサーバーの index、DM は チャンネルの index に、ユーザーにインストールしたアプリの index を足す
@@ -244,49 +249,37 @@ AGENT_JS = r"""
       return Object.values(c).filter(ch=>ch&&ch.guild_id===gid)
         .map(ch=>({id:ch.id,name:ch.name,type:ch.type,parent:ch.parent_id,topic:ch.topic||null,nsfw:!!ch.nsfw}))
         .sort((a,b)=>(a.type-b.type)||String(a.name).localeCompare(String(b.name))); },
-    // before を省くと最新、指定するとその id より古い側を limit 件（古い順）で返す
+    // before を省くと最新、指定するとその id より古い側を limit 件（古い順）で返す。
+    // ストア（MessageStore）は読み込み済みの古い範囲だけを持っていることがあるので、毎回 REST で読む
     async readMessages(cid, limit, before){
-      const ch=channelOf(cid); limit=Math.max(1,Math.min(100,limit||30));
-      await ensureLoaded(cid);
-      const pick=()=>{ let a=arr(cid); if(before) a=a.filter(m=>older(m.id,before)); return a; };
-      let a=pick();
-      // 足りなければ、手元の最古より前を読み込む（UI のスクロールと同じ）
-      for(let i=0;i<4 && a.length<limit && store(cid).hasMoreBefore!==false;i++){
-        const oldest=a.length? a[0].id : before;
-        const n0=arr(cid).length;
-        await fetch_(cid, oldest, 100);
-        a=pick(); if(arr(cid).length===n0) break;
-      }
-      const page=a.slice(-limit);
+      limit=Math.max(1,Math.min(100,limit||30));
+      const ch=await channelInfo(cid);
+      const r=await rest("get", `/channels/${cid}/messages?limit=${limit}`+(before?`&before=${before}`:""));
+      if(r.status>=300) throw new Error("read_failed: "+r.status+" "+JSON.stringify(r.body));
+      const page=(r.body||[]).slice().reverse();  // REST は新しい順
       return { channel:{id:cid,name:ch.name,guild:ch.guild_id}, count:page.length,
         next_before: page.length? page[0].id : null,
-        has_more_before: a.length>page.length || store(cid).hasMoreBefore!==false,
+        has_more_before: page.length===limit,
         messages: page.map(fmtMsg) };
     },
+    // POST の応答で確定する（ストアの反映は待たない）。enforce_nonce で、同じ nonce の再送は二重投稿にならない
     async sendMessage(cid, content){
-      await ensureLoaded(cid);
-      const nonce=String(Date.now())+"000";
-      try{ MA.sendMessage(cid,{content, tts:false, invalidEmojis:[], validNonShortcutEmojis:[]}, true, {nonce}); }
-      catch(e){ return { ok:false, error:String(e&&e.message||e) }; }
-      const r=await poll(cid, ms=>{ const m=ms.find(x=>x.nonce===nonce); if(!m) return null;
-        if(m.state==="SENT") return {id:m.id}; if(m.state==="SEND_FAILED") return {failed:true}; return null; });
-      if(!r) return { ok:false, error:"timeout: 送信の確定（SENT）を確認できなかった" };
-      if(r.failed) return { ok:false, error:"send_failed" };
-      return { ok:true, id:r.id };
+      const nonce=snowflake();
+      let r;
+      try{ r=await rest("post", `/channels/${cid}/messages`, {content, nonce, enforce_nonce:true, tts:false}); }
+      catch(e){ return { ok:false, error:"unknown: 届いたか分からない（"+String(e&&e.message||e)+"）。再送する前に read_messages で確かめる" }; }
+      if(r.status>=300) return restError("send", r);
+      return { ok:true, id:r.body.id };
     },
     async editMessage(cid, mid, content){
-      await ensureLoaded(cid);
-      if(!S.MessageStore.getMessage(cid,mid)) throw new Error("message_not_in_store: "+mid+"（read_messages の before で読み込んでから）");
-      try{ MA.editMessage(cid, mid, {content}); }catch(e){ return { ok:false, error:String(e&&e.message||e) }; }
-      const r=await poll(cid, ()=>{ const m=S.MessageStore.getMessage(cid,mid); return m&&m.content===content; });
-      return { ok:!!r, content:(S.MessageStore.getMessage(cid,mid)||{}).content };
+      const r=await rest("patch", `/channels/${cid}/messages/${mid}`, {content});
+      if(r.status>=300) return restError("edit", r);
+      return { ok:true, content:r.body.content };
     },
     async deleteMessage(cid, mid){
-      await ensureLoaded(cid);
-      if(!S.MessageStore.getMessage(cid,mid)) throw new Error("message_not_in_store: "+mid+"（read_messages の before で読み込んでから）");
-      try{ MA.deleteMessage(cid, mid); }catch(e){ return { ok:false, error:String(e&&e.message||e) }; }
-      const r=await poll(cid, ()=> !S.MessageStore.getMessage(cid,mid));
-      return { ok:!!r };
+      const r=await rest("del", `/channels/${cid}/messages/${mid}`);
+      if(r.status>=300) return restError("delete", r);
+      return { ok:true };
     },
     async channelType(cid){ return (await channelInfo(cid)).type; },
     // message_id があればそのメッセージから、無ければチャンネルに直接作る。フォーラム（15）とメディア（16）は最初の投稿 content が要る
@@ -338,16 +331,16 @@ AGENT_JS = r"""
     },
     // ボタンかセレクトメニューを操作する。values はセレクトの選択値
     async clickComponent(cid, mid, customId, values, waitSec){
-      const ch=channelOf(cid); await ensureLoaded(cid);
-      const m=S.MessageStore.getMessage(cid,mid);
-      if(!m) throw new Error("message_not_in_store: "+mid+"（read_messages の before で読み込んでから）");
+      const ch=await channelInfo(cid);
+      const m=await messageOf(cid, mid);
+      if(!m) throw new Error("message_not_found: "+mid);
       const comp=fmtComponents(m.components).find(c=>c.custom_id===customId);
       if(!comp) throw new Error("component_not_found: "+customId+"（このメッセージの components: "+fmtComponents(m.components).map(c=>c.custom_id).join(", ")+"）");
-      const appId=m.applicationId||(m.application&&m.application.id)||(m.author&&m.author.id);
+      const appId=m.applicationId||m.application_id||(m.application&&m.application.id)||(m.author&&m.author.id);
       const data={component_type:comp.type, custom_id:customId};
       if(comp.type!==2){ if(!Array.isArray(values)||!values.length) throw new Error("セレクトメニューには values が要る"); data.values=values.map(String); }
       const r=await interact(cid, {type:3, guild_id:ch.guild_id||undefined, channel_id:cid, message_flags:m.flags||0, message_id:mid, application_id:appId, data}, waitSec);
-      const after=S.MessageStore.getMessage(cid,mid);
+      const after=await messageOf(cid, mid);
       return {...r, message_after: after? {...fmtMsg(after), components:fmtComponents(after.components)} : null};
     },
     // values は入力欄の custom_id かラベルを鍵にした値
