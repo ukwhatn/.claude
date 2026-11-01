@@ -9,8 +9,9 @@
 """MCP 専用に起動した Discord デスクトップアプリを、クライアント本体の通信経路で読み書きする MCP サーバ。
 
 Bot を入れられない（が自分は参加している）サーバーのチャンネルを読む・書くための道具。
-通信はすべて Discord.app 本体の関数から出す（REST を自前で叩かない）ので、送り元とヘッダは
-通常の操作と同じになる。self-bot（ユーザートークンで外から API を叩く）ではない。
+通信はすべて Discord.app 本体の関数か、本体の認証つき HTTP クライアント（MessageQueue が
+/interactions を叩くのと同じもの）から出すので、送り元とヘッダは通常の操作と同じになる。
+self-bot（ユーザートークンで外から API を叩く）ではない。
 
 しくみ:
 - 普段使いの Discord とは別に、MCP 専用のインスタンスを起動する（`launch`）。Discord 本体の
@@ -24,8 +25,10 @@ Bot を入れられない（が自分は参加している）サーバーのチ�
   チャンネルを開かない（専用ウィンドウの表示も変えない）。
 
 安全:
-- 送信・編集・削除は、~/.claude/local/discord-app-mcp.json の write_allow に明示した
-  チャンネルか、write_allow_guilds に明示したサーバー内のチャンネル（スレッドを含む）だけ通る（既定は空）。1 件ずつの確認は呼び出し側（Claude Code）が行う前提。
+- 書き込み（送信・編集・削除・スレッド作成・コマンド実行・ボタン・モーダル・汎用 REST の GET 以外）は、
+  ~/.claude/local/discord-app-mcp.json の write_allow に明示したチャンネルか、write_allow_guilds に明示した
+  サーバー内のチャンネル（スレッドを含む）だけ通る（既定は空）。1 件ずつの確認は呼び出し側（Claude Code）が行う前提。
+- 汎用 REST（discord_api）の書き込みはチャンネル配下のメッセージまわりとスレッドの変更に限り、サーバーの管理操作は通さない。
 - トークンは renderer の外へ出さない。この MCP はトークンを読まない。
 
 使い方:
@@ -36,8 +39,10 @@ Bot を入れられない（が自分は参加している）サーバーのチ�
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -81,7 +86,7 @@ def _instance_dir() -> str:
 # チャンネルでは内部キューで pending のまま）ので await せず、ストアをポーリングして確定する。
 AGENT_JS = r"""
 (() => {
-  const V = "4";  // api の形を変えたら上げる（古いエージェントを張り直させる）
+  const V = "__AGENT_VERSION__";  // AGENT_JS のハッシュ。中身を変えると古いエージェントを張り直す
   if (window.__DMCP && window.__DMCP.v === V) return { ok:true, cached:true };
   const chunks = window.webpackChunkdiscord_app;
   if (!Array.isArray(chunks)) return { ok:false, missing:["webpackChunkdiscord_app"] };
@@ -104,10 +109,16 @@ AGENT_JS = r"""
   const byName=n=>exps.find(e=>{try{return fn(e,"getName")&&fn(e,"addChangeListener")&&e.getName()===n}catch{return false}});
 
   const S={};
-  for(const n of ["GuildStore","MessageStore","UserStore","ChannelStore"]) S[n]=byName(n);
+  for(const n of ["GuildStore","MessageStore","UserStore","ChannelStore","AuthenticationStore"]) S[n]=byName(n);
   const MA=exps.find(e=>fn(e,"fetchMessages")&&fn(e,"sendMessage")&&fn(e,"editMessage")&&fn(e,"deleteMessage"));
+  // アプリ本体の認証つき HTTP クライアント（MessageQueue.handleCommand もこれで /interactions を叩く）。
+  // 同じモジュールが export する fT（rejectWithError の既定）で、汎用の superagent と見分ける
+  let HTTP;
+  for(const m of Object.values(w.c)){ const e=get(m,"exports"); const b=e&&get(e,"Bo");
+    if(b&&get(e,"fT")&&["get","post","put","patch","del"].every(k=>fn(b,k))){ HTTP=b; break; } }
+  const D=exps.find(e=>fn(e,"subscribe")&&fn(e,"unsubscribe")&&fn(e,"dispatch")&&get(e,"_actionHandlers"));
   const missing=[];
-  for(const [k,v] of Object.entries({...S, MessageActions:MA})) if(!v) missing.push(k);
+  for(const [k,v] of Object.entries({...S, MessageActions:MA, HTTP, Dispatcher:D})) if(!v) missing.push(k);
   if(missing.length) return { ok:false, missing };
   // 起動直後はモジュールが揃っても gateway の READY 前でストアが空
   if(!S.UserStore.getCurrentUser()) return { ok:false, missing:["READY（ログイン前か接続中）"] };
@@ -119,7 +130,7 @@ AGENT_JS = r"""
   const fmtUser=u=>u?{id:u.id, name:(u.globalName||u.username), bot:!!u.bot}:null;
   const fmtMsg=m=>({ id:m.id, author:fmtUser(m.author), content:m.content||"",
      ts:(()=>{try{return new Date(m.timestamp).toISOString()}catch{return String(m.timestamp)}})(),
-     edited:!!m.editedTimestamp, reply_to:(m.messageReference&&m.messageReference.message_id)||null,
+     edited:!!m.editedTimestamp, ephemeral:!!((m.flags||0)&64), reply_to:(m.messageReference&&m.messageReference.message_id)||null,
      attachments:(m.attachments||[]).map(a=>({name:a.filename,url:a.url})),
      embeds:(m.embeds||[]).length, reactions:(m.reactions||[]).map(r=>({emoji:(r.emoji&&(r.emoji.name||r.emoji.id)),count:r.count})) });
   const channelOf=cid=>{ const ch=S.ChannelStore.getChannel(cid); if(!ch) throw new Error("channel_not_found: "+cid+"（未参加か id 誤り）"); return ch; };
@@ -132,10 +143,103 @@ AGENT_JS = r"""
   // pred(メッセージ配列) が値を返すまで最大 ~10 秒ポーリング
   const poll=async (cid, pred)=>{ for(let i=0;i<25;i++){ const v=pred(arr(cid)); if(v) return v; await sleep(400); } return null; };
 
+  // Bo は rejectWithError:false でも 4xx/5xx で reject する（値は応答オブジェクト）ので、どちらも {status, body} にそろえる
+  const rest=async (method, url, body)=>{
+    let r; try{ r=await HTTP[method]({url, body, rejectWithError:false}); }catch(e){ r=e; }
+    if(r==null||r.status==null) throw new Error("http_failed: "+String(r&&r.message||r));
+    return { status:r.status, body:r.body??null };
+  };
+  const channelInfo=async cid=>{ const ch=S.ChannelStore.getChannel(cid); if(ch) return {type:ch.type, guild_id:ch.guild_id||null};
+    const r=await rest("get",`/channels/${cid}`); if(r.status>=300) throw new Error("channel_not_found: "+cid+"（未参加か id 誤り）");
+    return {type:r.body.type, guild_id:r.body.guild_id||null}; };
+  const snowflake=()=>((BigInt(Date.now())-1420070400000n)<<22n).toString();
+
+  // interaction の結果は gateway でしか届かない（POST は 204 だけ返す）。nonce ごとに集める。
+  // 応答メッセージは interaction と同じ nonce を持つ（ephemeral も MessageStore に入る）
+  const inter={};
+  const onEv=t=>a=>{ const n=a.nonce||(a.message&&a.message.nonce); const r=n&&inter[n]; if(!r) return;
+    if(t==="INTERACTION_MODAL_CREATE") r.modal={ id:a.id, custom_id:a.customId, title:a.title, channel_id:a.channelId,
+       application_id:a.application&&a.application.id, components:a.components };
+    else if(t==="INTERACTION_FAILURE") r.failure={ code:a.errorCode??null, message:a.errorMessage??null };
+    else if(t==="INTERACTION_SUCCESS") r.success=true; };
+  const EV=["INTERACTION_SUCCESS","INTERACTION_FAILURE","INTERACTION_MODAL_CREATE"];
+  if(window.__DMCP&&window.__DMCP.unsubscribe) window.__DMCP.unsubscribe();
+  const subs=EV.map(t=>[t,onEv(t)]); subs.forEach(([t,f])=>D.subscribe(t,f));
+  const unsubscribe=()=>subs.forEach(([t,f])=>D.unsubscribe(t,f));
+  const modals={};  // 開いたモーダルを interaction id で保持し、submitModal で使う
+  const LOADING=128;  // 応答が deferred（「考え中」）の間のメッセージ flags
+  const fmtModal=m=>({ id:m.id, title:m.title, fields:(function walk(cs){ return (cs||[]).flatMap(c=>
+     c.type===1? walk(c.components) : c.type===18? walk([c.component]) :
+     c.type===4? [{custom_id:c.customId, label:c.label||null, required:!!c.required, placeholder:c.placeholder||null}] : []); })(m.components) });
+  // body を /interactions に送り、成功・失敗・モーダル・応答メッセージを待って返す
+  const interact=async (cid, body, waitSec)=>{
+    await ensureLoaded(cid);
+    const nonce=snowflake(); const rec=inter[nonce]={};
+    const r=await rest("post","/interactions",{...body, nonce, session_id:S.AuthenticationStore.getSessionId()});
+    if(r.status>=300){ delete inter[nonce]; return { ok:false, status:r.status, error:r.body }; }
+    const replies=()=>arr(cid).filter(m=>m.nonce===nonce);
+    const until=Date.now()+Math.max(2,Math.min(60,waitSec||15))*1000;
+    let settledAt=null;
+    while(Date.now()<until){
+      if(rec.failure||rec.modal) break;
+      const ms=replies();
+      if(ms.length&&ms.every(m=>!((m.flags||0)&LOADING))) break;
+      // 応答メッセージなしで終わる操作（元のメッセージの書き換えなど）は、成功から少し待って打ち切る
+      if(rec.success&&!ms.length){ settledAt=settledAt||Date.now(); if(Date.now()-settledAt>2500) break; }
+      await sleep(300);
+    }
+    delete inter[nonce];
+    if(rec.modal) modals[rec.modal.id]=rec.modal;
+    const ms=replies();
+    return { ok:!rec.failure, nonce,
+      state: rec.failure?"failed": rec.modal?"modal": ms.some(m=>(m.flags||0)&LOADING)?"pending": rec.success||ms.length?"done":"no_ack",
+      failure:rec.failure||null, modal:rec.modal?fmtModal(rec.modal):null,
+      replies: ms.map(m=>({...fmtMsg(m), components:fmtComponents(m.components)})) };
+  };
+  const fmtComponents=cs=>(function walk(cs){ return (cs||[]).flatMap(c=>
+     Array.isArray(c.components)? walk(c.components) :
+     c.customId? [{custom_id:c.customId, type:c.type, label:c.label||c.placeholder||null, disabled:!!c.disabled,
+       options:(c.options||[]).map(o=>({value:o.value,label:o.label}))}] : []); })(cs);
+
+  // コマンド定義。サーバーのチャンネルはサーバーの index、DM は チャンネルの index に、ユーザーにインストールしたアプリの index を足す
+  const indexCache={};  // 実行のたびに取り直すとすぐ 429 になる
+  const commandIndex=async cid=>{
+    const ch=channelOf(cid);
+    const urls=[ch.guild_id?`/guilds/${ch.guild_id}/application-command-index`:`/channels/${cid}/application-command-index`,
+                "/users/@me/application-command-index"];
+    const cmds=[], apps={};
+    for(const u of urls){ const c=indexCache[u]; let r;
+      if(c&&Date.now()-c.at<60000) r=c.r;
+      else { r=await rest("get",u); if(r.status>=300) throw new Error("command_index_failed: "+u+" "+r.status+" "+JSON.stringify(r.body));
+             indexCache[u]={at:Date.now(), r}; }
+      for(const a of r.body.applications||[]) apps[a.id]=a.name;
+      for(const c of r.body.application_commands||[]) if(!cmds.some(x=>x.id===c.id)) cmds.push(c); }
+    return { cmds, apps };
+  };
+  // name は表示用に訳されていることがあり、/interactions には訳す前の name_default を送る（訳した名前は 10005 Unknown Integration）
+  const realName=c=>c.name_default||c.name;
+  const OPT={SUB:1,GROUP:2,STRING:3,INTEGER:4,BOOLEAN:5,NUMBER:10,ATTACHMENT:11};
+  const coerce=(o,v)=>{
+    if(o.type===OPT.INTEGER){ const n=Number(v); if(!Number.isInteger(n)) throw new Error("option "+o.name+": 整数を渡す"); return n; }
+    if(o.type===OPT.NUMBER){ const n=Number(v); if(Number.isNaN(n)) throw new Error("option "+o.name+": 数値を渡す"); return n; }
+    if(o.type===OPT.BOOLEAN) return v===true||v==="true";
+    if(o.type===OPT.ATTACHMENT) throw new Error("option "+o.name+": 添付ファイルの引数には対応していない");
+    return String(v);  // STRING と、user / channel / role / mentionable の id
+  };
+  const buildOptions=(decl, given)=>{
+    const out=[];
+    for(const o of decl||[]){ if(!(o.name in given)){ if(o.required) throw new Error("option "+o.name+" は必須"); continue; }
+      out.push({type:o.type, name:o.name, value:coerce(o, given[o.name])}); }
+    const unknown=Object.keys(given).filter(k=>!(decl||[]).some(o=>o.name===k));
+    if(unknown.length) throw new Error("未知の option: "+unknown.join(", ")+"（list_commands で引数名を確かめる）");
+    return out;
+  };
+
   const api = {
     whoami(){ return fmtUser(S.UserStore.getCurrentUser()); },
     listGuilds(){ return Object.values(S.GuildStore.getGuilds()).map(x=>({id:x.id,name:x.name})); },
-    guildOf(cid){ return channelOf(cid).guild_id||null; },
+    // ゲートの判定用。アーカイブ済みのスレッドはストアに無いことがあるので REST で引く
+    async guildOf(cid){ return (await channelInfo(cid)).guild_id||null; },
     listChannels(gid){ const c=S.ChannelStore.getMutableGuildChannelsForGuild(gid)||{};
       return Object.values(c).filter(ch=>ch&&ch.guild_id===gid)
         .map(ch=>({id:ch.id,name:ch.name,type:ch.type,parent:ch.parent_id,topic:ch.topic||null,nsfw:!!ch.nsfw}))
@@ -184,11 +288,98 @@ AGENT_JS = r"""
       const r=await poll(cid, ()=> !S.MessageStore.getMessage(cid,mid));
       return { ok:!!r };
     },
+    async channelType(cid){ return (await channelInfo(cid)).type; },
+    // message_id があればそのメッセージから、無ければチャンネルに直接作る。フォーラム（15）とメディア（16）は最初の投稿 content が要る
+    async createThread(cid, name, messageId, content, autoArchive, isPrivate){
+      const ch=channelOf(cid); const forum=ch.type===15||ch.type===16;
+      const body={name, auto_archive_duration:autoArchive||1440};
+      let url;
+      if(messageId) url=`/channels/${cid}/messages/${messageId}/threads`;
+      else { url=`/channels/${cid}/threads`;
+        if(forum){ if(!content) throw new Error("フォーラムのチャンネルには最初の投稿 content が要る"); body.message={content}; }
+        else body.type= ch.type===5? 10 : isPrivate? 12 : 11; }
+      const r=await rest("post", url, body);
+      if(r.status>=300) return { ok:false, status:r.status, error:r.body };
+      // gateway の THREAD_CREATE でストアに入るまで、send_message などがこのスレッドを見つけられない
+      for(let i=0;i<25&&!S.ChannelStore.getChannel(r.body.id);i++) await sleep(200);
+      return { ok:true, id:r.body.id, name:r.body.name, parent_id:r.body.parent_id, type:r.body.type };
+    },
+    async listCommands(cid){
+      const {cmds, apps}=await commandIndex(cid);
+      const T={1:"slash",2:"user",3:"message",4:"primary_entry_point"};
+      const opt=o=>({name:o.name, type:o.type, required:!!o.required, description:o.description||null,
+         choices:(o.choices||[]).map(c=>({name:c.name,value:c.value})), autocomplete:!!o.autocomplete,
+         options:(o.options||[]).length? o.options.map(opt) : undefined});
+      return cmds.map(c=>({ id:c.id, application:apps[c.application_id]||c.application_id, application_id:c.application_id,
+         kind:T[c.type]||c.type, name:c.name, name_default:c.name_default||null, description:c.description||null,
+         options:(c.options||[]).map(opt) }));
+    },
+    // command はコマンド名（表示名・訳す前の名前・id のどれでもよい）。サブコマンドは "group sub" のように空白で続ける
+    async runCommand(cid, command, options, targetId, applicationId, waitSec){
+      const ch=channelOf(cid);
+      const [head, ...path]=String(command).trim().split(/\s+/);
+      const {cmds}=await commandIndex(cid);
+      const hits=cmds.filter(c=>(c.id===head||c.name===command||c.name===head||realName(c)===head||realName(c)===command)
+         &&(!applicationId||c.application_id===applicationId));
+      if(!hits.length) throw new Error("command_not_found: "+command+"（list_commands で確かめる）");
+      if(hits.length>1) throw new Error("同名のコマンドが複数ある: "+hits.map(c=>c.application_id).join(", ")+"（application_id を指定する）");
+      const c=hits[0]; const whole=c.name===command||realName(c)===command;
+      let decl=c.options||[], wrap=x=>x;
+      for(const p of (whole? [] : path)){
+        const o=decl.find(o=>(o.type===OPT.SUB||o.type===OPT.GROUP)&&o.name===p);
+        if(!o) throw new Error("サブコマンドが無い: "+p);
+        const outer=wrap; wrap=x=>outer([{type:o.type, name:o.name, options:x}]); decl=o.options||[];
+      }
+      if(decl.some(o=>o.type===OPT.SUB||o.type===OPT.GROUP)) throw new Error("サブコマンドを指定する: "+decl.map(o=>o.name).join(", "));
+      const data={version:c.version, id:c.id, name:realName(c), type:c.type, application_command:c,
+         options: wrap(buildOptions(decl, options||{}))};
+      if(c.type===2||c.type===3){ if(!targetId) throw new Error("コンテキストメニューのコマンドには target_id（"+(c.type===3?"メッセージ":"ユーザー")+" id）が要る"); data.target_id=targetId; }
+      return interact(cid, {type:2, application_id:c.application_id, guild_id:ch.guild_id||undefined, channel_id:cid, data}, waitSec);
+    },
+    // ボタンかセレクトメニューを操作する。values はセレクトの選択値
+    async clickComponent(cid, mid, customId, values, waitSec){
+      const ch=channelOf(cid); await ensureLoaded(cid);
+      const m=S.MessageStore.getMessage(cid,mid);
+      if(!m) throw new Error("message_not_in_store: "+mid+"（read_messages の before で読み込んでから）");
+      const comp=fmtComponents(m.components).find(c=>c.custom_id===customId);
+      if(!comp) throw new Error("component_not_found: "+customId+"（このメッセージの components: "+fmtComponents(m.components).map(c=>c.custom_id).join(", ")+"）");
+      const appId=m.applicationId||(m.application&&m.application.id)||(m.author&&m.author.id);
+      const data={component_type:comp.type, custom_id:customId};
+      if(comp.type!==2){ if(!Array.isArray(values)||!values.length) throw new Error("セレクトメニューには values が要る"); data.values=values.map(String); }
+      const r=await interact(cid, {type:3, guild_id:ch.guild_id||undefined, channel_id:cid, message_flags:m.flags||0, message_id:mid, application_id:appId, data}, waitSec);
+      const after=S.MessageStore.getMessage(cid,mid);
+      return {...r, message_after: after? {...fmtMsg(after), components:fmtComponents(after.components)} : null};
+    },
+    // values は入力欄の custom_id かラベルを鍵にした値
+    async submitModal(cid, modalId, values, waitSec){
+      const m=modals[modalId];
+      if(!m) throw new Error("modal_not_found: "+modalId+"（モーダルは run_command・click_component の返り値の modal.id。張り直しで消える）");
+      if(m.channel_id!==cid) throw new Error("このモーダルはチャンネル "+m.channel_id+" のもの");
+      const used=new Set();
+      const fill=cs=>cs.map(c=>{
+        if(c.type===1) return {type:1, components:fill(c.components)};
+        if(c.type===18) return {type:18, component:fill([c.component])[0]};
+        if(c.type===4){ const k=[c.customId, c.label].find(k=>k!=null&&k in values);
+          if(k==null&&c.required) throw new Error("入力欄 "+(c.label||c.customId)+" は必須");
+          if(k!=null) used.add(k); return {type:4, custom_id:c.customId, value:k!=null?String(values[k]):""}; }
+        throw new Error("このモーダルの部品（type "+c.type+"）には対応していない（入力欄だけ扱える）");
+      });
+      const components=fill(m.components);
+      const unknown=Object.keys(values).filter(k=>!used.has(k));
+      if(unknown.length) throw new Error("モーダルに無い入力欄: "+unknown.join(", "));
+      const ch=channelOf(cid);
+      const r=await interact(cid, {type:5, application_id:m.application_id, channel_id:cid, guild_id:ch.guild_id||undefined,
+         data:{id:m.id, custom_id:m.custom_id, components}}, waitSec);
+      if(r.ok) delete modals[modalId];
+      return r;
+    },
+    async request(method, path, body){ return rest(method, path, body); },
   };
-  window.__DMCP={ v:V, api };
+  window.__DMCP={ v:V, api, unsubscribe };
   return { ok:true };
 })()
 """
+AGENT_JS = AGENT_JS.replace("__AGENT_VERSION__", hashlib.sha1(AGENT_JS.encode()).hexdigest()[:12])
 
 
 # --- CDP クライアント（同期・接続を 1 本保持） ---
@@ -225,7 +416,7 @@ class CDP:
             return
         # suppress_origin: CDP は Origin ヘッダ付きの WebSocket を 403 で弾く（devtools 自身は付けない）
         self._ws = websocket.create_connection(
-            self._page_ws_url(), max_size=2 ** 27, timeout=60, suppress_origin=True
+            self._page_ws_url(), max_size=2 ** 27, timeout=120, suppress_origin=True
         )
 
     def _cmd(self, method: str, params: dict | None = None) -> dict:
@@ -305,6 +496,34 @@ def _require_write_allowed(cdp: CDP, channel_id: str) -> None:
             f"チャンネル {channel_id} への書き込みは許可されていない。"
             f"{CONFIG} の write_allow に channel id か、write_allow_guilds に guild id を足すと通る"
         )
+
+
+# 汎用 REST で書き込みを通すのは、チャンネル配下のメッセージまわりと、スレッド自体の変更（アーカイブ・ロック・改名・削除）だけ。
+# サーバーの管理（ロール・BAN・チャンネルの作成や権限）は、書き込みを許可したサーバーでも通さない
+_CHANNEL_WRITE_PATH = re.compile(
+    r"^/channels/(\d+)(?:/(messages|pins|typing|threads|thread-members|polls)(?:/.*)?)?$"
+)
+_THREAD_TYPES = (10, 11, 12)
+
+
+def _check_request(cdp: CDP, method: str, path: str) -> None:
+    bare = path.split("?", 1)[0]
+    if not bare.startswith("/") or ".." in bare:
+        raise DiscordAppError("path は /channels/... のような API のパスで渡す")
+    if bare.startswith("/auth"):
+        raise DiscordAppError("/auth 配下は扱わない")
+    if method == "get":
+        return
+    m = _CHANNEL_WRITE_PATH.match(bare)
+    if not m:
+        raise DiscordAppError(
+            "GET 以外で通すのは /channels/{id}/(messages|pins|typing|threads|thread-members|polls)/... と、"
+            "スレッド自体の PATCH・DELETE だけ"
+        )
+    channel_id, sub = m.group(1), m.group(2)
+    if sub is None and (method not in ("patch", "del") or cdp.call_api("channelType", channel_id) not in _THREAD_TYPES):
+        raise DiscordAppError("チャンネル自体の変更はスレッドの PATCH・DELETE だけ通す")
+    _require_write_allowed(cdp, channel_id)
 
 
 # --- 専用インスタンスの起動 ---
@@ -406,6 +625,84 @@ def build_server(cdp: CDP):
         """メッセージを削除する。write_allow か write_allow_guilds で許可したチャンネルだけ通る。"""
         _require_write_allowed(cdp, channel_id)
         return cdp.call_api("deleteMessage", channel_id, message_id)
+
+    @mcp.tool()
+    def discord_create_thread(
+        channel_id: str,
+        name: str,
+        message_id: str | None = None,
+        content: str | None = None,
+        auto_archive_minutes: int = 1440,
+        private: bool = False,
+    ) -> dict:
+        """スレッドを作る。message_id を渡すとそのメッセージから、省くとチャンネルに直接作る（private=True で非公開スレッド）。
+        フォーラムのチャンネルでは content（最初の投稿）が要る。auto_archive_minutes は 60・1440・4320・10080。
+        write_allow か write_allow_guilds で許可したチャンネルだけ通る。作る前にスレッド名を利用者に確認すること。
+        返り値の id はスレッドのチャンネル id で、send_message・read_messages にそのまま渡せる。"""
+        _require_write_allowed(cdp, channel_id)
+        return cdp.call_api("createThread", channel_id, name, message_id, content, auto_archive_minutes, private)
+
+    @mcp.tool()
+    def discord_list_commands(channel_id: str) -> list:
+        """そのチャンネルで使えるアプリのコマンド（スラッシュ・メッセージのコンテキストメニュー・ユーザーのコンテキストメニュー）を返す。
+        kind: slash / message / user。options は引数（type 3=文字列, 4=整数, 5=真偽, 6=ユーザー, 7=チャンネル, 8=ロール, 10=数値, 1=サブコマンド, 2=サブコマンドグループ）。"""
+        return cdp.call_api("listCommands", channel_id)
+
+    @mcp.tool()
+    def discord_run_command(
+        channel_id: str,
+        command: str,
+        options: dict | None = None,
+        target_id: str | None = None,
+        application_id: str | None = None,
+        wait_seconds: int = 15,
+    ) -> dict:
+        """アプリのコマンドを自分の名義で実行し、Bot の応答を待って返す。
+        command はコマンド名か id。サブコマンドは "group sub" のように空白で続ける。options は {引数名: 値}（ユーザー・チャンネル・ロールは id）。
+        コンテキストメニューのコマンド（kind が message / user）は target_id にメッセージ id かユーザー id を渡す。
+        返り値 state: done（応答あり）/ modal（フォームが開いた。submit_modal で送る）/ pending（応答待ちのまま時間切れ）/ failed / no_ack。
+        replies は応答メッセージ（ephemeral=自分にだけ見えるものを含む。components はボタン・セレクト）。
+        Bot 側で何が起きるか分からないので、呼ぶ前にコマンドと引数を利用者に確認すること。write_allow か write_allow_guilds で許可したチャンネルだけ通る。"""
+        _require_write_allowed(cdp, channel_id)
+        return cdp.call_api("runCommand", channel_id, command, options or {}, target_id, application_id, wait_seconds)
+
+    @mcp.tool()
+    def discord_click_component(
+        channel_id: str,
+        message_id: str,
+        custom_id: str,
+        values: list[str] | None = None,
+        wait_seconds: int = 15,
+    ) -> dict:
+        """Bot のメッセージのボタンを押す、またはセレクトメニューで values を選ぶ。custom_id は run_command の replies[].components か、
+        このツールのエラーに出る一覧から取る。返り値は run_command と同じ形に、操作後のメッセージ（message_after）を足したもの。
+        呼ぶ前に、押すボタンを利用者に確認すること。write_allow か write_allow_guilds で許可したチャンネルだけ通る。"""
+        _require_write_allowed(cdp, channel_id)
+        return cdp.call_api("clickComponent", channel_id, message_id, custom_id, values, wait_seconds)
+
+    @mcp.tool()
+    def discord_submit_modal(channel_id: str, modal_id: str, values: dict, wait_seconds: int = 15) -> dict:
+        """run_command・click_component が返したモーダル（state=modal）を送信する。modal_id は modal.id、
+        values は {入力欄の custom_id かラベル: 値}（modal.fields に一覧がある）。扱えるのはテキストの入力欄だけ。
+        呼ぶ前に入力内容を利用者に確認すること。write_allow か write_allow_guilds で許可したチャンネルだけ通る。"""
+        _require_write_allowed(cdp, channel_id)
+        return cdp.call_api("submitModal", channel_id, modal_id, values, wait_seconds)
+
+    @mcp.tool()
+    def discord_api(method: str, path: str, body: dict | None = None) -> dict:
+        """Discord.app の認証で REST API（https://discord.com/api/v9 からの相対パス）を呼び、{status, body} を返す。専用ツールに無い操作に使う。
+        GET はどのパスでも通る（/auth 配下を除く）。例: GET /users/@me/channels（DM 一覧）、GET /guilds/{id}/messages/search?content=語、
+        GET /channels/{id}/pins、GET /channels/{id}/threads/archived/public、GET /guilds/{id}/members/{user_id}。
+        GET 以外は、許可したチャンネルの /channels/{id}/(messages|pins|typing|threads|thread-members|polls)/... と、
+        スレッド自体の PATCH・DELETE だけ通る。例: PUT /channels/{id}/messages/{mid}/reactions/{絵文字（URL エンコード）}/@me（リアクション）、
+        PUT /channels/{id}/pins/{mid}、PATCH /channels/{thread_id} {"archived": true, "locked": true}、PUT /channels/{thread_id}/thread-members/@me（参加）。
+        GET 以外は外に出る操作なので、呼ぶ前に内容を利用者に確認すること。"""
+        m = method.strip().lower()
+        m = {"delete": "del"}.get(m, m)
+        if m not in ("get", "post", "put", "patch", "del"):
+            raise DiscordAppError("method は GET・POST・PUT・PATCH・DELETE のどれか")
+        _check_request(cdp, m, path)
+        return cdp.call_api("request", m, path, body)
 
     return mcp
 
