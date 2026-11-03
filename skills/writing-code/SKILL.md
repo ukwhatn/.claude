@@ -82,6 +82,7 @@ How はコード、What はテスト、Why（変更した理由・経緯）は�
 - 3行以上になりそうなら、先に関数の抽出と命名で表せないか考える
 - 書いたコメントは1つずつ「消すとレビュアーが誤読するか」を問い、誤読しないものは消す
 - 既存ファイルに確立したコメント密度・docstring の形式があればそれに従う
+- 利用者に表示される説明文（OpenAPI の description・CLI の help）はコメントではなく文章として扱い、`/writing-prose` の書き言葉の規則に従う
 
 書く例・書かない例は [references/comments.md](references/comments.md)。迷ったときに読む。
 
