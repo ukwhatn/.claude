@@ -1,6 +1,6 @@
 ---
 name: create-draft-pr
-description: PR を Draft で作成する。変更をローカルで動かして確かめ、画面が変わるならスクリーンショットを gh の --attach で貼り、PR テンプレートを全セクション埋めて対象 repo の既存 PR の分量に揃え、出した後は CI・レビュー・マージを Monitor で見張る。PR 作成の依頼時、実装が一段落して PR 化する時、/create-draft-pr 実行時に使用（gh pr create を直接実行しない）。引数でベースブランチを指定できる。境界: 個別レビューコメントへの対応は pr-comment、PR 全体のレビューは pr-review、複数 PR 規模の計画は plan-feature-prs。
+description: PR を Draft で作成する。変更をローカルで動かして確かめ、画面が変わるならスクリーンショットを gh の --attach で貼り、PR テンプレートを全セクション埋めて対象 repo の既存 PR の分量に揃え、出した後は CI・レビュー・マージを見張る（taskboard に結ばれたセッションは taskboard の通知を待ち、それ以外は Monitor）。PR 作成の依頼時、実装が一段落して PR 化する時、/create-draft-pr 実行時に使用（gh pr create を直接実行しない）。引数でベースブランチを指定できる。境界: 個別レビューコメントへの対応は pr-comment、PR 全体のレビューは pr-review、複数 PR 規模の計画は plan-feature-prs。
 allowed-tools: Bash(git:*), Bash(gh:*), Read, Write
 ---
 
@@ -201,7 +201,11 @@ gh pr view <n> --json mergeable,mergeStateStatus,statusCheckRollup
 
 ### 10. レビュー待ち・マージ待ちの監視
 
-PR を出したら、Monitor で PR の状態を見張る。Draft でも仕込む（ready にされた後のレビューと CI の再実行を拾うため）。
+PR を出したら、PR の状態を見張る。Draft でも見張る（ready にされた後のレビューと CI の再実行を拾うため）。
+
+taskboard に結ばれたセッションでは、Monitor も `watch_create` も張らない。PR がタスクにリンクされていれば、CI の結論・レビュー・コメント・conflict・マージ・クローズを taskboard が lead に通知するので、届いた通知に下の表の「各イベントでやること」を当てる。リンクされたかは `task_get` で確かめ、されていなければ `task_update` で足す（ブランチの PR はターンの終わりに自動でリンクされる）。タグへの反映や ready のような決めた動きで別の手順を始めるときだけ、`watch_create` に `events` か `tag_pattern` を付けて張る。
+
+taskboard に結ばれていないセッションは、Monitor で見張る。
 
 監視するのは CI の結論・レビューの到着・変更要求・マージ（またはクローズ）。状態が変わるたびに1行出し、gh が失敗したときも行を出す（沈黙は成功ではなく、監視が死んでいるのと区別できない）。
 
