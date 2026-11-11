@@ -6,7 +6,10 @@ AGENTS.md「文章とスキル」「コミット・ブランチ・PR」が求め
 強制はこの hook。
 
 - PreToolUse: きっかけの操作で、対応するスキルがこのセッションで（compaction の後に）呼ばれていなければ deny
-- PostToolUse（Skill）: 呼ばれたスキルを状態ファイルに記録する
+- PostToolUse（Skill）: 呼ばれたスキルを、セッションの記録とターンの記録の両方に書く
+- UserPromptSubmit: ターンの記録を消す
+- Stop: 返答の本文に人に宛てた文案があり、同じターンで文章のスキルを呼んでいなければ1回だけ止める。
+  ユーザーが投稿する文案はツールを通らないので、PreToolUse では止められないため
 - SessionStart（compact）: 状態ファイルを消す。compaction でスキル本文が落ちることがあるため
 
 subagent の中の呼び出し（agent_id がある）は止めない。入力・記録が読めないときも止めない。
@@ -49,6 +52,12 @@ BASH_WRITE_TARGET = re.compile(r"(?:[^0-9&]>>?|^>>?|\btee\s+(?:-a\s+)?)\s*[\"']?
 BASH_INPLACE_EDIT = re.compile(r"\b(?:sed|perl)\b[^|;&\n]*?\s(?:-[A-Za-z]*i|--in-place)[^|;&\n]*")
 BASH_CD = re.compile(r"(?:^|[;&|\n]\s*)cd\s+[\"']?([^\s;&|\"']+)")
 SLASH_COMMAND = re.compile(r"<command-name>/?([\w:-]+)</command-name>")
+# 人に宛てた文案の書き出しと結び。ユーザーへの返答の本文にはこれらで始まる行が出ない。`>` の引用行は含めない
+DRAFT_LINE = re.compile(
+    r"^[ \t]*(?:お疲れ様です|お疲れさまです|お世話になっております|よろしくお願い(?:いた)?します|よろしくお願い申し上げます)",
+    re.M,
+)
+DRAFT_SKILLS = ("writing-prose", "yomiyasu")
 
 
 def is_production_code_path(path: str, data: dict, cwd: str | None = None) -> bool:
@@ -142,6 +151,13 @@ def save_state(session_id: str, skills: set[str]) -> None:
     os.replace(temporary, path)
 
 
+def remove_state(session_id: str) -> None:
+    try:
+        os.remove(state_path(session_id))
+    except OSError:
+        pass
+
+
 def skills_in_transcript(transcript_path: str) -> set[str]:
     """最後の compaction より後に呼ばれたスキル（Skill tool とユーザーの /<名前>）。"""
     invoked: set[str] = set()
@@ -184,6 +200,28 @@ def deny(skill: str, note: str) -> None:
     }, ensure_ascii=False))
 
 
+def turn_key(session_id: str) -> str:
+    return session_id + "-turn"
+
+
+def stop_gate(data: dict, session_id: str) -> None:
+    # block 後の再停止は通す。止め続けると、スキルを呼べない状況で終われなくなる
+    if data.get("stop_hook_active"):
+        return
+    if not DRAFT_LINE.search(data.get("last_assistant_message") or ""):
+        return
+    missing = [skill for skill in DRAFT_SKILLS if skill not in load_state(turn_key(session_id))]
+    if not missing:
+        return
+    reason = (
+        "返答に人に宛てた文案がある（お疲れ様です・よろしくお願いします等で始まる行）が、"
+        f"このターンで {'・'.join('`/' + skill + '`' for skill in missing)} を発動していない。"
+        "Skill ツールで発動し、その規則（相手にしか答えられない問いだけを書く、など）で文案を書き直して出し直す"
+        "（AGENTS.md「文章とスキル」の規則を hook で強制している）。"
+    )
+    print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
+
+
 def gate(data: dict, session_id: str) -> None:
     tool_name = data.get("tool_name") or ""
     tool_input = data.get("tool_input") or {}
@@ -213,15 +251,18 @@ def main() -> int:
         return 0
     event = data.get("hook_event_name")
     if event == "SessionStart" and data.get("source") == "compact":
-        try:
-            os.remove(state_path(session_id))
-        except OSError:
-            pass
+        remove_state(session_id)
+        remove_state(turn_key(session_id))
+    elif event == "UserPromptSubmit":
+        remove_state(turn_key(session_id))
     elif event == "PostToolUse" and data.get("tool_name") == "Skill":
         skill = skill_name(str((data.get("tool_input") or {}).get("skill", "")))
-        save_state(session_id, load_state(session_id) | {skill})
+        for key in (session_id, turn_key(session_id)):
+            save_state(key, load_state(key) | {skill})
     elif event == "PreToolUse":
         gate(data, session_id)
+    elif event == "Stop":
+        stop_gate(data, session_id)
     return 0
 
 
