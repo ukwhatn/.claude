@@ -21,7 +21,9 @@
 - 既存の同種画面か、参照するデザインシステムの型を先に決めてから要素を置く（型を決めずに要素を足すと、後から文言を直しても読みにくさは消えない）［本環境］
 - 設計メモ（トークン・外枠の型・原則）を先に書き、目的に照らして見直してから実装する（実装後に型を変えると全画面に波及するから）［ANT-fd］
 - 罫線・枠・番号・区切り線は、内容の構造を表すときだけ使う。番号は内容が実際に順序を持つときだけ付ける（装飾の構造は情報があるように見せて読み手を誤らせるから）［ANT-fd］
-- 作ったら画面を見て自己批評し、目的に効かない装飾を1つずつ削る［ANT-fd］
+- 見出しの上の小さな分類ラベル、字間を広げた大文字のラベル、区切りの色の帯、中黒でつないだメタ情報を、まとまりを示す装飾として使わない。まとまりは余白・揃え・見出しの階層で示し、それで足りないときだけ線や面を足す（配置で分かることを言い直すだけで、読む量が増えるから）［ANT-fd］［plusai］［AST-space］［unslop］
+- 生成した画面が次の型に寄っていたら、PJ の指定でそう選んだのかを確かめる。クリーム色の背景にセリフ体と赤茶のアクセント、黒の背景に蛍光色1色、新聞風の罫線、同じ角丸と同じ影のカードの並び、全見出しの上の分類ラベル（どれも題材によらず出る既定の型で、選んだ結果ではないから。PJ の指定があればそれに従う）［ANT-fd］
+- 作ったら画面を見て自己批評し、目的に効かない装飾を1つずつ削る。消しても同じくらい分かる装飾は消す［ANT-fd］［plusai］
 
 ## 1. 外枠
 
@@ -91,12 +93,17 @@
 - 背景の役割と、その上に載る文字・アイコンの役割を対で使う（面の色と上の文字色を別々に選ぶと、テーマによってコントラストが崩れるから）［M3-color］
 - 余白・高さ・角丸・色の段階は決めたスケールから選び、スケールの間の値を作らない（スケールの外の値が1つ入ると、そこから揃わなくなるから）［ATL-space］［PRM-tokens］
 - 新しい役割（状態色など）が要るときは、値を直書きせず役割のトークンとして追加する［ATL-tokens］［CBN-color］
+- **主操作の強調とアクセント色は、操作の集まりごとに1つにする**。全部の操作を同じ強さで目立たせない（強調が並ぶと、どれが主操作か分からなくなるから）［AST-emph］［unslop］［ANT-fd］
+- 入れ子の面の角丸は同心にする。内側の角丸は、外側の角丸から間の余白を引いた値にする（内側と外側の角が平行に見えないと、別々の形が重なって見えるから）［AST-shape］［unslop］［VCL-wig］
 
 ## 4. 面の重なり
 
 - **面の区別は、面の色の明暗の段階で付ける。影は、他のUIの上に浮く要素（ダイアログ・メニュー・浮いたツールバー・動かせるカード）に限る**［ATL-elev］［M3-color］
 - 浮く面には必ず影を対で付ける（ダークでは影が見えにくいが、対で使うことで明暗と影の両方で区別できるから）［ATL-elev］
 - 内容のまとまりを示すために面を持ち上げない。余白か境界線で足りるなら、それを使う（持ち上げた面が増えると視覚的なノイズになるから）［ATL-elev］
+- カードや境界線を足す前に、余白と揃えでまとめられないかを確かめる［AST-space］
+- カードの中にカードを置かない。カードの中を分けるときは、余白・見出し・区切り線を使う［HLM］［ANT-fd］［AST-space］
+- 色相をまたぐグラデーション、光彩、色付きの影、内容の後ろのぼかした色の塊を、面・文字・境界線に使わない。グラデーションは1つの色の中の明暗の差までにする［unslop］［HLM］［ANT-fd］
 - 1つの面の上に置いた部品は、その面より1段上の面の色を使う（入力欄が面に溶け込まないようにするため）［CBN-color］
 - 沈んだ面（カンバンの列のような下地）は、基本の面の上にだけ置く。浮いた面の中に沈んだ面を作らない［ATL-elev］
 - **ダークテーマでは、高い面ほど明るくする**（前方から光が当たっている見え方にそろえ、影の代わりに明るさで高さを示すため）［ATL-elev］
@@ -111,6 +118,8 @@
 - 子要素にフォーカスがある間、まとまり全体に表示を付けるときは `:focus-within` を使う［VCL-wig］
 - **選択中・現在地を、色だけで示さない**。形の違い（塗りのアイコン・下線・印）か文字を併せて使う（色の区別がつかない利用者には伝わらないから）［WCAG-141］［VCL-wig］
 - 選択中のアイコンには塗りの形を使い、非選択は線の形にする（塗りの面が視覚的な強調になり、色以外で選択を示せるから）［HIG-sfsymbols］
+- **部品の境界線・フォーカスの表示・状態の塗りは、隣り合う色と 3:1 以上のコントラストにする**［WCAG-1411］［MWG-color］［UISDK-styles］
+- 選択・ハイライトの状態は、塗りの変化・全周の枠・文字の太さの変化のように単独で読める表示にする。薄い色合いだけや、片側の色の帯だけで示さない［UISDK-styles］［WCAG-1411］
 
 ## 6. モーション
 
@@ -124,12 +133,14 @@
 - 動きを止めても、同じ情報が静的な表示で伝わるようにする［CBN-motion］［WCAG-233］
 - 動きは途中で止められるようにし、利用者の入力に追随させる［VCL-wig］
 - 動きの起点（`transform-origin`）を、物理的に動き出す位置に合わせる（メニューは開いたボタンの側から広げる）［VCL-wig］
+- 自動で始まり、5秒を超えて動き続け、ほかの内容と並んで出る表示（自動で回るカルーセル・流れるバナー）には、止める・隠すボタンを付ける。`prefers-reduced-motion` はこのボタンの代わりにならない（その設定をしていない利用者も動きを止める必要があるから）［WCAG-222］［MWG-motion］
 
 ## 7. 堅牢さ
 
 - **flex の子で文字を省略表示するときは、その子に `min-width: 0` を付ける**（付けないと子が内容の幅より縮まず、省略されずにはみ出すから）［VCL-wig］
 - 文字の入る箱は、長い内容を省略・行数制限・折り返しのどれかで受ける［VCL-wig］
 - 利用者が入力する値は、短い・普通・極端に長いの3通りで表示を確かめる［VCL-wig］
+- 文字を含む要素（ボタン・バッジ・タブ・カード）に固定の高さを付けない。最低限の高さが必要なら最小値で指定する（利用者が行間や字間を広げたとき、文字がはみ出すか切れるから）［WCAG-1412］［MWG-type］
 - 空の文字列・空の配列で表示が崩れないようにする。空・少ない・多い・エラーの各状態を全部作る（空状態の型は 通知の参照）［VCL-wig］
 - 50件を超える一覧は仮想化する［VCL-wig］
 - 意図しないスクロールバーを出さない。はみ出しを直す［VCL-wig］
@@ -140,7 +151,7 @@
 
 | キー | URL | 確認 | 原文の該当文 |
 |---|---|---|---|
-| ANT-fd | https://raw.githubusercontent.com/anthropics/skills/main/skills/frontend-design/SKILL.md | 確認済み | "If the brief does not identify what the product or subject matter is, identify it yourself before designing ... one concrete subject, the design's audience, and the design's primary job" / "Visual structure is information. Structural devices like outlines, borders, numbering ... encode useful information about the content rather than decorate it." / "Work in two passes." / "Critique your own work as you build" / "Motion that answers a person's action (opening, expanding, confirming) is welcome when it shows what changed." |
+| ANT-fd | https://raw.githubusercontent.com/anthropics/skills/main/skills/frontend-design/SKILL.md | 確認済み（2026-11-13、commit 2c5958e） | "If the brief does not identify what the product or subject matter is, identify it yourself before designing ... one concrete subject, the design's audience, and the design's primary job" / "Visual structure is information. Structural devices like outlines, borders, numbering, eyebrows, dividers, labels, etc., encode useful information about the content rather than decorate it." / "Adding unnecessary typographic labels above content." / "the SaaS-card kit: content chopped into identical rounded cards, one border-radius on everything regardless of hierarchy, the same soft grey shadow ... and gradient washes as decoration" / "template chrome that appears whatever the subject: a tracked-out ALL-CAPS eyebrow label above every heading; meta strings joined with middle dots" / "All traits are legitimate for some briefs, but they are defaults rather than choices" / "Spend your boldness in one place. Let one element be the memorable thing, keep everything around it quiet" / "Work in two passes." / "Critique your own work as you build" / "Motion that answers a person's action (opening, expanding, confirming) is welcome when it shows what changed." |
 | 本環境 | — | 本環境の既定 | 外部の出典を持たない、本環境の運用で定めた既定（型を先に決める／情報量の多い一覧・比較はサイドバー付きの多カラム／その場で開く導線の幅と高さ） |
 | LIN-redesign | https://linear.app/now/how-we-redesigned-the-linear-ui | 確認済み | "I started to focus on this inverted L-shape. It's the global chrome of the application that controls the content in the main view." |
 | CBN-shell | https://carbondesignsystem.com/components/UI-shell-header/usage/ | 確認済み | "The header is persistent throughout the product experience. For each UI shell component, left-to-right translates to product-to-global." / "As a header scales down to fit smaller screen sizes, header links and menus should collapse into a left-panel hamburger menu." |
@@ -159,7 +170,20 @@
 | WCAG-141 | https://www.w3.org/WAI/WCAG22/Understanding/use-of-color.html | 確認済み | "Color is not used as the only visual means of conveying information, indicating an action, prompting a response, or distinguishing a visual element." |
 | WCAG-247 | https://www.w3.org/WAI/WCAG22/Understanding/focus-visible.html | 確認済み | "Any keyboard operable user interface has a mode of operation where the keyboard focus indicator is visible." |
 | WCAG-233 | https://www.w3.org/WAI/WCAG22/Understanding/animation-from-interactions.html | 確認済み | "Motion animation triggered by interaction can be disabled, unless the animation is essential to the functionality or the information being conveyed." |
-| VCL-wig | https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/AGENTS.md | 確認済み | "NEVER: `outline: none` without visible focus replacement" / "NEVER: `transition: all`—list properties explicitly" / "MUST: Animate compositor-friendly props (`transform`, `opacity`) only" / "MUST: Flex children need `min-w-0` to allow truncation" / "MUST: Virtualize large lists (>50 items)" / "MUST: Honor `prefers-reduced-motion`" |
+| VCL-wig | https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/AGENTS.md | 確認済み | "SHOULD: Nested radii: child ≤ parent; concentric" / "NEVER: `outline: none` without visible focus replacement" / "NEVER: `transition: all`—list properties explicitly" / "MUST: Animate compositor-friendly props (`transform`, `opacity`) only" / "MUST: Flex children need `min-w-0` to allow truncation" / "MUST: Virtualize large lists (>50 items)" / "MUST: Honor `prefers-reduced-motion`" |
+| plusai | https://plusai.com/blog/how-to-make-ai-slides-that-dont-look-like-ai-slop/ | 確認済み（2026-11-13） | "It's extraneous decoration doing the job that layout should do." / "Use whitespace to separate sections" / "if you delete the decoration and the slide is just as clear, the decoration was slop." |
+| unslop | https://github.com/heydamir/unslop/blob/main/skills/unslop/SKILL.md （本環境では `skills/unslop/`） | 確認済み（2026-11-13、commit 97daa3e） | "In the chrome, one accent, used rarely. It marks the primary action, the selection or the one number that matters." / "Remove hue gradients on surfaces, gradient text, colored glows and colored shadows, radial color washes and blobs behind content, and neon borders." / "A gradient is allowed only as a small tone shift inside one neutral" / "Nested radius. An inner radius equals the outer radius minus the padding between them" ／ 兆候の一覧（references/signs.md）に uppercase tracked labels がある |
+| HLM | https://github.com/Nutlope/hallmark/blob/main/skills/hallmark/SKILL.md | 確認済み（2026-11-13、commit 04977e1） | "Never an eyebrow, and never a label in tracked capitals or small caps" / "Never a purple-to-blue gradient, a card inside a card, an emoji as an icon" |
+| AST-space | https://github.com/facebook/astryx/blob/main/docs/design/spatial-hierarchy.md | 確認済み（2026-11-13、commit 721dbf1。文書の状態は draft） | "DR3 — Space precedes containment. Authors SHOULD use spacing and alignment to establish groups before adding another card or boundary." |
+| AST-shape | https://github.com/facebook/astryx/blob/main/docs/design/shape-relationships.md | 確認済み（同上） | "DR2 — Nested curves remain concentric. Inner and outer corners MUST read as parallel shapes after accounting for the space between them." |
+| AST-emph | https://github.com/facebook/astryx/blob/main/docs/design/color-emphasis.md | 確認済み（同上） | "DR3 — Emphasis remains scarce. A local action group SHOULD expose one clear primary emphasis rather than making every action compete equally." |
+| UISDK-styles | https://github.com/vercel-labs/ui/blob/main/packages/core/skills/ui-sdk/references/styles.md | 確認済み（2026-11-13、commit c53df2f） | "Style `data-selected`, `data-highlighted`, `data-checked` and the rest so the state reads on its own, at 3:1 against what's around it: a fill change, a full outline or a weight change. A faint tint alone doesn't. Don't default to a stripe down one edge." / "Control edges, focus indicators and state fills need 3:1 (WCAG 1.4.11)." |
+| MWG-color | https://github.com/GoogleChrome/modern-web-guidance/blob/main/skills/modern-web-guidance/guides/visual-design/color.md | 確認済み（2026-11-13、commit 4dd9683） | "Maintain a minimum contrast ratio of 3:1 for user interface component boundaries and states (WCAG 1.4.11 Non-text Contrast)." |
+| MWG-type | https://github.com/GoogleChrome/modern-web-guidance/blob/main/skills/modern-web-guidance/guides/visual-design/typography.md | 確認済み（同上） | "DON'T set a fixed `height` or `block-size` on elements that contain text, such as buttons, badges, tabs and cards. Let the content set the height, with `min-block-size` if a minimum is needed" |
+| MWG-motion | https://github.com/GoogleChrome/modern-web-guidance/blob/main/skills/modern-web-guidance/guides/ui-behaviors/motion.md | 確認済み（同上） | "Any moving, blinking, or scrolling content that starts automatically, lasts more than five seconds, and is shown alongside other content needs a visible control to pause, stop, or hide it" / "`prefers-reduced-motion` doesn't replace the control" |
+| WCAG-1411 | https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html | 確認済み（2026-11-13） | "The visual presentation of the following have a contrast ratio of at least 3:1 against adjacent color(s): User Interface Components Visual information required to identify user interface components and states" |
+| WCAG-1412 | https://www.w3.org/WAI/WCAG22/Understanding/text-spacing.html | 確認済み（2026-11-13） | "no loss of content or functionality occurs by setting all of the following and by changing no other style property" |
+| WCAG-222 | https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html | 確認済み（2026-11-13） | "For any moving, blinking or scrolling information that (1) starts automatically, (2) lasts more than five seconds, and (3) is presented in parallel with other content, there is a mechanism for the user to pause, stop, or hide it" |
 
 ## 9. 未確認で外した規則
 
@@ -171,6 +195,7 @@
 | state layer の不透明度（hover・focus・pressed の %）、motion の ms、Carbon data table の行の高さ、補助ペインの幅の比率（Android の 70/30・50/50） | 原文で確認できたものも含め、sources.md の採否どおり数値はスキルに持たない。比率は「主内容に幅の多くを割く」とだけ書いた |
 | 画面幅の区切り（window size class の dp、Carbon のブレークポイント） | sources.md の採否どおり持たない。PJ・CSSフレームワークの値を使う |
 | 押下で形が変わる等の M3 Expressive 固有の演出 | sources.md の採否どおり入れない |
-| 重ねた影（ambient＋direct）、入れ子の角丸を内側ほど小さくする、境界線と影を背景の色相に寄せる（Vercel の Design 節） | 原文は確認したが SHOULD の見た目の好みで、型の選択と配置というこのファイルの範囲を外れるので入れない |
+| unslop の数値（4px の余白の段階、サイドバーの幅、文字の太さ 400/500、easing の曲線、ms、色コード）と英語の文言・欧文書体・チャートの規則 | sources.md の採否どおり数値は持たない。文言は `/writing-ui-text`、チャートは dataviz に従う。unslop を使うときは unslop の中で扱う |
+| 重ねた影（ambient＋direct）、境界線と影を背景の色相に寄せる（Vercel の Design 節） | 原文は確認したが SHOULD の見た目の好みで、ほかの出典と一致を確かめていないので入れない（入れ子の角丸は Astryx・unslop と一致したので3節に入れた） |
 | shadcn の変数と M3 の役割の対応表（card = surface-container-low 等） | フレームワーク固有なので shadcn の対応付けの参照の担当。本ファイルには入れない |
 | Linear の LCH・3入力（ベース色・アクセント色・コントラスト）からのテーマ生成 | 原文は確認したが、トークンの生成方法は PJ の実装判断で、型の選択の規則にならないので入れない |

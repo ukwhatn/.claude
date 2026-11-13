@@ -113,6 +113,7 @@
 - 動かない文字だけ（「読み込み中」の表示だけ）で待たせない（止まっても利用者が気付けない）［NNg-progress］
 - 待ち時間を見積もれないときは、確定型に切り替える境目を早めに取る（見積もりの振れが大きいほど早める）［NNg-progress］
 - 部品に読み込みの状態が組み込まれていれば、独自の表示を作らずにそれを使う［Primer-loading］
+- エージェントの思考・ツールの実行・入力待ちの表示は、新しい表現を作る前に、この節の読み込み・処理中の型と、状態の表示で示せないかを確かめる（同じ意図に別の表現を作ると、利用者は状態を見分け直すことになるから）［AST-agentic］
 
 ### スケルトンとスピナー
 
@@ -210,6 +211,7 @@
 | GOVUK-validation | https://design-system.service.gov.uk/patterns/validation/ | 確認済み | "Do not validate when the user moves away from a field." |
 | GOVUK-errmsg | https://design-system.service.gov.uk/components/error-message/ | 確認済み | "Do not clear any form fields when showing the Error message component." |
 | NNg-errors | https://www.nngroup.com/articles/error-message-guidelines/ | 確認済み | "Display the error message close to the error's source." |
+| AST-agentic | https://github.com/facebook/astryx/blob/main/docs/design/agentic-states.md | 確認済み（2026-11-13、commit 721dbf1。文書の状態は draft） | "DR1 — Extend established state language first. Agentic states SHOULD reuse representations from `design:user-states` and `design:system-states` when the underlying intention is the same." |
 | Vercel-WIG | https://github.com/vercel-labs/web-interface-guidelines | 確認済み（README.md を raw で取得） | "Keep submit enabled until submission starts; then disable during the in-flight request, show a spinner, & include an idempotency key." |
 
 ## 8. 未確認で外した規則
