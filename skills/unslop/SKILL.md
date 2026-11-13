@@ -1,6 +1,6 @@
 ---
 name: unslop
-description: Turns vibecoded, AI-looking UI into a designed interface with its own character. Finds a direction from the product itself, then fixes spacing, color, icons, copy, type, layout, details, visuals and motion in that order, and can generate a real hero visual with an image tool when one is available. Use when the user asks to unslop, polish, clean up or redesign a screen so it stops looking AI-generated, or when a UI shows the usual tells like purple gradients, glows, gradient text, emoji labels, "New ✨" badges, glossy blobs, uppercase tracked labels, pulsing elements or uneven spacing. Works on React, Tailwind, HTML and CSS, for dashboards, apps and landing pages. Not for choosing navigation, overlays or the app shell (use designing-ui), Japanese UI copy (use writing-ui-text) or charts (use dataviz).
+description: Turns vibecoded, AI-looking UI into a designed interface with its own character. Finds a direction from the product itself, then fixes spacing, color, icons, copy, type, layout, details, visuals and motion in that order, and can generate a real hero visual with an image tool when one is available. Use when the user asks to unslop, polish, clean up or redesign a screen so it stops looking AI-generated, or when a UI shows the usual tells like purple gradients, glows, gradient text, emoji labels, "New ✨" badges, glossy blobs, uppercase tracked labels, pulsing elements or uneven spacing. Works on React, Tailwind, HTML and CSS, for dashboards, apps and landing pages. Not for choosing navigation, overlays or the app shell (use designing-ui), Japanese UI copy (use writing-ui-text) or charts (use dataviz). Also runs as the finishing pass when designing-ui builds a new screen.
 license: CC-BY-4.0
 metadata:
   author: Damir Sokolovsky
@@ -37,7 +37,7 @@ Which visual styles tend to work, and which fail, is in [references/visuals.md](
 - A project's own design system, DESIGN.md or token set wins over the values in this skill. Keep its spacing, radius, colors and type scale; use this skill's numbers only where the project has none.
 - Japanese UI text follows the writing-ui-text skill. Skip the English copy rules in the copy pass and run that skill instead.
 - Charts, stat tiles and dashboard data marks follow the dataviz skill. Skip the chart rules in visuals and tokens.
-- Choosing navigation, overlays, feedback or the app shell is the designing-ui skill. This skill polishes a chosen structure; it does not change the shell or the navigation pattern.
+- Choosing navigation, overlays, feedback or the app shell is the designing-ui skill. When designing-ui builds a new screen, it confirms the direction with the user first and then calls this skill to finish the screen: take that direction, skip the wait in step 4, and run the passes. This skill does not change the shell or the navigation pattern.
 - The type table lists Latin families only. For Japanese text, keep the project's Japanese font stack and weights.
 - Before generating an image with a tool that costs money or sends the project's content to an outside service, ask the user, even after the direction is confirmed.
 
