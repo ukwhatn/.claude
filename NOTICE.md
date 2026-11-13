@@ -1,6 +1,6 @@
 # NOTICE — 第三者ライセンス表示
 
-このリポジトリの以下のファイルは、MITライセンスで公開されている外部リポジトリのコンテンツを翻案（日本語化・本環境の規約への適応・再構成）したものを含む。
+このリポジトリは、外部リポジトリのコンテンツを翻案（日本語化・本環境の規約への適応・再構成）したものと、外部リポジトリのファイルをコピーしたもの（改変はパッチで管理する）を含む。各項目に出典・ライセンス・改変の有無を書く。
 
 ## obra/superpowers
 
@@ -140,6 +140,24 @@ SOFTWARE.
 - 改変: `SKILL.md` の、読み込み時に `npx shadcn@latest info --json` を自動で実行する行と、`npx shadcn@latest` の `allowed-tools`（事前承認）を外し、必要なときに実行する手順の文に置き換えた（版を固定しないパッケージが、要らない場面でも確認なしに実行されるのを避けるため）。自動実行の結果を前提にしていた2行も合わせて直した。改変の全体は `vendor/patches/shadcn.patch`。それ以外のファイルは無改変
 - 更新するときは、上流の参照commitから最新までの差分を全文読み、上流のファイルを無改変でコピーしてから `git apply vendor/patches/shadcn.patch` で改変を当て直す。当たらなければ改変の趣旨（自動実行と事前承認を外す）に沿ってパッチを作り直す。上の参照commitと `vendor/manifest.json` の `commit` を書き換える
 - ライセンス全文: `skills/shadcn/LICENSE.md`（MIT License, Copyright (c) 2023 shadcn）
+
+## heydamir/unslop
+
+- 出典: https://github.com/heydamir/unslop の `skills/unslop/` （参照commit: `97daa3eb365670ea3f87ed85356cbfcee18105a5`）。作者: Damir Sokolovsky（https://x.com/heydamir）
+- 配置先: `skills/unslop/`（SKILL.md, references/, scripts/, agents/openai.yaml, LICENSE）。上流の最上位にある LICENSE を `skills/unslop/LICENSE` に置いた。`examples/`・`test/` は Claude Code の実行に要らないので取り込んでいない
+- ライセンス: Creative Commons Attribution 4.0 International（CC BY 4.0、https://creativecommons.org/licenses/by/4.0/ ）。SKILL.md と references にある作者のクレジット行は消さない
+- 改変: `SKILL.md` の description の末尾に、本環境のほかのスキルとの境界を1文足し、`## Run it` の前に `## Precedence in this environment` の節を足し、frontmatter の直後に改変した旨の注記を1行足した（PJ のデザインシステム・日本語の文言・チャート・画面の型の選択を本環境のスキルに譲り、課金や外部送信のある画像生成を事前に確かめるため）。改変の全体は `vendor/patches/unslop.patch`。それ以外のファイルは無改変
+- 更新するときは、上流の参照commitから最新までの差分を全文読み、上流のファイルを無改変でコピーしてから `git apply vendor/patches/unslop.patch` で改変を当て直す。当たらなければ改変の趣旨（境界の1文と優先順位の節）に沿ってパッチを作り直す。上の参照commitと `vendor/manifest.json` の `commit` を書き換える
+
+## GoogleChrome/modern-web-guidance
+
+- 出典: https://github.com/GoogleChrome/modern-web-guidance の `skills/modern-web-guidance/` （参照commit: `4dd968349e54ca45a05dd5c818fb035c9054b022`）
+- 配置先: `skills/modern-web-guidance/`（SKILL.md, LICENSE）。`guides/` は SKILL.md の手順どおり CLI が実行時に取得するので取り込んでいない。plugin 定義・`skills/chrome-extensions/` も取り込んでいない
+- 改変: `SKILL.md` の description の「MANDATORY: Execute FIRST for all HTML/CSS and clientside JS tasks」を、ブラウザ側の機能の作り方を決める前に使う旨と designing-ui との境界の文に置き換えた（CSS の小さな修正でも毎回 CLI がネットワークに出るのを避けるため）。応答の末尾に `### Modern Web Guidance` 節を付けさせる Step 4 を外した（応答の書き方は output style が決めるため）。frontmatter の直後に、改変した旨の注記を1行足した（Apache License 2.0 の 4(b)）。改変の全体は `vendor/patches/modern-web-guidance.patch`
+- CLI は `npx -y modern-web-guidance@latest` のまま実行させる。`~/.npmrc` の `min-release-age` が公開から日の浅い版を除外するので、版をここで固定しない
+- `vendor/manifest.json` の `watch_dirs` は空にしてある（取り込まない `guides/` の追加で毎週 issue が立つのを避けるため）。SKILL.md の `--skill-version` は上流の更新ごとに変わるので、更新は SKILL.md の差分で検出できる
+- 更新するときは、上流の参照commitから最新までの SKILL.md の差分を全文読み、無改変でコピーしてから `git apply vendor/patches/modern-web-guidance.patch` で改変を当て直す。上の参照commitと `vendor/manifest.json` の `commit` を書き換える
+- ライセンス全文: `skills/modern-web-guidance/LICENSE`（Apache License 2.0）
 
 ## 上流の更新の検出
 

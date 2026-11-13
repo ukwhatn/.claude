@@ -152,7 +152,7 @@ printf '%s\n' '<貼られたcallback URL>' > "<scratchpad>/codex-login.fifo"
 - plugin skillは名前空間付き（`/commit` → `/ns:commit`）。指示ファイル内のskill名参照は多数あり、全書き換えが要る
 - marketplace方式は実体が `plugins/cache/<mp>/<plugin>/<version>/` に入るため、更新のたびにsymlink先が変わる
 - 結論: 個人運用ではsymlinkが優位。他人に配布する必要が出たら再検討する
-- 外部由来で自分が編集しないskill（Cloudflare系等）は公式marketplaceのpluginで導入する、という区分は有効
+- 外部由来のskillのうち、Codexにも届けるものと本環境でpatchを当てるものは、vendor方式（`vendor/manifest.json`・`vendor/patches/`・`NOTICE.md`）で `skills/` に置く。上流がmarketplaceを持つClaude Code専用のもの（Cloudflare系等）はpluginで導入してよい
 
 ## 実機検証で確定している事実（推測しない）
 

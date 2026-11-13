@@ -83,6 +83,43 @@
         {"upstream": "skills/shadcn/rules/styling.md", "local": "skills/shadcn/rules/styling.md"},
         {"upstream": "LICENSE.md", "local": "skills/shadcn/LICENSE.md"}
       ]
+    },
+    {
+      "name": "unslop",
+      "repo": "heydamir/unslop",
+      "branch": "main",
+      "commit": "97daa3eb365670ea3f87ed85356cbfcee18105a5",
+      "watch_dirs": ["skills/unslop"],
+      "patch": "vendor/patches/unslop.patch",
+      "files": [
+        {"upstream": "skills/unslop/SKILL.md", "local": "skills/unslop/SKILL.md", "patched": true},
+        {"upstream": "skills/unslop/agents/openai.yaml", "local": "skills/unslop/agents/openai.yaml"},
+        {"upstream": "skills/unslop/references/effects.md", "local": "skills/unslop/references/effects.md"},
+        {"upstream": "skills/unslop/references/refs.md", "local": "skills/unslop/references/refs.md"},
+        {"upstream": "skills/unslop/references/refs/beacon-engraving.webp", "local": "skills/unslop/references/refs/beacon-engraving.webp"},
+        {"upstream": "skills/unslop/references/refs/meadow-3d.webp", "local": "skills/unslop/references/refs/meadow-3d.webp"},
+        {"upstream": "skills/unslop/references/refs/story-dashboard-frames.webp", "local": "skills/unslop/references/refs/story-dashboard-frames.webp"},
+        {"upstream": "skills/unslop/references/refs/unslop-dashboard-after.webp", "local": "skills/unslop/references/refs/unslop-dashboard-after.webp"},
+        {"upstream": "skills/unslop/references/refs/unslop-hero-after.webp", "local": "skills/unslop/references/refs/unslop-hero-after.webp"},
+        {"upstream": "skills/unslop/references/signs.md", "local": "skills/unslop/references/signs.md"},
+        {"upstream": "skills/unslop/references/tokens.md", "local": "skills/unslop/references/tokens.md"},
+        {"upstream": "skills/unslop/references/visuals.md", "local": "skills/unslop/references/visuals.md"},
+        {"upstream": "skills/unslop/scripts/snapshot.mjs", "local": "skills/unslop/scripts/snapshot.mjs"},
+        {"upstream": "skills/unslop/scripts/story.mjs", "local": "skills/unslop/scripts/story.mjs"},
+        {"upstream": "LICENSE", "local": "skills/unslop/LICENSE"}
+      ]
+    },
+    {
+      "name": "modern-web-guidance",
+      "repo": "GoogleChrome/modern-web-guidance",
+      "branch": "main",
+      "commit": "4dd968349e54ca45a05dd5c818fb035c9054b022",
+      "watch_dirs": [],
+      "patch": "vendor/patches/modern-web-guidance.patch",
+      "files": [
+        {"upstream": "skills/modern-web-guidance/SKILL.md", "local": "skills/modern-web-guidance/SKILL.md", "patched": true},
+        {"upstream": "LICENSE", "local": "skills/modern-web-guidance/LICENSE"}
+      ]
     }
   ]
 }
