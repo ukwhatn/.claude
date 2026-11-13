@@ -27,23 +27,23 @@ EnterWorktreeの `name` パラメータはsanitizeされる（`/` → `+`）。�
 
 ## 既存ブランチで作業を再開する場合
 
-ケースが複雑なため（既存worktree残存有無、remote-onlyブランチ、別worktreeでcheckout済み等）、固定フローを規定しない。再開時は `git worktree list` と `git branch -a` で現状を確認し、判断に迷う点があればユーザーに方針を確かめる。
+ケースが複雑なため（既存worktree残存有無、remote-onlyブランチ、別worktreeでcheckout済み等）、固定フローを規定しない。再開時は `git worktree list` と `git branch -a` で現状を確認し、判断に迷う点があればユーザーに方針を確認する。
 
 ## baseRefとBASE_BRANCHの不一致
 
-baseRefは `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.mdの `BASE_BRANCH` が `origin/<default-branch>` と異なる場合（例: defaultが `main` だがPRベースは `develop`）、worktree起点とPRベースがずれる。その場合はEnterWorktree後に `git rebase <BASE_BRANCH>` 等でbaseを揃えるか、ユーザーに確かめる。
+baseRefは `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.mdの `BASE_BRANCH` が `origin/<default-branch>` と異なる場合（例: defaultが `main` だがPRベースは `develop`）、worktree起点とPRベースがずれる。その場合はEnterWorktree後に `git rebase <BASE_BRANCH>` 等でbaseを統一するか、ユーザーに確認する。
 
 ## worktreeとブランチの片付け
 
-後片付けは確認を待たずに行う（AGENTS.md「進め方の既定」）。次の全てを満たすworktreeは削除し、マージ済みのブランチは `git branch -d` で消す:
+後片付けは確認を待たずに行う（AGENTS.md「進め方の既定」）。次の全てを満たすworktreeは削除し、マージ済みのブランチは `git branch -d` で削除する:
 
 - 実機検証・動作確認が完了している、またはworktreeでの作業自体が終わっている
 - 未コミットの変更がない（`git status` で確認）
-- そのブランチのコミットがマージ済み、またはpush済みでPRに載っている（未pushのコミットがあるなら消さずに報告する。保全が先）
+- そのブランチのコミットがマージ済み、またはpush済みでPRに載っている（未pushのコミットがあるなら削除せずに報告する。保全が先）
 
-`git branch -d` はマージされていないブランチを消さないので、確認なしで使ってよい。`git branch -D`（強制削除）はマージされていないコミットを失うので、実行前にユーザーに確かめる（AGENTS.md「確認が要るもの」の緩和しない安全項目）。未pushのコミットを持つブランチを消したいときは、rebase / cherry-pickで別ブランチに保全してから消す。
+`git branch -d` はマージされていないブランチを削除しないので、確認なしで使ってよい。`git branch -D`（強制削除）はマージされていないコミットを失うので、実行前にユーザーに確認する（AGENTS.md「確認が必要なもの」の緩和しない安全項目）。未pushのコミットを持つブランチを削除したいときは、rebase / cherry-pickで別ブランチに保全してから削除する。
 
-`ExitWorktree(action: 'remove')` は、EnterWorktreeが作った元のブランチ名（`worktree-<sanitized>`）を削除しようとする。上記フローで `feature/...` に改名している場合、改名後のブランチは消えない。改名後のブランチはPR作成・マージまで残し、マージされたら `git branch -d` で消す。
+`ExitWorktree(action: 'remove')` は、EnterWorktreeが作った元のブランチ名（`worktree-<sanitized>`）を削除しようとする。上記フローで `feature/...` に改名している場合、改名後のブランチは消えない。改名後のブランチはPR作成・マージまで残し、マージされたら `git branch -d` で削除する。
 
 ## EnterWorktree/ExitWorktreeの状態管理（実測トラブルシュート）
 
@@ -51,7 +51,7 @@ baseRefは `fresh`（origin/<default-branch> 起点）。PJ CLAUDE.mdの `BASE_B
 
 - **`Already in a worktree session`**: 既にEnterWorktree済みのセッションで再度EnterWorktreeしようとした。新規worktreeが必要なら先にExitWorktree（またはpathを渡して切替）する
 - **`No-op: there is no active EnterWorktree session to exit`**: ExitWorktreeが対応するセッションを特定できていない（compaction後に多い）。実行前に`git worktree list`で実際の状態を確認してから判断する
-- **`Worktree has N commits. Removing will discard this work permanently`**: ExitWorktreeはコミット済み作業があるとworktreeの削除を止める。`git log`でコミット有無とマージ・push状況を確認する。マージ済みかpush済みなら `discard_changes: true` で消してよい。未pushのコミットが残るなら `action: "keep"` 相当で残し、報告する
+- **`Worktree has N commits. Removing will discard this work permanently`**: ExitWorktreeはコミット済み作業があるとworktreeの削除を止める。`git log`でコミット有無とマージ・push状況を確認する。マージ済みかpush済みなら `discard_changes: true` で削除してよい。未pushのコミットが残るなら `action: "keep"` 相当で残し、報告する
 
 ## 並列bg sessionの指針
 

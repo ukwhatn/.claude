@@ -27,5 +27,5 @@
 ## テストのPython固有事項
 
 - 本体のテスト規律（シーム限定TDD・トートロジー禁止・mockは外部境界のみ）に従う
-- `monkeypatch` / `unittest.mock.patch` で**自分のmoduleの内部を差し替えるのは実装結合**のサイン。境界をProtocolにしてfakeを注入する形に設計を直す
+- `monkeypatch` / `unittest.mock.patch` で**自分のmoduleの内部を差し替えるのは実装結合**のサイン。境界をProtocolにしてfakeを注入する形に設計を修正する
 - patchが正当なのは外部境界（時刻・環境変数・外部SDK）のみ

@@ -1,6 +1,6 @@
 ---
 name: create-draft-pr
-description: PR を Draft で作成する。変更をローカルで動かして確かめ、画面が変わるならスクリーンショットを gh の --attach で貼り、PR テンプレートを全セクション埋めて対象 repo の既存 PR の分量に揃え、出した後は CI・レビュー・マージを見張る（taskboard に結ばれたセッションは taskboard の通知を待ち、それ以外は Monitor）。PR 作成の依頼時、実装が一段落して PR 化する時、/create-draft-pr 実行時に使用（gh pr create を直接実行しない）。引数でベースブランチを指定できる。境界: 個別レビューコメントへの対応は pr-comment、PR 全体のレビューは pr-review、複数 PR 規模の計画は plan-feature-prs。
+description: PR を Draft で作成する。変更をローカルで動かして確認し、画面が変わるならスクリーンショットを gh の --attach で貼り、PR テンプレートを全セクション埋めて対象 repo の既存 PR の分量に統一し、出した後は CI・レビュー・マージを見張る（taskboard に結ばれたセッションは taskboard の通知を待ち、それ以外は Monitor）。PR 作成の依頼時、実装が一段落して PR 化する時、/create-draft-pr 実行時に使用（gh pr create を直接実行しない）。引数でベースブランチを指定できる。境界: 個別レビューコメントへの対応は pr-comment、PR 全体のレビューは pr-review、複数 PR 規模の計画は plan-feature-prs。
 allowed-tools: Bash(git:*), Bash(gh:*), Read, Write
 ---
 
@@ -33,7 +33,7 @@ cat .github/PULL_REQUEST_TEMPLATE.md 2>/dev/null || cat .github/pull_request_tem
 ls .github/PULL_REQUEST_TEMPLATE/ 2>/dev/null
 ```
 
-テンプレートがあれば、すべてのセクションを埋める。レビュアーが記入を前提にした項目が欠けると差し戻しの原因になるので、セクションは削除しない。該当なしのセクションも見出しを残して「特になし」と1行書く。テンプレート内の HTML コメント（`<!-- ... -->`）は消す。
+テンプレートがあれば、すべてのセクションを埋める。レビュアーが記入を前提にした項目が欠けると差し戻しの原因になるので、セクションは削除しない。該当なしのセクションも見出しを残して「特になし」と1行書く。テンプレート内の HTML コメント（`<!-- ... -->`）は削除する。
 
 ### 3. 変更内容の確認
 
@@ -49,7 +49,7 @@ PR を作る前に、変更をローカルで実際に通す。lint・typecheck�
 - **すべての差分**: 変更を実際に通す確認（実行・テスト・起動のどれか）をローカルで行う。変更した関数・コマンド・エンドポイントを、変えた入力で呼ぶ
 - **画面・UI・挙動が変わる差分**（コンポーネント・テンプレート・CSS・ルーティング・API の応答形式を含む）: ローカルで起動し、変えた操作を画面で通す。ブラウザ操作ツールを使う前に `context/browser-automation.md` を Read する
 - **画面が変わる差分**: 変更後の画面のスクリーンショットを撮り、手順6の「テスト方法」に `![<説明>](./<file>.png)` で置く。手順8で同じパスを `--attach` に渡す（挙動と失敗時の扱いは `context/github-cli-notes.md`「画像・動画の添付」）
-- **確かめられなかった範囲**（ローカルで起動できない外部連携など）は、何を確かめられなかったかと理由を「テスト方法」に1行書く
+- **確認できなかった範囲**（ローカルで起動できない外部連携など）は、何を確認できなかったかと理由を「テスト方法」に1行書く
 
 ### 5. 分量予算を決める
 
@@ -74,7 +74,7 @@ gh pr list --state merged --limit 40 --json changedFiles,body,author \
   -q '.[] | select(.body != null) | "\(.changedFiles)\t\(.body | length)\t\(.author.login)"' | sort -n
 ```
 
-そのうえで今回と同規模（変更ファイル数が近い）の PR 2〜3件を実際に読み、粒度と長さをそれに揃える。author 別に差がある場合は、レビュアー層に受け入れられている多数派に合わせる。
+そのうえで今回と同規模（変更ファイル数が近い）の PR 2〜3件を実際に読み、粒度と長さをそれに統一する。author 別に差がある場合は、レビュアー層に受け入れられている多数派に合わせる。
 
 測った結果は `${MEMORY_DIR}/context/pr-conventions.md` に次の形で残す（`.local/` は global gitignore 済みでコミット不要。CLAUDE.local.md に直書きでもよい）:
 
@@ -146,7 +146,7 @@ PR が少ない・新規 repo 等でキャッシュも実測もできない場�
 
 文体は `/writing-prose` スキルを実行して、その GitHub 向けガイド（PR 概要欄）に従う。箇条書きは体言止め・常体、地の文は敬体。パス・関数・設定値・コマンドは `` ` `` で囲む。事実は断定、推測・提案だけぼかす。
 
-チェックリストは、依存追加・スキーマ変更・環境変数・migration の有無を diff で確かめてから `[x]` を付ける（確かめずに付けると、レビュアーがその項目を見なくなる）。補足を書くのは2ケースだけ:
+チェックリストは、依存追加・スキーマ変更・環境変数・migration の有無を diff で確認してから `[x]` を付ける（確認せずに付けると、レビュアーがその項目を見なくなる）。補足を書くのは2ケースだけ:
 
 - `[ ]` のまま残すとき（理由と後追いの合意を1行）
 - 該当ありでレビュアーが判断に迷うとき（1行）
@@ -155,9 +155,9 @@ PR が少ない・新規 repo 等でキャッシュも実測もできない場�
 
 ### 7. 削る（AI の書きすぎを落とす）
 
-書き終えたら、以下を上から順に検索して消す。いずれもレビュアーの判断材料にならず、本文を長くするだけ。
+書き終えたら、以下を上から順に検索して削除する。いずれもレビュアーの判断材料にならず、本文を長くするだけ。
 
-| 消すもの | 代わりに |
+| 削除するもの | 代わりに |
 |---|---|
 | 実装の設計判断・採用理由の解説段落 | 判断を仰ぐものだけ「レビュー時チェック」相当に1行 |
 | トレードオフ・将来の代替実装案（「必要になれば〜に切替可能」） | 書かない。指摘されたら返信で書く |
@@ -191,7 +191,7 @@ gh pr create --draft \
 
 ### 9. CI と conflict の確認
 
-CI の結果と conflict の有無を自分で確かめてから報告する。走行中なら完了まで監視し、失敗・conflict があれば指摘を待たずに原因調査に入る。
+CI の結果と conflict の有無を自分で確認してから報告する。走行中なら完了まで監視し、失敗・conflict があれば指摘を待たずに原因調査に入る。
 
 ```bash
 gh pr view <n> --json mergeable,mergeStateStatus,statusCheckRollup
@@ -201,9 +201,9 @@ gh pr view <n> --json mergeable,mergeStateStatus,statusCheckRollup
 
 ### 10. レビュー待ち・マージ待ちの監視
 
-PR を出したら、PR の状態を見張る。Draft でも見張る（ready にされた後のレビューと CI の再実行を拾うため）。
+PR を出したら、PR の状態を見張る。Draft でも見張る（ready にされた後のレビューと CI の再実行を検出するため）。
 
-taskboard に結ばれたセッションでは、Monitor も `watch_create` も張らない。PR がタスクにリンクされていれば、CI の結論・レビュー・コメント・conflict・マージ・クローズを taskboard が lead に通知するので、届いた通知に下の表の「各イベントでやること」を当てる。リンクされたかは `task_get` で確かめ、されていなければ `task_update` で足す（ブランチの PR はターンの終わりに自動でリンクされる）。タグへの反映や ready のような決めた動きで別の手順を始めるときだけ、`watch_create` に `events` か `tag_pattern` を付けて張る。
+taskboard に結ばれたセッションでは、Monitor も `watch_create` も張らない。PR がタスクにリンクされていれば、CI の結論・レビュー・コメント・conflict・マージ・クローズを taskboard が lead に通知するので、届いた通知に下の表の「各イベントでやること」を当てる。リンクされたかは `task_get` で確認し、されていなければ `task_update` で追加する（ブランチの PR はターンの終わりに自動でリンクされる）。タグへの反映や ready のような決めた動きで別の手順を始めるときだけ、`watch_create` に `events` か `tag_pattern` を付けて張る。
 
 taskboard に結ばれていないセッションは、Monitor で見張る。
 
@@ -232,14 +232,14 @@ Monitor には `timeout_ms` を上限（1800000）で渡す。期限で切れた
 
 | イベント | やること |
 |---|---|
-| checks に `FAILURE`・`ERROR`・`TIMED_OUT` が出た | ログを読んで原因を直し、同じブランチへ push する（出した PR の承認に含まれる）。push 後は手順9をやり直す |
+| checks に `FAILURE`・`ERROR`・`TIMED_OUT` が出た | ログを読んで原因を修正し、同じブランチへ push する（出した PR の承認に含まれる）。push 後は手順9を再実行する |
 | `reviews=` が増えた・`CHANGES_REQUESTED` になった | 付いたコメントを読み、`/pr-comment` スキルで対応と返信案を作る。返信の投稿はユーザーの承認を得てから |
 | `mergeStateStatus` が `DIRTY` になった | base を取り込んで conflict を解消し、push する |
-| `MERGED` | worktree を削除し、ブランチを `git branch -d` で消し、taskboard の作業項目を `done` にする（列は daemon が進める）。片付けたものを報告に並べる |
+| `MERGED` | worktree を削除し、ブランチを `git branch -d` で削除し、taskboard の作業項目を `done` にする（列は daemon が進める）。片付けたものを報告に並べる |
 | `CLOSED`（マージなし） | 片付けずにユーザーへ報告する |
-| `ERROR` 行 | 認証切れ・ネットワークなど原因を確かめ、直してから張り直す |
+| `ERROR` 行 | 認証切れ・ネットワークなど原因を確認し、修正してから張り直す |
 
-worktree・ブランチを消す前に `context/worktree-guide.md` を Read する。
+worktree・ブランチを削除する前に `context/worktree-guide.md` を Read する。
 
 ### 11. 結果の報告
 
@@ -248,7 +248,7 @@ worktree・ブランチを消す前に `context/worktree-guide.md` を Read す�
 - PR の URL、base、Draft か
 - 本文の文字数（予算に対して）
 - CI と conflict の状態
-- 手順4で確かめた操作と、確かめられなかった範囲
+- 手順4で確認した操作と、確認できなかった範囲
 - 監視を仕込んだことと、起きる条件
 
 ---

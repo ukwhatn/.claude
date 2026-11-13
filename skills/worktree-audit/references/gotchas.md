@@ -34,9 +34,9 @@ git diff --name-status HEAD "$mc" -- $(cat <scratchpad>/f.txt | tr '\n' ' ')
 
 ## 2. squashマージは `--merged` で検出できない
 
-squash / rebaseマージはコミットが作り直されて別SHAになるため、`git branch --merged` でも `merge-base --is-ancestor` でも検出されない。**squashマージ運用のリポジトリではworktreeの相当数がこれに該当し、祖先判定だけなら全部「未マージ」に見える**。
+squash / rebaseマージはコミットが再作成されて別SHAになるため、`git branch --merged` でも `merge-base --is-ancestor` でも検出されない。**squashマージ運用のリポジトリではworktreeの相当数がこれに該当し、祖先判定だけなら全部「未マージ」に見える**。
 
-PR stateを引くのが唯一の確実な検出手段。
+PR stateを取得するのが唯一の確実な検出手段。
 
 ```bash
 gh pr list --head "$br" --state all --json number,state,headRefOid

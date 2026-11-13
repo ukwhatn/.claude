@@ -40,7 +40,7 @@ verdictをそのまま3群に分ける。
 
 | 群 | verdict | 扱い |
 |---|---|---|
-| 削除可 | `MERGED_ANCESTOR` `MERGED_SQUASH` | dirty / untrackedが0ならそのまま消せる |
+| 削除可 | `MERGED_ANCESTOR` `MERGED_SQUASH` | dirty / untrackedが0ならそのまま削除できる |
 | 要判断 | `HEAD_MISMATCH` `CLOSED_PR` `NO_PR` | 内容がbaseにあるか個別確認（→ 3へ） |
 | 削除不可 | `OPEN_PR` | 作業中 |
 
@@ -50,7 +50,7 @@ verdictをそのまま3群に分ける。
 
 ### 3. 要判断の行を確定させる
 
-ここを飛ばすと誤って消すか、逆に消せるものを残す。判定方法はreferences/gotchas.mdに集約してある。**要判断の行が1件でもあれば必ず読むこと。**
+ここを飛ばすと誤って削除するか、逆に削除できるものを残す。判定方法はreferences/gotchas.mdに集約してある。**要判断の行が1件でもあれば必ず読むこと。**
 
 `git diff base...HEAD`（three-dot）の行数は反映有無の証拠にならない。実際に確認するのは次のいずれか。
 
@@ -81,7 +81,7 @@ git -C "$wt" ls-files --others --exclude-standard > "$BK/$name.untracked.txt"
 (cd "$wt" && tar czf "$BK/$name.untracked.tar.gz" -T "$BK/$name.untracked.txt")
 ```
 
-ブランチを消す場合は **削除前にSHAを記録する**。`git branch <名前> <SHA>` で復元できる唯一の手がかりになる（とくに `CLOSED_PR` のブランチは内容がbaseに存在しない）。
+ブランチを削除する場合は **削除前にSHAを記録する**。`git branch <名前> <SHA>` で復元できる唯一の手がかりになる（とくに `CLOSED_PR` のブランチは内容がbaseに存在しない）。
 
 ```bash
 git -C "$repo" rev-parse "refs/heads/$br" >> "$BK/deleted-branches-sha.tsv"
@@ -108,7 +108,7 @@ git -C "$repo" worktree list
 git -C "$repo" branch
 ```
 
-`git worktree remove` はディレクトリ削除に失敗してもgit側のメタデータを先に消すことがある。その後 `prune` すると、**git管理外の孤立ディレクトリだけが残る**。worktree置き場に想定外のディレクトリが残っていないか実際に `ls` して確かめる。
+`git worktree remove` はディレクトリ削除に失敗してもgit側のメタデータを先に削除することがある。その後 `prune` すると、**git管理外の孤立ディレクトリだけが残る**。worktree置き場に想定外のディレクトリが残っていないか実際に `ls` して確認する。
 
 **完了基準**: 残存worktree・ブランチが承認した内容と一致し、worktree置き場に孤立ディレクトリが無い。
 

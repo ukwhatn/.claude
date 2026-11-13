@@ -31,7 +31,7 @@ HTTP API（REST/JSON API）の外部仕様 — エラー形式・日時・認証
 - media typeは `application/problem+json`。メンバーは `type`（エラー種別を識別するURI）/ `title` / `status` / `detail` / `instance`
 - HTTPステータスコード（トランスポート層の機械分岐）と `type`（アプリ固有エラーの識別子）の二層で表現する。独自のエラー封筒（`{"error": {...}}` 等)を新規に発明しない
 - 拡張メンバー（バリデーションエラーの `errors` 配列等）の追加は仕様上公認されている
-- フレームワーク対応: Spring Boot 3（`ProblemDetail`、opt-in）・ASP.NET Core（既定で対応）は組み込みあり。NestJS / Express / Fastify / Honoは組み込みなし（自前で形式を揃える）
+- フレームワーク対応: Spring Boot 3（`ProblemDetail`、opt-in）・ASP.NET Core（既定で対応）は組み込みあり。NestJS / Express / Fastify / Honoは組み込みなし（自前で形式を統一する）
 
 ### 日時フォーマット — RFC 3339
 
@@ -42,7 +42,7 @@ HTTP API（REST/JSON API）の外部仕様 — エラー形式・日時・認証
 
 - HTTPセマンティクスの現行仕様はRFC 9110/9111/9112（2022年再編、9110はInternet Standard / STD 97）。メソッド・ステータスコードの選択に迷ったらRFC 9110を参照する
 - `429 Too Many Requests` の出典はRFC 6585
-- RFC 2616やRFC 7231を根拠に引く資料は1〜2世代前。設計根拠はRFC 9110に読み替える
+- RFC 2616やRFC 7231を根拠に挙げる資料は1〜2世代前。設計根拠はRFC 9110に読み替える
 
 ### 認証・認可 — RFC 9700（BCP 240）
 
@@ -92,7 +92,7 @@ IETF draftは失効済み（2026-08時点rev 07・Expired）。Stripe実装を�
 
 - API記述のデファクトはOpenAPI（2026-08時点の最新は3.2.0）。呼称は「OpenAPI」を使う（「Swagger」は2.0時代の呼称）
 - スキーマを真実源にし、型付きクライアント・サーバスタブ・ドキュメントの生成起点とする（ドキュメントは副産物）
-- レスポンス形式はJSON固定が主流。`Accept` ヘッダでのJSON/XML切替は新規採用しない。形式の多様性が要る場面はgRPC/Protocol Buffers（サービス間）・GraphQL（クライアント主導のフィールド選択）へ
+- レスポンス形式はJSON固定が主流。`Accept` ヘッダでのJSON/XML切替は新規採用しない。形式の多様性が必要な場面はgRPC/Protocol Buffers（サービス間）・GraphQL（クライアント主導のフィールド選択）へ
 
 ## 標準がない領域の調べ方
 

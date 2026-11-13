@@ -8,7 +8,7 @@
 
 ## リポジトリの管理範囲
 
-`.gitignore` は **allowlist方式**（`*` で全除外してから `!` で個別に戻す）。新しいディレクトリを追加しても、allowlistに足さない限り追跡されない。
+`.gitignore` は **allowlist方式**（`*` で全除外してから `!` で個別に戻す）。新しいディレクトリを追加しても、allowlistに追加しない限り追跡されない。
 
 | 追跡する | 追跡しない |
 |---|---|
@@ -16,7 +16,7 @@
 | `context/` `skills/` `hooks/` `agents/` `templates/` `output-styles/` `bin/` `vendor/` `.github/` | `.local/`（メモリ・issue） |
 | `statusline-command.sh` `subagent-statusline.py` `codex-usage.py` `README.md` `NOTICE.md` | `plugins/`（marketplaceキャッシュ） |
 
-statusline系スクリプトはルート直下に置く（`bin/` を切らない）。`settings.json` が `statusLine` / `subagentStatusLine` から参照しており、settingsだけ同期されてスクリプトが無いと毎tickで実行失敗するため、allowlistへの追加が要る。
+statusline系スクリプトはルート直下に置く（`bin/` を切らない）。`settings.json` が `statusLine` / `subagentStatusLine` から参照しており、settingsだけ同期されてスクリプトが無いと毎tickで実行失敗するため、allowlistへの追加が必要。
 
 `settings.json` にマシン依存の値はほぼ無く、そのまま3台で共有できている（`extraKnownMarketplaces` / `enabledPlugins` もここに載るため、pluginの導入はsettings.jsonの同期だけで全台に伝播する）。
 
@@ -29,7 +29,7 @@ Codexの走査パスは `~/.codex/skills/` + `~/.agents/skills/` + `<repo>/.agen
 | グローバル指示 | `~/.codex/AGENTS.md` → `~/.claude/AGENTS.md`（symlink） |
 | skills | `~/.agents/skills` → `~/.claude/skills`（**ディレクトリごと1本**） |
 | PJ CLAUDE.md | `~/.codex/config.toml` の `project_doc_fallback_filenames = ["CLAUDE.md"]` で自動読込 |
-| context7（公式仕様の確認） | `~/.codex/config.toml` の `[mcp_servers.context7]`（git管理外なのでマシンごとに設定が要る） |
+| context7（公式仕様の確認） | `~/.codex/config.toml` の `[mcp_servers.context7]`（git管理外なのでマシンごとに設定が必要） |
 
 `~/.codex/config.toml` は `~/.claude` リポジトリの外にあるため3PC同期の対象外。symlinkで済む2項目と違い、マシンごとに手で入れる（下記セットアップ手順に含めた）。
 
@@ -75,7 +75,7 @@ codex exec --sandbox read-only --skip-git-repo-check < /dev/null \
 
 AGENTS.md末尾の見出し（`## マシンローカル設定`）が返れば全文注入、`worktree-audit`（`~/.codex/skills` に無いskill）が見えれば `~/.agents/skills` 経由が機能している。
 
-`bin/herdr-delegate.sh` も3台へ配布されるが、herdr本体のバージョンが古いと依存コマンドが欠けている可能性がある。symlinkの存在確認と同じく、コマンドの実在は別途確認が要る。スクリプトが依存しているのは次のサブコマンド・オプション:
+`bin/herdr-delegate.sh` も3台へ配布されるが、herdr本体のバージョンが古いと依存コマンドが欠けている可能性がある。symlinkの存在確認と同じく、コマンドの実在は別途確認が必要。スクリプトが依存しているのは次のサブコマンド・オプション:
 
 - `herdr tab create` の `--workspace` / `--cwd` / `--label` / `--no-focus`
 - `herdr agent start` の `--kind` / `--pane` / `--timeout` と `--` 以降のargv渡し
@@ -84,7 +84,7 @@ AGENTS.md末尾の見出し（`## マシンローカル設定`）が返れば全
 
 確認方法は、各コマンドグループを引数なしで実行してusageを出す形（`herdr tab` / `herdr agent` / `herdr pane`）。bareの `herdr` はTUIを起動するので実行しない。
 
-`bin/taskboard-delegate.sh` は taskboard の CLI の `conversation start --parent-from-env` に依存する。入っていない版では自分で `taskboard_outdated` を返すので、PCごとの確認は要らない。
+`bin/taskboard-delegate.sh` は taskboard の CLI の `conversation start --parent-from-env` に依存する。入っていない版では自分で `taskboard_outdated` を返すので、PCごとの確認は不要。
 
 ## slack-app-mcp のセットアップ（Mac・Slack.app ログイン済みのPCだけ）
 
@@ -103,7 +103,7 @@ cp ~/.claude/bin/slack-cookie-broker.plist ~/Library/LaunchAgents/uk.whatn.slack
 launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/uk.whatn.slack-cookie-broker.plist
 ```
 
-plist 内の絶対パスと `PATH`（shebang の `uv` を最小 PATH で解決するための候補列挙）はこの Mac のユーザー用。別ユーザーの PC ではパスを直す。
+plist 内の絶対パスと `PATH`（shebang の `uv` を最小 PATH で解決するための候補列挙）はこの Mac のユーザー用。別ユーザーの PC ではパスを修正する。
 
 3. **keychain の初回許可**。初めて d cookie を読むとき keychain のダイアログが出る。GUI セッションで「常に許可」する（この許可は Aqua セッションでしか通らない）。
 
@@ -113,7 +113,7 @@ plist 内の絶対パスと `PATH`（shebang の `uv` を最小 PATH で解決�
 
 ## discord-app-mcp のセットアップ（Mac・Discord.app を入れたPCだけ）
 
-`bin/discord-app-mcp.py` は、普段使いとは別に起動した MCP 専用の Discord.app に CDP で入り、アプリ本体の関数で読み書きする user スコープの MCP。外から token で API を叩く形にしないのは、Discord ではそれが self-bot として規約で禁じられ、送り元もクライアントと変わるため。専用インスタンスは Discord.app の `--multi-instance` と `DISCORD_USER_DATA_DIR` で別データ・別ウィンドウとして動き、デバッグポートはこちらにだけ開く（普段使いを再起動しない・画面を動かさないため）。登録は `~/.claude.json`・LaunchAgent・専用データ置き場に載るのでマシンごとに手で行う（同期対象外）。
+`bin/discord-app-mcp.py` は、普段使いとは別に起動した MCP 専用の Discord.app に CDP で入り、アプリ本体の関数で読み書きする user スコープの MCP。外から token で API を呼び出す形にしないのは、Discord ではそれが self-bot として規約で禁じられ、送り元もクライアントと変わるため。専用インスタンスは Discord.app の `--multi-instance` と `DISCORD_USER_DATA_DIR` で別データ・別ウィンドウとして動き、デバッグポートはこちらにだけ開く（普段使いを再起動しない・画面を動かさないため）。登録は `~/.claude.json`・LaunchAgent・専用データ置き場に載るのでマシンごとに手で行う（同期対象外）。
 
 1. **MCP を user スコープで登録**: `claude mcp add --scope user discord-app -- ~/.claude/bin/discord-app-mcp.py server`
 2. **専用インスタンスを起動してログインする**: `~/.claude/bin/discord-app-mcp.py launch`（`--dry-run` で実行内容だけ出す）。2つ目の Discord の窓が開くので一度だけログインし、その窓の通知を切る（普段使いと2重に届くため）
@@ -122,13 +122,13 @@ plist 内の絶対パスと `PATH`（shebang の `uv` を最小 PATH で解決�
 
 書き込み（送信・編集・削除・スレッド作成・アプリのコマンド実行・ボタンとモーダルの操作・`discord_api` の GET 以外）は既定で無効（`~/.claude/local/discord-app-mcp.json` の `write_allow` が空なら全拒否）。許可するチャンネルの id を `write_allow` に、サーバー全体を許可するなら guild id を `write_allow_guilds` に並べる（`write_allow` を `"*"` にすると全許可。同期対象外）。
 
-## CodexにMCPサーバーを足す
+## CodexにMCPサーバーを追加する
 
-`~/.codex/config.toml` はマシンごとなので、Codexに使わせたいMCPはPCごとに足す。URL・OAuthのclient id・ポート番号の実値はここに書かない（PJの `CLAUDE.local.md` かメモリに置く）。
+`~/.codex/config.toml` はマシンごとなので、Codexに使わせたいMCPはPCごとに追加する。URL・OAuthのclient id・ポート番号の実値はここに書かない（PJの `CLAUDE.local.md` かメモリに置く）。
 
 Claude Code のディレクトリ別 MCP 登録を Codex に写すときは `python3 ~/.claude/bin/sync-codex-mcp.py` を実行する。`~/.claude.json` の project ごとの登録と、workspace 内の `.mcp.json` / `.claude/settings.json` の登録を対応する `.codex/config.toml` へ生成する。生成ファイルはローカルの `git/info/exclude` に登録し、秘密値を含む場合も git に載せない。既存の手書き `.codex/config.toml` は上書きせず停止する。Codex は信頼済み project の設定だけを読むため、新しい project は `~/.codex/config.toml` の `[projects."<絶対パス>"]` で信頼設定を確認する。OAuth の認証は Claude Code と共有されないため、登録後に各 Codex 接続で確認する。
 
-- **`codex mcp add <name> --url <url>` はOAuthを検出すると、その場でブラウザでのログインを始めて待つ。** 承認を別の端末で行うと、待ち受けが時間切れ（`timed out waiting for OAuth callback`）になる。追加だけ済ませ、ログインは次の手順でやり直す
+- **`codex mcp add <name> --url <url>` はOAuthを検出すると、その場でブラウザでのログインを始めて待つ。** 承認を別の端末で行うと、待ち受けが時間切れ（`timed out waiting for OAuth callback`）になる。追加だけ済ませ、ログインは次の手順で再実行する
 - **ログインは `codex mcp login <name> --no-browser` で行う。** 承認URLを出し、承認後にブラウザが開こうとしたcallbackのURLを標準入力で受け取る。ハーネスのBashは対話入力できないので、FIFOを介して渡す。FIFOとログはscratchpadに置く（`/tmp` は並列のセッションと共有される）:
 
 ```bash
@@ -139,7 +139,7 @@ printf '%s\n' '<貼られたcallback URL>' > "<scratchpad>/codex-login.fifo"
 ```
 
 - **OAuthの提供元がredirect URIの事前登録を求めるときは、トップレベルの `mcp_oauth_callback_port` / `mcp_oauth_callback_url` でcallbackのポートを固定する**（`[mcp_servers.*]` より前に置く）。同じポートを使うログインは1つずつ行う
-- **ログインできたかは `codex mcp list` のAuth欄で判断しない。** 表示とツール呼び出しの結果が食い違うことがある。`codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check < /dev/null '<サーバー名> のツールを1回呼んで結果を答える'` で実際に呼んで確かめる（read-only sandboxではMCPツールを呼べないので、確認にも使えない）
+- **ログインできたかは `codex mcp list` のAuth欄で判断しない。** 表示とツール呼び出しの結果が食い違うことがある。`codex exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check < /dev/null '<サーバー名> のツールを1回呼んで結果を答える'` で実際に呼んで確認する（read-only sandboxではMCPツールを呼び出せないので、確認にも使えない）
 
 ## 同期の運用
 
@@ -149,7 +149,7 @@ printf '%s\n' '<貼られたcallback URL>' > "<scratchpad>/codex-login.fifo"
 ## plugin化しない判断（複数回検討、いずれも見送り）
 
 - pluginは `CLAUDE.md` / `settings.json` を配布できない。同期の主な対象は `AGENTS.md` と `context/` なので、plugin化すると経路が「plugin自動更新」と「git」の2本に分かれた上で、最も頻繁に編集するファイルはgit側に残る
-- plugin skillは名前空間付き（`/commit` → `/ns:commit`）。指示ファイル内のskill名参照は多数あり、全書き換えが要る
+- plugin skillは名前空間付き（`/commit` → `/ns:commit`）。指示ファイル内のskill名参照は多数あり、全書き換えが必要
 - marketplace方式は実体が `plugins/cache/<mp>/<plugin>/<version>/` に入るため、更新のたびにsymlink先が変わる
 - 結論: 個人運用ではsymlinkが優位。他人に配布する必要が出たら再検討する
 - 外部由来のskillのうち、Codexにも届けるものと本環境でpatchを当てるものは、vendor方式（`vendor/manifest.json`・`vendor/patches/`・`NOTICE.md`）で `skills/` に置く。上流がmarketplaceを持つClaude Code専用のもの（Cloudflare系等）はpluginで導入してよい

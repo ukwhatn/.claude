@@ -22,7 +22,7 @@ AGENTS.md末尾の `@CLAUDE.local.md` は展開されないので、セッショ
 
 | 指示ファイル上の表記 | Codexでの実現手段 |
 |---|---|
-| AskUserQuestion（選択肢提示質問） | 番号付き選択肢のテキスト質問で代替（推奨案を先頭に置き「（推奨）」を付す。論点ごとの分け方はAGENTS.md「確認が要るもの」の質問の出し方に従う） |
+| AskUserQuestion（選択肢提示質問） | 番号付き選択肢のテキスト質問で代替（推奨案を先頭に置き「（推奨）」を付す。論点ごとの分け方はAGENTS.md「確認が必要なもの」の質問の出し方に従う） |
 | Edit / Writeツール | apply_patch（`cat >>` / heredocを使わない意図＝ファイル状態追跡の維持は同じ） |
 | EnterWorktree / ExitWorktree | `git worktree add <path> -b feature/<issue_num>-<title-kebab>` / `git worktree remove <path>` を直接実行する。ブランチ名を直接指定できるので、`context/worktree-guide.md` の改名フローは不要。コミット保全・競合回避の原則は同ガイドに従う |
 | Skillツール / `/skill-name` | `$skill-name` の明示発動、またはdescriptionによる暗黙発動 |
@@ -34,7 +34,7 @@ AGENTS.md末尾の `@CLAUDE.local.md` は展開されないので、セッショ
 
 ## 委譲
 
-`bin/herdr-delegate.sh` はherdr CLIを叩くシェルスクリプトなので、Codexからも同じ引数で呼べる。`bin/taskboard-delegate.sh`（taskboard の会話）は使わない（委譲先の完了を taskboard が lead の taskboard の会話に入れるので、Codex の lead には届かない）。規則は `~/.claude/context/delegation.md` が真実源で、委譲すると決めた時点でReadする。ここに書くのはCodex固有の差分だけ。
+`bin/herdr-delegate.sh` はherdr CLIを呼び出すシェルスクリプトなので、Codexからも同じ引数で呼び出せる。`bin/taskboard-delegate.sh`（taskboard の会話）は使わない（委譲先の完了を taskboard が lead の taskboard の会話に入れるので、Codex の lead には届かない）。規則は `~/.claude/context/delegation.md` が真実源で、委譲すると決めた時点でReadする。ここに書くのはCodex固有の差分だけ。
 
 - Herdrのpane内で動いているか（`HERDR_ENV=1` かどうか）で分岐する。pane内ならpane委譲を使う。pane外ではスクリプトが `not_in_herdr` を返し、CodexにはAgent toolが無いので、上のツール対応表に従って逐次実行で進める
 - `--lead-name` は渡さない。CodexはClaude CodeのListAgentsに現れないため、この名前を渡すと委譲先が届かない宛先へ問い合わせることになる。省略すれば、委譲先へはpane経由の連絡方法だけが案内される

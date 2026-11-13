@@ -52,7 +52,7 @@ PJ の CLAUDE.md（と行数）、`.claude/`・`.claude/rules/`・`docs/` の構
 
 ### 4. ユーザー確認
 
-選択肢を示して確かめる（Claude Code: AskUserQuestion）。
+選択肢を示して確認する（Claude Code: AskUserQuestion）。
 
 1. 更新提案の承認
 2. 削除対象の確認（誤削除を防ぐため）

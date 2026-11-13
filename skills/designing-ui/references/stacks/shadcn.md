@@ -2,7 +2,7 @@
 
 PJ に `components.json` があるときに読む。型の選び方は SKILL.md の手順と各参照で決め、本ファイルは選んだ型を shadcn のどの部品とトークンで作るかだけを扱う。部品の API と組み立ての正誤（Group の入れ子・`asChild` と `render` の違い・Title の必須など）は `/shadcn` スキルに従う。
 
-- 使える部品は、`npx shadcn@latest info --json` の `components` と `resolvedPaths.ui` で確かめる。`package.json` が無いなどで実行できないときは、`components.json` の `aliases.ui` が指すディレクトリの中身を見る。入っていない部品を使うなら `/shadcn` スキルの手順で追加する
+- 使える部品は、`npx shadcn@latest info --json` の `components` と `resolvedPaths.ui` で確認する。`package.json` が無いなどで実行できないときは、`components.json` の `aliases.ui` が指すディレクトリの中身を見る。入っていない部品を使うなら `/shadcn` スキルの手順で追加する
 - `base`（`radix` か `base`）で API が違う部品がある。toast の部品も `base` で変わる
 
 ## 型と部品
@@ -41,10 +41,10 @@ PJ に `components.json` があるときに読む。型の選び方は SKILL.md 
 
 - 色は意味を持つトークン（`bg-primary`・`text-muted-foreground` など）だけを使う。パレットの色（`bg-blue-500`）・色コード・`dark:` での手動の上書きを書かない（テーマとダークモードの切替に追随しないから）
 - 面の色（`--card` など）と、その上の文字色（`--card-foreground` など）を対で使う
-- 成功・警告など、テーマに無い状態の色が要るときは、`Badge` の variant か `text-destructive` で足りるかを先に見る。足りないなら、テーマに CSS 変数を足すことをユーザーに確認してから、`:root` と `.dark` に定義する。Tailwind v4 は `@theme inline` で公開し、v3 は `tailwind.config` に登録する
-- 面の明暗の段階が要るときは、PJ のテーマで `--background`・`--card`・`--popover`・`--muted` が段階を持つかを確かめる。段階が無いなら、面を持ち上げず境界線（`--border`）か余白で区切る
+- 成功・警告など、テーマに無い状態の色が必要なときは、`Badge` の variant か `text-destructive` で足りるかを先に見る。足りないなら、テーマに CSS 変数を追加することをユーザーに確認してから、`:root` と `.dark` に定義する。Tailwind v4 は `@theme inline` で公開し、v3 は `tailwind.config` に登録する
+- 面の明暗の段階が必要なときは、PJ のテーマで `--background`・`--card`・`--popover`・`--muted` が段階を持つかを確認する。段階が無いなら、面を持ち上げず境界線（`--border`）か余白で区切る
 - 角丸は `--radius` から派生させ、部品ごとに値を書かない
-- 部品の見た目は variant で変える。呼び出し側の `className` で決めてよいのは配置と幅（margin・width・flex の配分）だけ。足りない見た目は、部品の定義（`components/ui` の中）に variant を足す
+- 部品の見た目は variant で変える。呼び出し側の `className` で決めてよいのは配置と幅（margin・width・flex の配分）だけ。足りない見た目は、部品の定義（`components/ui` の中）に variant を追加する
 
 ## lint
 
@@ -59,6 +59,6 @@ PJ に `components.json` があるときに読む。型の選び方は SKILL.md 
 | `no-unknown-classes` | Tailwind が生成しないクラス（綴りの誤り）を書いていないか |
 | `require-static-classes` | クラス名を文字列の連結で組み立てていないか |
 
-- PJ に `@shadcn/lint` が入っていれば、変更の後に PJ 規定の lint コマンドで実行し、指摘を直す。例外は理由を書いた disable コメントで残す
+- PJ に `@shadcn/lint` が入っていれば、変更の後に PJ 規定の lint コマンドで実行し、指摘を修正する。例外は理由を書いた disable コメントで残す
 - 入っていない PJ に導入するのは依頼の範囲外。必要だと思えば提案として伝える
 - lint はレイアウト・型の選択・a11y・文言を検査しない。それらは SKILL.md の手順10で確認する

@@ -50,10 +50,10 @@ gh pr view <number> --json headRefName,headRefOid,baseRefName
 
 ### 5. 実装対応
 
-- 修正を実装し、品質チェック（PJ CLAUDE.mdのコマンド）を実行する。変えた挙動はローカルで実際に通して確かめる
+- 修正を実装し、品質チェック（PJ CLAUDE.mdのコマンド）を実行する。変えた挙動はローカルで実際に通して確認する
 - コミットは `/commit` スキルで作る
-- push: 自分が出した PR のブランチへは、そのまま push してよい（PR を出した承認に含まれる。AGENTS.md「確認が要るもの」）。他人の PR のブランチへの push は、ユーザーの指示があるときだけ
-- push したら、CI の結果と conflict の有無を確かめてから報告する（`gh pr view <number> --json mergeable,mergeStateStatus,statusCheckRollup`）。失敗していれば指摘を待たずに原因を調べる
+- push: 自分が出した PR のブランチへは、そのまま push してよい（PR を出した承認に含まれる。AGENTS.md「確認が必要なもの」）。他人の PR のブランチへの push は、ユーザーの指示があるときだけ
+- push したら、CI の結果と conflict の有無を確認してから報告する（`gh pr view <number> --json mergeable,mergeStateStatus,statusCheckRollup`）。失敗していれば指摘を待たずに原因を調べる
 
 ### 6. 返信ドラフト作成
 

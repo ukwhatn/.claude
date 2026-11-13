@@ -25,7 +25,7 @@ printf 'user = "{{JIRA_USER}}:%s"\n' "$(cat {{JIRA_TOKEN_FILE}})" | curl -s --co
   | jq -r '.issues[] | "\(.key)\t\(.fields.status.name)\t\(.fields.duedate // "-")\t\(.fields.updated)\t\(.fields.summary)"'
 ```
 
-## 2-1 に足す判定
+## 2-1 に追加する判定
 
 Jira がリンクされたタスク。ステータスの名前はプロジェクトのワークフローで決まるので、分類（`category`）で決まる行は固定、名前で決まる行は埋める:
 
@@ -66,13 +66,13 @@ taskboard の列を動かすのと同じ観測値で、Jira のステータス�
 
 **手順**（Step 3 に貼る）:
 
-1. `.tb-state.json` の `links[].jira.statusName` で今のステータスを確かめ、表の「今」と一致することを確かめる
+1. `.tb-state.json` の `links[].jira.statusName` で今のステータスを確認し、表の「今」と一致することを確認する
 2. `getTransitionsForJiraIssue` で使える遷移を取り、**表の遷移名に一致するものの id を取る**（遷移の id は今の状態で変わるので、固定値として持たない。一致する遷移名が無ければ実行せず「■ エラー」に書く）
 3. `transitionJiraIssue` で遷移する
 4. note に「Jira <KEY> を <遷移前> → <遷移後> へ同期（根拠: <PR URL> が MERGED）」を追記する
 5. 通知の「■ 外部への書き戻し」に `<KEY> <遷移前> → <遷移後>  (#<タスク番号> / <根拠>)` を1行出す
 
-`{{JIRA_MCP}}` が繋がっていなければ遷移をスキップし、「■ エラー」に書いて次の回に回す（推測で REST を叩かない）。
+`{{JIRA_MCP}}` が繋がっていなければ遷移をスキップし、「■ エラー」に書いて次の回に回す（推測で REST を呼び出さない）。
 
 ## 起票の既定
 

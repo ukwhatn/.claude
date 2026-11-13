@@ -49,6 +49,6 @@ git log "$BASE" --first-parent -20 --format='%h %ce %s'              # 直近の
 全コミットが自分の直コミットで、PR/merge の痕跡なし（判定日: YYYY-MM-DD）。main への直コミットを許容する。
 ```
 
-## ブランチ作り直し時
+## ブランチ再作成時
 
 既存コミットをrebase / cherry-pickで保全してからブランチを削除する（コミット消失防止。手順の詳細は `context/worktree-guide.md`）。

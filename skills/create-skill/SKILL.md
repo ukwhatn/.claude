@@ -27,9 +27,9 @@ description: スキルを新規作成する。「スキルを作って」「こ�
 
 ### Step 2: 置き場所を決める
 
-claude-customization-guide.md「1. 知識の置き場所判定」で、Skill にするか CLAUDE.md に足すかを決める。常時適用するルールで CLAUDE.md が200行以下に収まるなら CLAUDE.md に足す。Commands（`.claude/commands/`）はレガシー形式なので新規には使わない。
+claude-customization-guide.md「1. 知識の置き場所判定」で、Skill にするか CLAUDE.md に追加するかを決める。常時適用するルールで CLAUDE.md が200行以下に収まるなら CLAUDE.md に追加する。Commands（`.claude/commands/`）はレガシー形式なので新規には使わない。
 
-スコープ（user / project）も同ガイド「スコープ配置」で決める。既存スキルとの重複・スコープの判断が割れるときは、ユーザーに確かめる（Claude Code: AskUserQuestion）。
+スコープ（user / project）も同ガイド「スコープ配置」で決める。既存スキルとの重複・スコープの判断が割れるときは、ユーザーに確認する（Claude Code: AskUserQuestion）。
 
 ### Step 3: 設計する
 

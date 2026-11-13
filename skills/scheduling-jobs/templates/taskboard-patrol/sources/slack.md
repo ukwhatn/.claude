@@ -1,6 +1,6 @@
 # ソース部品: Slack
 
-指示の受け口と、自分へのメンション・自分の発言の収集。各節を RUNBOOK.md の「貼る:」の位置へ写す。tool 名は Slack の MCP server が出す名前に合わせる（引数は呼ぶ前にツールスキーマで確かめる。版が変わると引数の名前が変わる）。
+指示の受け口と、自分へのメンション・自分の発言の収集。各節を RUNBOOK.md の「貼る:」の位置へ写す。tool 名は Slack の MCP server が出す名前に合わせる（引数は呼ぶ前にツールスキーマで確認する。版が変わると引数の名前が変わる）。
 
 ## 固定値の行
 
@@ -8,7 +8,7 @@
 |---|---|
 | Slack の自分のユーザー ID | `{{SLACK_USER_ID}}` |
 | 通知先チャンネル（指示の受け口を兼ねる） | `{{NOTIFY_CHANNEL_NAME}}` (`{{NOTIFY_CHANNEL_ID}}`) |
-| Slack MCP | `{{SLACK_MCP}}` **1本だけ**（同じワークスペースに届く server が複数あっても、1本に決める。複数使うと同じ発言を二重に拾う） |
+| Slack MCP | `{{SLACK_MCP}}` **1本だけ**（同じワークスペースに届く server が複数あっても、1本に決める。複数使うと同じ発言を二重に取得する） |
 
 ## 指示の受け口（1-0 に貼る）
 
@@ -18,7 +18,7 @@
 slack_read_channel(channel_id="{{NOTIFY_CHANNEL_ID}}", oldest=state.cursors.slack_instruction_ts, limit=50)
 ```
 
-`{{SLACK_USER_ID}}` の発言だけ拾う。
+`{{SLACK_USER_ID}}` の発言だけ取得する。
 
 **指示はほぼスレッドの返信で来る。** `read_channel` はスレッドの返信を返さないので、これだけでは取りこぼす。チャンネル読みで得た各メッセージの返信数を見て、返信があるものは `slack_read_thread(channel_id="{{NOTIFY_CHANNEL_ID}}", message_ts=<通知の ts>)` を開く。**直近の通知は必ず開く**（`state.pending[].notify_ts`。無ければ `read_channel` の詳細表示で ts を取る）。
 
@@ -48,7 +48,7 @@ slack_search_public_and_private(
 
 - `after` には `date -j -f "%Y-%m-%dT%H:%M:%S%z" "<since の ISO8601>" "+%s"` で変えた Unix 秒を渡す。**返ってきた各メッセージの timestamp は `since` と自分でも比べて仕分ける**（検索のフィルタを過信しない）
 - メンションの検索には**メンションを含まない投稿も混ざる**ので、本文に `{{SLACK_USER_ID}}` があるものだけ残す
-- 文脈が要るものだけ `slack_read_thread` で該当スレッドを読む（全件は読まない）
+- 文脈が必要なものだけ `slack_read_thread` で該当スレッドを読む（全件は読まない）
 - **ページは `cursor` で追う**。応答が次のページありを示したら、`cursor` に前の値を渡して最大3ページまで取る。3ページ使い切ってもまだ残るときだけ「■ 打ち切り」に書く（1ページで打ち切らない）
 - **スレッド単位の無視**: ユーザーが「このスレッドは今後起票しなくて良い」等とスレッド全体を指したら、root の `thread_ts` を `state.seen["slack:thread:<root_ts>"]` に `{"decision":"ignored"}` で登録する。検索でヒットしたメッセージの `thread_ts` がこれと一致したら、個別の permalink が未処理でも無視する
 

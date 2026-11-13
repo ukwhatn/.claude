@@ -29,7 +29,7 @@ agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-m
 | `-p, --print` | 非対話モード |
 | `--trust` | 省略するとワークスペース信頼の対話確認が出て、non-interactiveで失敗する |
 | `--model <model>` | effort / speedを名前に含む合成slug（例: `gpt-5.6-sol-medium`）。実在は `agent --list-models` で確認し、無ければ一覧で最も近いgpt-5.6-sol系を使う |
-| `--output-format json` | session_idの取得に要る。`stream-json` はバッファリングでハングし得るので使わない |
+| `--output-format json` | session_idの取得に必要。`stream-json` はバッファリングでハングし得るので使わない |
 | `--resume <session_id>` | セッション継続 |
 
 - effort表記はモデル系列で異なる（gpt-5.6-sol系・gpt-5.4以前・claude系は `medium` / `xhigh`、gpt-5.5系のxhigh相当のみ `extra-high`）
@@ -38,7 +38,7 @@ agent -p "<プロンプト>" --resume <session_id> --trust --model gpt-5.6-sol-m
 
 ## paneでループを回す
 
-`codex exec` 直叩きは1〜2ラウンドで終える単発レビュー向け。ラウンドが長引く見込み・進捗を画面で追いたい・指摘と修正のやり取りをleadのコンテキストから分離したいときはpaneに切り替える（経路選択の一般原則は `context/delegation.md`「経路の選択」）。
+`codex exec` の直接実行は1〜2ラウンドで終える単発レビュー向け。ラウンドが長引く見込み・進捗を画面で追いたい・指摘と修正のやり取りをleadのコンテキストから分離したいときはpaneに切り替える（経路選択の一般原則は `context/delegation.md`「経路の選択」）。
 
 1. `bin/herdr-delegate.sh --kind codex` で起動する。tabは既定で残るので、次のラウンドをそのまま送れる（`--close` は付けない）
 2. 初回の指示書に本体「プロンプト」の本文をそのまま渡す

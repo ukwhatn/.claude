@@ -45,6 +45,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "Bash|mcp__taskboard__(doc_publish|ask_user|review_request)|mcp__slack.*|mcp__google-workspace__.*_draft|mcp__github.*|mcp__atlassian.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/prose-check.py\"",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -99,6 +109,15 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/prose-check.py\"",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "UserPromptSubmit": [
@@ -126,6 +145,15 @@
             "type": "command",
             "command": "if [ -n \"$CLAUDE_CODE_SESSION_ID\" ] && [ -e \"$HOME/Library/Application Support/taskboard/feedback-pending/$CLAUDE_CODE_SESSION_ID\" ] && [ -x \"$HOME/.local/bin/taskboard\" ]; then \"$HOME/.local/bin/taskboard\" hook prompt; else exit 0; fi",
             "timeout": 10
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/prose-check.py\"",
+            "timeout": 5
           }
         ]
       }

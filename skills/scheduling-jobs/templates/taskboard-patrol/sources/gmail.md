@@ -18,8 +18,8 @@ search_all_messages(account_id="{{GMAIL_ACCOUNT_ID}}", max_results=20,
          -from:notifications@github.com -from:noreply@github.com {{GMAIL_EXTRA_EXCLUDES}}")
 ```
 
-- **GitHub の通知メールはクエリの側で除外する。** 除外しないと未読の大半が PR のコメント・approve の通知で埋まり、人からのメールが上限から押し出される。PR の状態は taskboard の `links[]` と GitHub の部品が一次情報なので、メールから拾わない
-- `newer_than` は `since` より長めに取る（回が飛んだ分を拾うため）。重複は `seen` で落とす
+- **GitHub の通知メールはクエリの側で除外する。** 除外しないと未読の大半が PR のコメント・approve の通知で埋まり、人からのメールが上限から押し出される。PR の状態は taskboard の `links[]` と GitHub の部品が一次情報なので、メールから取得しない
+- `newer_than` は `since` より長めに取る（回が飛んだ分を取得するため）。重複は `seen` で落とす
 - 定期の監査通知・全社のアナウンスのように「毎回同じものが来る」メールは、`seen` で1度だけ扱う。返信や作業を求めているものだけ残す
 
 ## 起票の既定

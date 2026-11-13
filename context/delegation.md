@@ -16,13 +16,13 @@ taskboard の MCP の tool の使い方は `skills/taskboard/SKILL.md`、herdr C
 | **委譲先はファイルを書かず、結果をleadに返す**（`Explore` による探索、複数観点のレビュー報告、freshな単発判定） | Agent tool |
 | codex に振る（外部レビュー・ユーザーが指示した調査） | pane（`bin/herdr-delegate.sh --kind codex`） |
 
-書き込みの有無で切るのは、中断したときに失われるものが違うため。`Explore` は書き込み不可なので、中断してもやり直せば同じ結論に戻れる。ファイルを書く委譲が中断すると、書きかけの作業文脈が失われ、成果物が不完全な状態でディスクに残る（どこまで書けているかをleadが読み直して判断することになる）。会話とpaneなら、委譲先が利用枠の上限に当たっても、戻ったときに続きから再開する（会話は taskboard が続きを送り、pane は Claude Code の `autoContinueAtUsageLimit` が続ける）。
+書き込みの有無で切るのは、中断したときに失われるものが違うため。`Explore` は書き込み不可なので、中断しても再実行すれば同じ結論に戻れる。ファイルを書く委譲が中断すると、書きかけの作業文脈が失われ、成果物が不完全な状態でディスクに残る（どこまで書けているかをleadが読み直して判断することになる）。会話とpaneなら、委譲先が利用枠の上限に当たっても、戻ったときに続きから再開する（会話は taskboard が続きを送り、pane は Claude Code の `autoContinueAtUsageLimit` が続ける）。
 
 ファイルを書く委譲で会話を先に選ぶのは、完了を taskboard が lead に届けるため。lead はスクリプトの完了を Bash で持ち続けなくてよく、委譲先の返事と履歴は端末の画面でなく `session_history` で読める。会話は taskboard の daemon が動かす Claude Code（stream-json）なので、lead が taskboard の会話の中にいるときだけ使える。そうでないときはスクリプトが `not_in_taskboard` を返すので、pane の経路に移る（下の「フォールバック」）。
 
 ## モデルの選択
 
-委譲先のモデルと effort は経路によらず用途で決め、毎回明示する。会話もpaneも `--model` と `--effort` で渡し（effort を省くとスクリプトが `effort_invalid` で止める。省いて起こすと user settings に保存された effort で動くため）、Agent toolは `model` パラメータで渡す。Agent toolは `model` を省略すると親セッションのモデルを継承し、調査1本に親と同じ大きいモデルを使うことになるため。親と同じモデルが要ると判断したときは、そのモデル名を明示して判断を05_log.mdに書く。`model` の無いAgent tool呼び出しはPreToolUse hook（`hooks/agent-model-required.py`）が拒否する（`fork` は常に親モデルで動くので対象外）。
+委譲先のモデルと effort は経路によらず用途で決め、毎回明示する。会話もpaneも `--model` と `--effort` で渡し（effort を省くとスクリプトが `effort_invalid` で止める。省いて起こすと user settings に保存された effort で動くため）、Agent toolは `model` パラメータで渡す。Agent toolは `model` を省略すると親セッションのモデルを継承し、調査1本に親と同じ大きいモデルを使うことになるため。親と同じモデルが必要だと判断したときは、そのモデル名を明示して判断を05_log.mdに書く。`model` の無いAgent tool呼び出しはPreToolUse hook（`hooks/agent-model-required.py`）が拒否する（`fork` は常に親モデルで動くので対象外）。
 
 委譲は基本Claudeで行い、codexは別ベンダーであること自体が要件になる用途（外部レビュー）に温存する。PCによってはcodexの枠が月間のcredit上限しか無く、調査で使い切ると外部レビューまで止まるため。コードを書かない調査をcodexに振るのは、ユーザーが指示したときだけにする。枠に余裕があっても、Claudeで足りる委譲をcodexに振らない。委譲先を同時に6体以上起こす確認（`context/tool-claude-code.md`「委譲判断」）では、Claudeとcodexの枠の残量を並べ、一部をcodexに振る案を添えて聞く。振るときは下の「codexに委譲するとき」に従う。
 
@@ -33,16 +33,16 @@ taskboard の MCP の tool の使い方は `skills/taskboard/SKILL.md`、herdr C
 | コードを書かない調査（コード内のファイル探し・ログ / テスト出力の読み取り・Web / 文書の収集と要約） | `sonnet` | `model: "sonnet"`。コード内の探索は `subagent_type: "Explore"`、Web / 外部資料は `general-purpose` |
 | 複数観点のレビュー報告・freshな単発判定（結果をleadが検証する） | — | `model: "opus"` |
 | 前例のない難所・壁打ち | `fable` | `model: "fable"` |
-| 外部レビュー（別ベンダーのbias独立性が要る） | paneの `--kind codex` | —（`context/agent-cli-guide.md`） |
+| 外部レビュー（別ベンダーのbias独立性が必要） | paneの `--kind codex` | —（`context/agent-cli-guide.md`） |
 | コードを書かない調査をユーザーの指示でcodexに振る | paneの `--kind codex` | — |
 
-Sonnetにコードを書かせるのは、指示書に受け入れ条件と、変更を確かめるコマンド（テスト・型検査・ビルド）があるときだけにする。Sonnetは手順と完了条件が具体的な作業ではOpusと同じ結果をより安く出すが、曖昧な問題では読み違えやすく、leadが誤った前提で進むため。コードを書く委譲にはeffort `low` を使わない（変更を確かめずに完了と報告しやすくなる）。調査の報告は一次ソースと突き合わせてから採用する（`context/tool-claude-code.md`「委譲後の実務」）。sonnetで同じ問題に2回詰まったらopusで、opusのmediumで2回詰まったらeffort `high` かfableで委譲し直す。
+Sonnetにコードを書かせるのは、指示書に受け入れ条件と、変更を確認するコマンド（テスト・型検査・ビルド）があるときだけにする。Sonnetは手順と完了条件が具体的な作業ではOpusと同じ結果をより安く出すが、曖昧な問題では読み違えやすく、leadが誤った前提で進むため。コードを書く委譲にはeffort `low` を使わない（変更を確認せずに完了と報告しやすくなる）。調査の報告は一次ソースと突き合わせてから採用する（`context/tool-claude-code.md`「委譲後の実務」）。sonnetで同じ問題に2回詰まったらopusで、opusのmediumで2回詰まったらeffort `high` かfableで委譲し直す。
 
 codexを起動する前に枠を確認する（`python3 ~/.claude/codex-usage.py --refresh` → `--show`。taskboardの `usage_get` でも見える）。枯渇していれば `context/agent-cli-guide.md` のfallback規定に従う。
 
 ## 委譲先の寿命
 
-委譲先（会話・pane）は、指示書の1単位（完了基準を1組持つ作業）を終えたら閉じる。次の作業は、同じ委譲先に追加の指示として積まず、短い引き継ぎ（決まったこと・成果物のパス・残り）を指示書にして新しい委譲先を起こす。1つの委譲先に作業を積むと文脈が膨らみ、以後のリクエストのたびにその全体を読み直す。止まった後に再開すると、キャッシュが切れて文脈全体を書き直すことにもなる。
+委譲先（会話・pane）は、指示書の1単位（完了基準を1組持つ作業）を終えたら閉じる。次の作業は、同じ委譲先に追加の指示として積まず、短い引き継ぎ（決まったこと・成果物のパス・残り）を指示書にして新しい委譲先を起こす。1つの委譲先に作業を積むと文脈が膨らみ、以後のリクエストのたびにその全体を読み直す。止まった後に再開すると、キャッシュが切れて文脈全体を書き換えることにもなる。
 
 完了基準を満たしていないときの手直しは、同じ委譲先に頼む（その単位の文脈が残っているほうが速い）。
 
@@ -68,7 +68,7 @@ codexを起動する前に枠を確認する（`python3 ~/.claude/codex-usage.py
 
 - 連絡経路: 問い合わせと完了の連絡の方法。会話はそのターンの最後の返事に書いてターンを終える（taskboard が lead に届ける）。Claude Codeのpaneは `SendMessage` で `--lead-name` の宛先、codexのpaneは `herdr agent prompt` でleadのpane ID
 - 再委譲の禁止: 子エージェントを起動しない。会話とclaudeのpaneでは起動時にAgent / Workflow toolを外す（`--disallowedTools`）ので、タスク本文でも解除できない。作業を分けたいなら、leadが分けて各委譲先を起こす
-- 委譲先モデルごとの作法: Claude の全モデルに「最後まで終えて止まる・頼まれていない追加をしない・実際のチェックを走らせる」、Haikuには今日の日付、Fableには「宣言で終えない・別件を直さない・結果から書く」が入る。指示書に書き足さない
+- 委譲先モデルごとの作法: Claude の全モデルに「最後まで終えて止まる・頼まれていない追加をしない・実際のチェックを走らせる」、Haikuには今日の日付、Fableには「宣言で終えない・別件を直さない・結果から書く」が入る。指示書に追記しない
 
 実装を委譲し、委譲先に自分の成果物の外部レビュー（`codex exec`）まで回させたいときは `--allow-review` を付ける（どちらのスクリプトも同じ）。Agent / Workflow toolは外したままなので、codexが使えないときのfable subagentでの代替（`context/agent-cli-guide.md`）は委譲先ではできず、leadに戻ってくる。調査の委譲には付けない（調査の成果物はleadが検証する）。
 
@@ -82,7 +82,7 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 
 ### 起動
 
-前景の Bash 1 回で呼ぶ。スクリプトは会話を起こした時点で返り、完了を待たない（`run_in_background` は要らない）。
+前景の Bash 1 回で呼ぶ。スクリプトは会話を起こした時点で返り、完了を待たない（`run_in_background` は不要）。
 
 ```bash
 ~/.claude/bin/taskboard-delegate.sh \
@@ -95,7 +95,7 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 - `--worktree-branch` を付けると、`--cwd` の repo から worktree を切って、その中で動かす（同じ repo を複数の委譲先に並べて編集させるとき。担当ファイルを重ねない規定は `context/tool-claude-code.md`）
 - 承認は `bypassPermissions` で、Agent と Workflow の tool は外して起こす（スクリプトが付ける）
 - 返る1行JSONは `status`（`started` か失敗）・`conversation_id`・`task_sent`（ヘッダを前置きした指示書の一時ファイル）など。起こしたら05_log.mdに1行記録する（会話の id / 題 / 指示書 / 成果物 / 起動時刻）。compactionから復帰したら、この記録と `session_list` の会話の節を突き合わせる。記録に残っている委譲を起こし直さない
-- 並列に回すときは、体数分を続けて呼ぶ（待たないので、1回ずつ返りを見てから次を呼べる）
+- 並列に回すときは、体数分を続けて呼ぶ（待たないので、1回ずつ返りを見てから次を呼び出せる）
 
 ### 委譲先とのやり取り（会話）
 
@@ -122,16 +122,16 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 
 成果物はファイルから読む。知らせの返事を成果物の受け取り口にしない。
 
-- 完了の知らせが来たら、指示書に書いた成果物を開いて、完了基準を満たしているかを確かめる。足りなければ `session_prompt` で続きを頼む（同じ会話なので文脈は残っている）
+- 完了の知らせが来たら、指示書に書いた成果物を開いて、完了基準を満たしているかを確認する。足りなければ `session_prompt` で続きを頼む（同じ会話なので文脈は残っている）
 - 終わった委譲先は `session_stop` の `conversation_id` で止める。タスクに結ばれた会話は、止めても記録が残り、アプリから開き直せる
-- `task_sent` の一時ファイルを消す
+- `task_sent` の一時ファイルを削除する
 - worktree を切ったなら、マージした後に worktree とブランチを片付ける（`context/worktree-guide.md`）
 
 ### pane の経路との差
 
 意図して pane の経路から外したもの。
 
-- 完了を待たないので、時間切れ（`timeout`）・成果物の作成と更新の判定（`--out`・`missing_output`）・tab を閉じる（`--close`）は無い。完了は知らせで知り、成果物は lead が開いて確かめる
+- 完了を待たないので、時間切れ（`timeout`）・成果物の作成と更新の判定（`--out`・`missing_output`）・tab を閉じる（`--close`）は無い。完了は知らせで知り、成果物は lead が開いて確認する
 - 完了の連絡を強制する Stop hook は付けない。ターンの終わりは taskboard が必ず届けるため
 - 委譲先から lead への連絡は最後の返事だけにする（`SendMessage`・`herdr agent prompt`・`AskUserQuestion` を使わせない）。届く道を1つにして、同じ連絡が2回届かないようにする
 
@@ -139,7 +139,7 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 
 ### ライフサイクル
 
-`bin/herdr-delegate.sh` は完了まで同期ブロックする。`--state` を付けてバックグラウンドで起動し、stateファイルの生成を確かめる。その後は委譲先と同じ対象に手を付けず、独立した別の作業があれば続ける（無ければターンを終える）。完了はharnessの通知で受け取る。
+`bin/herdr-delegate.sh` は完了まで同期ブロックする。`--state` を付けてバックグラウンドで起動し、stateファイルの生成を確認する。その後は委譲先と同じ対象に手を付けず、独立した別の作業があれば続ける（無ければターンを終える）。完了はharnessの通知で受け取る。
 
 起動の形は「1委譲 = Bash 1呼び出し、`run_in_background: true`、`&`・`nohup`・`disown`・`setsid` を付けない」に固定する。harnessの完了通知はBash呼び出しのプロセスの終了に紐づくので、シェルの `&` で切り離すと委譲先が終わっても通知が来ず、ループで複数を1呼び出しに入れると通知は全部が終わったときの1回になる。この形はPreToolUse hook（`hooks/herdr-delegate-launch.py`）が検査し、外れた呼び出しを拒否する。
 
@@ -160,7 +160,7 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
   > "<結果 JSON の出力先>" 2> "<ログの出力先>"
 ```
 
-`--cwd` には自セッションが起動されたディレクトリをそのまま渡す。作業対象がその配下のサブディレクトリ・別リポジトリでも変えず、指示書で対象を絶対パスで示し、git操作は `git -C <対象の絶対パス>` で行わせる。信頼済みでないディレクトリを渡すと、agentの起動時に信頼確認のダイアログで止まり、委譲が `start_failed`（exit 6）になる。この確認は自動承認しない規定なので、信頼済みのディレクトリを渡して確認自体を発生させない。起動ディレクトリ自体が信頼済みでない（ホームディレクトリなど）ときは、作業対象を含む信頼済みのディレクトリを渡す（マシンごとの信頼済みディレクトリは `CLAUDE.local.md`。`~/.claude.json` の `projects.<path>.hasTrustDialogAccepted` で確かめられる）。このときスクリプトは、信頼確認で止まったことを `blocked_trust` でなく `start_failed`（reason `agent_name_taken`）として返すことがある。
+`--cwd` には自セッションが起動されたディレクトリをそのまま渡す。作業対象がその配下のサブディレクトリ・別リポジトリでも変えず、指示書で対象を絶対パスで示し、git操作は `git -C <対象の絶対パス>` で行わせる。信頼済みでないディレクトリを渡すと、agentの起動時に信頼確認のダイアログで止まり、委譲が `start_failed`（exit 6）になる。この確認は自動承認しない規定なので、信頼済みのディレクトリを渡して確認自体を発生させない。起動ディレクトリ自体が信頼済みでない（ホームディレクトリなど）ときは、作業対象を含む信頼済みのディレクトリを渡す（マシンごとの信頼済みディレクトリは `CLAUDE.local.md`。`~/.claude.json` の `projects.<path>.hasTrustDialogAccepted` で確認できる）。このときスクリプトは、信頼確認で止まったことを `blocked_trust` でなく `start_failed`（reason `agent_name_taken`）として返すことがある。
 
 - `--state` はtab作成とagent起動の直後に `{"run_id","name","tab_id","pane_id","task","out","started_at"}` を書き出す。stdoutの最終JSONは完了まで出ないので、識別子はここから取る
 - stateを読んだら `run_id` の一致を確認してから採用する（同じパスに前回実行のstateが残っていると、置換前の古い内容を読むことがある）
@@ -172,9 +172,9 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 
 いつ振るかは「モデルの選択」に従う。ここはcodexに振ると決めた後の差分。
 
-- MCPを使う作業は、承認バイパスで起動するpane（本スクリプト）で行う。`codex exec --sandbox read-only` ではMCPツールを呼べない
-- codexが使うMCPは `~/.codex/config.toml` にマシンごとに設定する（手順は `context/multi-agent-setup.md`「CodexにMCPサーバーを足す」）。委譲する前に、codexから実際にツールを1回呼んで使えることを確かめる。設定の一覧に出ていることでは確かめたことにならない
-- 同じMCPサーバーでも、codexから見えるツール名がClaudeと違うことがある。Claude向けに書いた指示書を流用するときは、ツール名をcodex側で確かめた名前に直す
+- MCPを使う作業は、承認バイパスで起動するpane（本スクリプト）で行う。`codex exec --sandbox read-only` ではMCPツールを呼び出せない
+- codexが使うMCPは `~/.codex/config.toml` にマシンごとに設定する（手順は `context/multi-agent-setup.md`「CodexにMCPサーバーを足す」）。委譲する前に、codexから実際にツールを1回呼んで使えることを確認する。設定の一覧に出ていることでは確認したことにならない
+- 同じMCPサーバーでも、codexから見えるツール名がClaudeと違うことがある。Claude向けに書いた指示書を流用するときは、ツール名をcodex側で確認した名前に修正する
 - 完了の通知と問い合わせは `herdr agent prompt` でleadのpane ID宛てに送る（codexにSendMessageは無い）。ヘッダが宛先を案内するので、指示書には宛先を書かない
 
 ### 委譲先とのやり取り（pane）
@@ -182,7 +182,7 @@ user-level設定の変更は同じターン内でcommit・pushまで完了させ
 委譲先は、指示書の前提が実態と食い違ったときの問い合わせと、作業を終えたとき・途中で止まるとき（バックグラウンドの完了待ち・leadの返答待ち）の連絡をleadへ送る。どちらも方法はヘッダに書いてある。
 
 - pane上のClaude Code: `ListAgents` に現れるので、`SendMessage` で名前宛に送れる。lead → 委譲先も同じ
-- pane上のcodex: SendMessageは届かない。`herdr agent prompt <宛先> '<メッセージ>'` を使う。lead → 委譲先の宛先は委譲先のagent名かpane ID、委譲先 → leadの宛先はleadのpane ID（ヘッダが案内する。codexがBashでこのコマンドを叩く）
+- pane上のcodex: SendMessageは届かない。`herdr agent prompt <宛先> '<メッセージ>'` を使う。lead → 委譲先の宛先は委譲先のagent名かpane ID、委譲先 → leadの宛先はleadのpane ID（ヘッダが案内する。codexがBashでこのコマンドを実行する）
 
 leadがスクリプトを同期実行していると、問い合わせをリアルタイムに受け取れない（完了後にまとめて届く）。バックグラウンド起動が必要なのはこのためでもある。
 
@@ -192,11 +192,11 @@ tabは既定で残るので、手直しの指示は完了後でもそのまま�
 
 ### 完了の連絡を強制する
 
-ヘッダで連絡を求めても、委譲先が送らずに終えることがある。claudeのpaneでは、スクリプトが起動時に `--settings` でStop hook（`hooks/delegate-completion-stop.py`）を足す。委譲先が応答を終えようとしたとき、最後の入力（指示書・leadからのメッセージ）以降にlead宛の送信（`SendMessage` の `to` がlead名、またはleadのpane ID宛ての `herdr agent prompt`）が無ければ、停止を1回止めて送るよう返す。
+ヘッダで連絡を求めても、委譲先が送らずに終えることがある。claudeのpaneでは、スクリプトが起動時に `--settings` でStop hook（`hooks/delegate-completion-stop.py`）を追加する。委譲先が応答を終えようとしたとき、最後の入力（指示書・leadからのメッセージ）以降にlead宛の送信（`SendMessage` の `to` がlead名、またはleadのpane ID宛ての `herdr agent prompt`）が無ければ、停止を1回止めて送るよう返す。
 
 - user-levelのsettingsには登録しない（leadや普段のセッションで発火させないため）
 - 止めるのは1回だけ（`stop_hook_active` なら通す）。送れない状況で委譲先が終われなくなるのを防ぐ
-- 宛先が無い（`--lead-name` も `HERDR_PANE_ID` も無い）ときは足さない。codexにはhookが無いので、ヘッダの指示だけになる
+- 宛先が無い（`--lead-name` も `HERDR_PANE_ID` も無い）ときは追加しない。codexにはhookが無いので、ヘッダの指示だけになる
 - 判定は「最後の入力以降に送ったか」だけで、送った中身が完了の連絡か問い合わせかは区別しない。問い合わせを送った後に返答を待たずに作業を続けて終えた場合は、止めずに通る
 
 ### 結果の受け取り
@@ -222,12 +222,12 @@ tabは既定で残るので、手直しの指示は完了後でもそのまま�
 
 失敗した委譲を送り直すときは、tabを閉じてスクリプトごと起動し直す。手で送るなら、元の指示書ではなく `task_sent`（ヘッダを前置きした指示書。結果のJSONとstateに出る）を送る。元の指示書を送ると連絡経路と再委譲禁止のヘッダが欠ける。`task_sent` の一時ファイルは `done` のときだけ消える（JSONでは `null`）。
 
-**`done` は作業の完了を保証しない。** 判定しているのは「idleになった時点で成果物ファイルが作成・更新されていた」ことだけで、書きかけ（骨組み・プレースホルダ）の保存でも満たす。逆に `missing_output` でも、委譲先がバックグラウンドの完了を待って作業を続けていることがある。どちらのstatusでも、成果物を採用する前に次の2つを確かめる。
+**`done` は作業の完了を保証しない。** 判定しているのは「idleになった時点で成果物ファイルが作成・更新されていた」ことだけで、書きかけ（骨組み・プレースホルダ）の保存でも満たす。逆に `missing_output` でも、委譲先がバックグラウンドの完了を待って作業を続けていることがある。どちらのstatusでも、成果物を採用する前に次の2つを確認する。
 
 - 委譲先から完了の連絡（ヘッダが求めるSendMessage等）が届いている
 - `herdr pane get <pane_id>` の `agent_status` が `working` でない
 
-満たさなければ作業中として扱い、成果物を採用せず、委譲をやり直さずに連絡を待つ。届いた連絡が「バックグラウンドの完了を待っている」等の途中経過なら、その完了の連絡を待つ。
+満たさなければ作業中として扱い、成果物を採用せず、委譲し直さずに連絡を待つ。届いた連絡が「バックグラウンドの完了を待っている」等の途中経過なら、その完了の連絡を待つ。
 
 `agent_status` がidleのまま連絡が届かないとき（codexのpane、Stop hookの1回を経ても送らなかった）は、待ち続けずに `herdr pane read` で画面の最後の応答を読み、完了か途中かを判断する。
 
@@ -253,13 +253,13 @@ tabはleadが閉じる。閉じてよいのは、上の「結果の受け取り�
 | taskboard-delegate.sh | `not_in_taskboard` | lead が taskboard の会話でない | pane へ |
 | taskboard-delegate.sh | `taskboard_unavailable` | `taskboard` が無い | pane へ |
 | taskboard-delegate.sh | `taskboard_outdated` | taskboard が知らせの届け先を受け付けない古い版 | pane へ |
-| taskboard-delegate.sh | `start_failed` | 会話を起こせなかった。`detail` に taskboard の文が入る（会話の枠の上限・確かめた版が無いなど） | `detail` を読む。枠や版の問題なら pane へ |
+| taskboard-delegate.sh | `start_failed` | 会話を起こせなかった。`detail` に taskboard の文が入る（会話の枠の上限・確認した版が無いなど） | `detail` を読む。枠や版の問題なら pane へ |
 | taskboard-delegate.sh | `unexpected_output` | 会話は起きたかもしれないが、id を読めなかった | `session_list` の会話の節で探す。見つかれば起こし直さない |
 | herdr-delegate.sh | `not_in_herdr` | Herdrの外で実行された | Agent toolへ |
 | herdr-delegate.sh | `herdr_unavailable` | `herdr` がPATHに無い | Agent toolへ |
 | herdr-delegate.sh | `workspace_missing` | workspaceを特定できない | Agent toolへ |
 | herdr-delegate.sh | `agent_cli_unavailable` | `--kind` に対応するCLIが無い | **条件付き**（下記） |
-| 両方 | `task_invalid` / `task_id_invalid` / `model_invalid` / `effort_invalid` / `arg_invalid` / `python3_unavailable` | 呼び出し側の誤り | 直して再実行する |
+| 両方 | `task_invalid` / `task_id_invalid` / `model_invalid` / `effort_invalid` / `arg_invalid` / `python3_unavailable` | 呼び出し側の誤り | 修正して再実行する |
 
 フォールバックは、元のタスクが要求するモデル・ベンダーの条件を保てるときに限る。`--kind codex` が別ベンダーによる外部レビューを目的にしているなら、ClaudeのAgent toolへ切り替えるとbias独立性という品質ゲートを満たさないまま進むことになる。外部レビュー用途では `context/agent-cli-guide.md` のfallback規定（fable subagentで暫定。別ベンダーのレビューとはみなさず、不可逆な変更を含むときは復旧後に裏取り）が優先する。
 
@@ -283,11 +283,11 @@ tabはleadが閉じる。閉じてよいのは、上の「結果の受け取り�
 - **herdrのagent名は「小文字で始まり、小文字・数字・`-`・`_` だけの1〜32字」。** 違反すると `herdr agent start` が `invalid_agent_name` を返し、paneはシェルのまま残る（スクリプトは事前に検証する）
 - **`herdr agent prompt` の宛先にはpane IDを使える。** Claude Codeのセッション名（SendMessageの宛先名）はherdrのagent名とは別物で、宛先にすると `agent_not_found` になる
 - **codexに `-c` で設定を渡すと、共有のバックグラウンドサーバーを使わないembeddedモードで起動する**（起動時の警告に出る。スクリプトは更新確認を切るために `-c` を付けている）。embeddedモードでも起動・agent名の登録・MCPツールの呼び出しは通る
-- **`codex exec --sandbox read-only` ではMCPツールを呼べず、`--dangerously-bypass-approvals-and-sandbox` では呼べる**（同じツール呼び出しで比較）
+- **`codex exec --sandbox read-only` ではMCPツールを呼び出せず、`--dangerously-bypass-approvals-and-sandbox` では呼び出せる**（同じツール呼び出しで比較）
 - **`claude --disallowedTools Agent Workflow` で両toolが外れ、SendMessage・ListAgentsは残る**（`-p` の起動時のtools一覧と、本スクリプト経由で起動したpaneのツール一覧の両方で確認。`-p` ではAgent toolが `Task` の名で出るが、`Agent` の指定で外れる。`TaskCreate` 等のタスク管理toolは残るが子エージェントは起動しない）。完了通知の経路はこれで壊れない
 - **承認プロンプトのバイパスは既定で付く**（claude: `--dangerously-skip-permissions` / codex: `--dangerously-bypass-approvals-and-sandbox`）。承認待ちで止まると委譲が進まないため。追加のフラグは `--agent-arg` で透過的に渡せる
-- **Bashの `run_in_background: true` はPreToolUse hookの `tool_input` に載り、前景の呼び出しでは項目自体が無い**（`claude -p` に記録用hookを足して確認）
-- **`claude --settings '<JSON>'` で足したhookは、user-levelのhookを置き換えずに併用される**（委譲先のpaneで、足したStop hookとuser-levelのSessionStart・UserPromptSubmitが両方動いた）
+- **Bashの `run_in_background: true` はPreToolUse hookの `tool_input` に載り、前景の呼び出しでは項目自体が無い**（`claude -p` に記録用hookを追加して確認）
+- **`claude --settings '<JSON>'` で追加したhookは、user-levelのhookを置き換えずに併用される**（委譲先のpaneで、追加したStop hookとuser-levelのSessionStart・UserPromptSubmitが両方動いた）
 - **Stop hookで1回止めると、委譲先は指示書に「連絡は不要」とあっても連絡を送る**（sonnetで確認）。ヘッダだけの委譲先は、hookが止める前に自分から `SendMessage` で送った
 - **委譲先が `herdr agent prompt <lead pane>` で送った連絡は、leadの画面にユーザーの入力として入る**（cross-session messageの表示にならない）。送り主の区別が付きにくいので、ヘッダとStop hookはSendMessageを先に案内する
 - `herdr pane run` と `herdr agent prompt` はテキストとEnterを一括送信する。改行を含む長文を直接渡すと途中で送信されるので、指示書はファイルに書いてパスだけを渡す（スクリプトがこれを行う）
@@ -296,11 +296,11 @@ tabはleadが閉じる。閉じてよいのは、上の「結果の受け取り�
 
 スクリプトに実装はあるが実機で通していない経路。ここに当たったら、挙動を確認してこのファイルを更新する。
 
-- 会話の経路の `--worktree-branch`（MCP の `session_start` の `worktree_branch` では、worktree の中で動くことを確かめた）
+- 会話の経路の `--worktree-branch`（MCP の `session_start` の `worktree_branch` では、worktree の中で動くことを確認した）
 - 委譲先が問いで待っているときの知らせと `session_answer`、知らせていないターンが2つ以上たまったときの数
 - `--allow-review`
-- 委譲先が利用枠の上限に当たった後の続きの送信（taskboard のテストでだけ確かめた）
+- 委譲先が利用枠の上限に当たった後の続きの送信（taskboard のテストでだけ確認した）
 - `start_failed`・`unexpected_output`
 - `done_close_failed`（`--close` 指定時のtab closeの失敗）
 - 起動タイムアウトによる `blocked_unknown`
-- codexの更新選択ダイアログの自動スキップ（バナー形態しか再現できていない）。選択ダイアログ（更新する／スキップ／このバージョンをスキップの3択）が出たpaneは、自動スキップが効かずに `prompt_failed`（agent名が未登録）で落ちた例がある。対策として、スクリプトはcodexを `-c check_for_update_on_startup=false` で起動し、ダイアログ自体を出さない。ダイアログが出なくなることは次の更新が来るまで確かめられないので、それでも出たら画面（`herdr pane read`）を保存してから判定を直す
+- codexの更新選択ダイアログの自動スキップ（バナー形態しか再現できていない）。選択ダイアログ（更新する／スキップ／このバージョンをスキップの3択）が出たpaneは、自動スキップが効かずに `prompt_failed`（agent名が未登録）で落ちた例がある。対策として、スクリプトはcodexを `-c check_for_update_on_startup=false` で起動し、ダイアログ自体を出さない。ダイアログが出なくなることは次の更新が来るまで確認できないので、それでも出たら画面（`herdr pane read`）を保存してから判定を修正する

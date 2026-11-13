@@ -1,6 +1,6 @@
 ---
 name: taskboard
-description: taskboard の MCP tool でタスク・作業項目・文書と、案件・定期起動・セッション・受信箱を扱う。依頼を受けて作業に入る時（紐づくタスクが無ければ起票する）、状況を聞かれた時、自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、計画書・設計提案を人に読ませて採否やレビューを求める時、ボードの一覧・状態を確認する時、オーケストレーターとして全体の health を見回る時、案件・定期起動・セッションを作る・変える・止める・消す時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: taskboard の外で始まったセッションをタスクに移すのは taskboard-adopt、複数のタスクの会話を lead として束ねて回すのは lead、pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域、新しい定期起動の中身（仕組みの選択・手順書・プロンプト・状態ファイル）の設計は scheduling-jobs。
+description: taskboard の MCP tool でタスク・作業項目・文書と、案件・定期起動・セッション・受信箱を扱う。依頼を受けて作業に入る時（紐づくタスクが無ければ起票する）、状況を聞かれた時、自分のセッションに紐づくタスクの列を進める・起票する時、計画の承認後に作業項目を登録し着手・完了・待ちを更新する時、計画書・設計提案を人に読ませて採否やレビューを求める時、ボードの一覧・状態を確認する時、オーケストレーターとして全体の health を見回る時、案件・定期起動・セッションを作る・変える・止める・削除する時、依頼に taskboard・タスクボード・kanban・作業項目の語がある時に使用。境界: taskboard の外で始まったセッションをタスクに移すのは taskboard-adopt、複数のタスクの会話を lead として束ねて回すのは lead、pane・tab・agent の操作は herdr、作業ログ・調査記録はメモリディレクトリ、ボードの画面操作はユーザーの領域、新しい定期起動の中身（仕組みの選択・手順書・プロンプト・状態ファイル）の設計は scheduling-jobs。
 ---
 
 # Taskboard
@@ -9,7 +9,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 
 ## 前提
 
-ツール一覧に `mcp__taskboard__*` があること。無ければ「taskboard の MCP が繋がっていない（`claude mcp list` で確認）」と伝えて止まる。CLI や API を推測して直接叩かない。
+ツール一覧に `mcp__taskboard__*` があること。無ければ「taskboard の MCP が繋がっていない（`claude mcp list` で確認）」と伝えて止まる。CLI や API を推測して直接呼び出さない。
 
 `task_id` を省くと、このセッションに紐づくタスクを使う。セッションは、taskboard の会話なら会話の id（`TASKBOARD_CONVERSATION_ID`）で、普段使いの端末の Claude Code なら MCP に渡るセッション ID（`CLAUDE_CODE_SESSION_ID`）で見分ける。taskboard が起動したセッションは SessionStart hook が結ぶ。`work_list` が「紐づくタスクが無い」と返したら `board_overview` で候補を見て、`task_update` の `link_session: true` で結ぶか、`task_create` で起票する。taskboard の外で始まった作業をまとめて移すときは /taskboard-adopt スキルを実行する。
 
@@ -17,7 +17,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 
 ## 列
 
-**列は案件の列の説明に従って選ぶ。** 列の id・名前・説明は案件ごとに違い、人が直せる（既定の列を消した案件、列を足した案件もある）。説明は SessionStart の案内・`session_guide`・`task_get`（今の列）・`task_update`（移した先）・`board_overview` に出る。id をハードコードしない。
+**列は案件の列の説明に従って選ぶ。** 列の id・名前・説明は案件ごとに違い、人が修正できる（既定の列を削除した案件、列を追加した案件もある）。説明は SessionStart の案内・`session_guide`・`task_get`（今の列）・`task_update`（移した先）・`board_overview` に出る。id をハードコードしない。
 
 新しい案件の既定の列（参考。今の案件の説明が優先する）:
 
@@ -40,7 +40,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 - **依頼を受けて作業に入るとき、紐づくタスクが無ければ、着手の前に起票して作業中の列に置く**（PR を待たない。下の Stop hook の自動起票は PR がある場合だけで、それまでの作業がボードに出ないため）。起票の手順は「起票する」
 - **状況を聞かれたら**（いまどうなっているか・何待ちか・残り）、`task_get` と `work_list` を開き、その結果を一次情報として答える。メモリの記録や会話の記憶は書いた時点の状態なので、そこから答えない
 
-**PR の状態に対応する列の前進は daemon が自動で行う**（PR が ready なら `review`、merge されれば案件の「マージしたら」の列（既定は `deploying`。その列を消した案件では `done`）。前進方向のみで、終端列・常設・足した列は触らず、進める先の列が案件に無ければ動かさない。Stop hook でも同じ判定が走る）。この前進を手で `task_update` しに行かない。手で動かすのは daemon が判断しない列（`planning` / `working` / `wontfix` 等）と、ユーザーから指示された移動だけ。
+**PR の状態に対応する列の前進は daemon が自動で行う**（PR が ready なら `review`、merge されれば案件の「マージしたら」の列（既定は `deploying`。その列を削除した案件では `done`）。前進方向のみで、終端列・常設・追加した列は触らず、進める先の列が案件に無ければ動かさない。Stop hook でも同じ判定が走る）。この前進を手で `task_update` しに行かない。手で動かすのは daemon が判断しない列（`planning` / `working` / `wontfix` 等）と、ユーザーから指示された移動だけ。
 
 **`review_req` に入ったタスクは `review_req` と終端列しか取らない。** 紐づいているのは他人の PR なので、自分が approve しても作業段階は進まない。レビューを投稿しても `review_req` に留める（「レビュー済み」は daemon が PR の状態から出すので、タイトルに印を付けない）。紐づく PR が全部マージかクローズになると daemon が `done` へ進めるので、手で `done` へ移さない。
 
@@ -61,7 +61,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 
 ## 起票する
 
-**起票の前に、紐づける URL で既存タスクを引く**（`board_overview` に PR の短縮名が出る。同一性は URL で判断し、タイトルでは照合しない）。`task_create` は同じ URL のタスクがあればエラーで止まるので、そのときは返ってきた番号に `task_update` で足す。
+**起票の前に、紐づける URL で既存タスクを検索する**（`board_overview` に PR の短縮名が出る。同一性は URL で判断し、タイトルでは照合しない）。`task_create` は同じ URL のタスクがあればエラーで止まるので、そのときは返ってきた番号に `task_update` で追加する。
 
 - **粒度は「1 タスク = 1 つの完了判定」**。PR 1 本・チケット 1 件・調査 1 件が単位。複数 PR にまたがる 1 つの作業は、束ねる 1 タスクにリンクを複数付ける（PR ごとに割らない。PR ごとの進みは作業項目で表す）
 - **リンク（`links`・`add_links`）には、そのタスクの成果物か、完了を左右する PR・issue・チケットだけを入れる。** 参考に読むだけの PR は `note` か指示書に URL で書く。リンクした PR の動き（コミット・コメント・Ready）は紐づく会話へ通知され、daemon がタスクの列を動かすので、成果物でない PR をリンクすると、会話が何もしないターンを回し、列も実態とずれる
@@ -78,10 +78,10 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 - **タスクに載せるもの**: 計画書・設計提案など、ユーザーが後から見返して採否を決める文書。採否は `ask_user` か `review_request` で問う
 - **セッション内で示すもの**: 調査結果・レビュー結果の要約、実装中の技術判断、単発の質問。ユーザーがセッション内での提示を指定したら、以後そのタスクではセッション内に留める
 - **`doc_publish`** で載せる（`path` か `content` + `name`）。同じ `name` への再 publish は新しいリビジョンになり、前の版のコメントは残る。比較軸が 3 つ以上・状態遷移・依存関係・段階の順序を示す文書は HTML にする（外部の画像・CSS・script は読み込まれないので、全部インラインで書く）
-- **`ask_user`** で選択肢を出して聞く。背景・判断材料・trade-off は `context`（markdown）に書き、質問文に詰め込まない。既存の文書に付けるなら `name` にその文書名を渡し、`context` は渡さない（本文は変わらず、質問だけが付く。背景はその文書の本文が担う）。質問は全問に答えるまで送れないので、問いは本当に要るものだけにする
+- **`ask_user`** で選択肢を出して聞く。背景・判断材料・trade-off は `context`（markdown）に書き、質問文に詰め込まない。既存の文書に付けるなら `name` にその文書名を渡し、`context` は渡さない（本文は変わらず、質問だけが付く。背景はその文書の本文が担う）。質問は全問に答えるまで送れないので、問いは本当に必要なものだけにする
 - **`review_request`** で、載せた文書のレビューを頼む（`note` に何を見てほしいか 1 行）
 - **回答とレビューは、ターンを終えて入力待ちになった時点で daemon が人の発話としてこのセッションの入力欄に入れる**（taskboard の会話の外のセッションでは Stop hook が最大 1 時間待って注入する）。聞いたら答えを前提にした作業は止め、答えに依存しない作業だけ進めてターンを終える。返事を待つために tool を繰り返し呼ばない
-- 届いたレビューのコメントは 1 件ずつ対応し、**`comment_reply`**（`comment_id` は届いた本文の `commentId`）で何をしたかを返す。直したら `resolve: true`。文書を直したら同じ `name` で `doc_publish` し直す
+- 届いたレビューのコメントは 1 件ずつ対応し、**`comment_reply`**（`comment_id` は届いた本文の `commentId`）で何をしたかを返す。修正したら `resolve: true`。文書を修正したら同じ `name` で `doc_publish` し直す
 - Stop hook が無い環境（`claude -p`、hook を入れていない Mac）では、**`feedback_list`** で届いた分を取る。各項目は 1 回しか返らない
 
 ## 別のセッションへ送る・起こす
@@ -120,20 +120,20 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 | マシン | `orchestrator_status` / `orchestrator_start` / `orchestrator_prompt` / `orchestrator_restart` / `settings_get` / `settings_update` / `inbox_list` / `inbox_dismiss` / `inbox_restore` / `prs_list` / `prs_refresh` / `usage_get` |
 
 - **見回りの順**: `health` → 回答待ちの会話は `session_answer`（答えを省く）で何を待っているかを読む → 失敗・スキップした定期起動は `schedule_runs` で理由を見る → 戻すなら `session_stop`・`session_resume`・`schedule_run`
-- **消す tool（`task_delete`・`board_delete`・`work_delete`・`doc_delete`・`schedule_delete`）と `session_stop` の `force` は、1 回目は何が消える（止まる）かを返すだけで実行しない。** 中身を読んで、消してよいと確かめてから同じ引数に `confirm: true` を付けて呼び直す。消すのも PR の操作も、人の指示があるときだけ
-- 自分のセッションに紐づくタスク以外の列・作業項目は、health のために動かすときだけ触り、理由をそのタスクの `note` に 1 行足す（`note` は丸ごと置き換わるので、`task_get` で今の備考を読んでから足す）
-- `orchestrator_restart` はオーケストレーターを止め、今の会話を破棄して新しく起こす（引数なし。常駐を切っていても起こす。設定の引数と起動プロンプトで、`--resume` なし）。会話が長くなった・様子がおかしいときに使う。元に戻せないので、人に確かめてから呼ぶ。オーケストレーター自身から呼ぶと、自分の会話が止まって応答は届かない
+- **削除する tool（`task_delete`・`board_delete`・`work_delete`・`doc_delete`・`schedule_delete`）と `session_stop` の `force` は、1 回目は何が消える（止まる）かを返すだけで実行しない。** 中身を読んで、削除してよいと確認してから同じ引数に `confirm: true` を付けて呼び直す。削除するのも PR の操作も、人の指示があるときだけ
+- 自分のセッションに紐づくタスク以外の列・作業項目は、health のために動かすときだけ触り、理由をそのタスクの `note` に 1 行追加する（`note` は丸ごと置き換わるので、`task_get` で今の備考を読んでから追記する）
+- `orchestrator_restart` はオーケストレーターを止め、今の会話を破棄して新しく起こす（引数なし。常駐を切っていても起こす。設定の引数と起動プロンプトで、`--resume` なし）。会話が長くなった・様子がおかしいときに使う。元に戻せないので、人に確認してから呼ぶ。オーケストレーター自身から呼ぶと、自分の会話が止まって応答は届かない
 - `session_stop`・`session_prompt`・`session_answer` は自分の会話には使えない
-- 利用枠の上限で止まった会話には、taskboard が戻った時刻に「利用枠が戻ったので、止まったところから続けてください。」を送る（`session_list` に予定の時刻が出る）。送らせないときは `session_stop`（止まっている会話でも予定を消す）
+- 利用枠の上限で止まった会話には、taskboard が戻った時刻に「利用枠が戻ったので、止まったところから続けてください。」を送る（`session_list` に予定の時刻が出る）。送らせないときは `session_stop`（止まっている会話でも予定を削除する）
 
 ## Gotchas
 
 - **`work_update` で `wait` にするときは `blocker_kind` か `blocker_text` が必須**（無いとエラー）
-- **`task_delete` は `task_id` を省けない**（このセッションのタスクを暗に消さない）
-- **案件を消せるのはタスクが 0 件のときだけ。** 残っていれば `task_update` の `board` でほかの案件へ移すか `task_delete` で消してから
+- **`task_delete` は `task_id` を省けない**（このセッションのタスクを暗に削除しない）
+- **案件を削除できるのはタスクが 0 件のときだけ。** 残っていれば `task_update` の `board` でほかの案件へ移すか `task_delete` で削除してから
 - **`task_id` の解決は会話の id か Claude Code のセッション ID 経由**。どちらも無い所（Codex、CI）では毎回 `task_id` を渡す
 - **`/clear` の後の会話は、MCP に `/clear` の前の会話の ID が残る**（MCP の process が起動し直されない）。`/clear` の後に `link_session` で別のタスクへ結ぶと前の会話を結ぶので、`/exit` して `claude --continue` で開き直してから結ぶ
 - **タスク番号は削除しても再利用されない。** 一度得た番号は安定した handle として使える
-- **同じ文書に未回答の質問は 1 束だけ。** 新しい `questions` を付けて publish すると前の未回答の束は取り下げられる（同じ内容なら作り直さない）
-- **文書を消すと、その文書の質問とコメントも消える**
+- **同じ文書に未回答の質問は 1 束だけ。** 新しい `questions` を付けて publish すると前の未回答の束は取り下げられる（同じ内容なら再作成しない）
+- **文書を削除すると、その文書の質問とコメントも消える**
 - **daemon が止まっていると tool はエラーを返す。** その旨を伝え、`launchctl kickstart -k gui/$UID/uk.whatn.taskboardd` を案内する（自分では実行しない）

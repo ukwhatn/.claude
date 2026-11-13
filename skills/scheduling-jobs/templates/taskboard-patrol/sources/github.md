@@ -18,7 +18,7 @@ gh search prs --review-requested=@me --state=open --limit 30 --json url,title,re
 gh search prs --author=@me --merged --merged-at ">=<since の日付>" --limit 30 --json url,title,closedAt
 ```
 
-- `gh search prs` の `--json` に `reviewDecision` は**無い**。個別の詳細が要るときだけ、件数を絞ってから `gh pr view <url> --json state,isDraft,reviewDecision,mergedAt` を使う
+- `gh search prs` の `--json` に `reviewDecision` は**無い**。個別の詳細が必要なときだけ、件数を絞ってから `gh pr view <url> --json state,isDraft,reviewDecision,mergedAt` を使う
 - `--review-requested=@me` は GitHub の仕様上、**チーム宛の依頼を含まない**。{{REVIEW_SCOPE}}
   <!-- 埋め方の例: 「バイネームの依頼だけを対象にする。--review-requested=<org>/<team> を足さず、チーム宛が出ないことを取りこぼしとして報告しない」か「チーム <org>/<team> 宛も対象にする。同じクエリを --review-requested=<org>/<team> でも投げる」 -->
 
@@ -34,7 +34,7 @@ gh release view <TAG> -R {{RELEASE_REPO}} --json tagName,publishedAt,body
 - タグ名の形: `{{RELEASE_TAG_FORMAT}}`（環境がタグ名のどこに出るか。本番を表す値: `{{PROD_ENV}}`）
 - **`since` 以降に publish されたタグだけ** `view` する（毎回全タグを開かない）
 
-## 2-1 に足す判定
+## 2-1 に追加する判定
 
 release tag が取れたタスク:
 

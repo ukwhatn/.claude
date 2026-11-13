@@ -5,14 +5,14 @@ Cloudflare（wrangler / cf CLI / Workers / D1 / R2 / Builds）の作業で使う
 ## セットアップ・アカウント
 
 - wranglerはbunでインストールする（`bun add -d wrangler`）
-- 複数のCloudflareアカウントがあるので、デプロイ先アカウントはユーザーに確かめる。`bunx wrangler whoami` で利用可能なアカウント一覧を見てから提示・質問する。PJ CLAUDE.mdまたはpackage.jsonに `CLOUDFLARE_ACCOUNT_ID` が明記されている場合はそれを使う
+- 複数のCloudflareアカウントがあるので、デプロイ先アカウントはユーザーに確認する。`bunx wrangler whoami` で利用可能なアカウント一覧を見てから提示・質問する。PJ CLAUDE.mdまたはpackage.jsonに `CLOUDFLARE_ACCOUNT_ID` が明記されている場合はそれを使う
 
 ## cf CLI（Cloudflare公式の新しいCLI）
 
-- npmパッケージ `cf`（github.com/cloudflare/cf）。学習時点より新しく、手持ちの知識に無い前提で扱う。`command -v cf` で有無を確かめ、無ければ導入をユーザーに確認する。認証は `cf auth login`（状態は `cf auth whoami`）、アカウントは `CLOUDFLARE_ACCOUNT_ID` で選ぶ
-- wranglerに無い操作と、ダッシュボードでしかできないと思える操作は、cfで自分で行う。cfはCloudflare APIの大半を覆う（Workers Buildsのトリガー作成・ビルド一覧とログ、Observabilityのクエリ、AI Gateway、アカウントのメンバー・APIトークン、DNS、キャッシュのpurgeなど）。ダッシュボードでの作業をユーザーに頼む前に、cfでできるかを確かめる（頼んだ作業が済むまで後続が止まり、済んだかの確認も漏れやすいため）
-- コマンドは `cf cli search "<やりたい操作と対象の種類>"` で探し、見つけたコマンドの `--help` を読む。`--help` を入れ子にたどって探さない（CLI自身がエージェントにそう指示している）。検索語に名前・ID・ドメイン・トークンを入れない。APIの詳細は、見つけたコマンドの先頭の `cf` を `cf schema` に替えて引く
-- 設定を書き換えるコマンドは、`--dry-run` があれば先に流して送信内容を確かめる（全体を置き換える更新では、渡さなかった設定が初期値に戻る）
+- npmパッケージ `cf`（github.com/cloudflare/cf）。学習時点より新しく、手持ちの知識に無い前提で扱う。`command -v cf` で有無を確認し、無ければ導入をユーザーに確認する。認証は `cf auth login`（状態は `cf auth whoami`）、アカウントは `CLOUDFLARE_ACCOUNT_ID` で選ぶ
+- wranglerに無い操作と、ダッシュボードでしかできないと思える操作は、cfで自分で行う。cfはCloudflare APIの大半を覆う（Workers Buildsのトリガー作成・ビルド一覧とログ、Observabilityのクエリ、AI Gateway、アカウントのメンバー・APIトークン、DNS、キャッシュのpurgeなど）。ダッシュボードでの作業をユーザーに頼む前に、cfでできるかを確認する（頼んだ作業が済むまで後続が止まり、済んだかの確認も漏れやすいため）
+- コマンドは `cf cli search "<やりたい操作と対象の種類>"` で探し、見つけたコマンドの `--help` を読む。`--help` を入れ子にたどって探さない（CLI自身がエージェントにそう指示している）。検索語に名前・ID・ドメイン・トークンを入れない。APIの詳細は、見つけたコマンドの先頭の `cf` を `cf schema` に替えて調べる
+- 設定を書き換えるコマンドは、`--dry-run` があれば先に流して送信内容を確認する（全体を置き換える更新では、渡さなかった設定が初期値に戻る）
 - デプロイ先アカウントの確認と、対外に効く変更の事前確認はwranglerと同じ扱いにする
 
 ## Workersランタイムの落とし穴（実機検証済み）
