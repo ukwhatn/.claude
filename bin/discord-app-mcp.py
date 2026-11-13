@@ -40,6 +40,7 @@ self-bot（ユーザートークンで外から API を叩く）ではない。
 """
 from __future__ import annotations
 
+import base64
 import hashlib
 import json
 import os
@@ -262,11 +263,24 @@ AGENT_JS = r"""
         has_more_before: page.length===limit,
         messages: page.map(fmtMsg) };
     },
-    // POST の応答で確定する（ストアの反映は待たない）。enforce_nonce で、同じ nonce の再送は二重投稿にならない
-    async sendMessage(cid, content){
+    // POST の応答で確定する（ストアの反映は待たない）。enforce_nonce で、同じ nonce の再送は二重投稿にならない。
+    // files（[{name, data: base64}]）は本体と同じ経路で上げる: アップロード先を受け取って PUT し、投稿で参照する
+    async sendMessage(cid, content, files){
       const nonce=snowflake();
+      const body={content:content||"", nonce, enforce_nonce:true, tts:false};
+      if(files&&files.length){
+        const bytes=files.map(f=>Uint8Array.from(atob(f.data), c=>c.charCodeAt(0)));
+        const u=await rest("post", `/channels/${cid}/attachments`,
+          {files:files.map((f,i)=>({id:String(i), filename:f.name, file_size:bytes[i].length}))});
+        if(u.status>=300) return restError("upload_url", u);
+        for(const a of u.body.attachments){
+          const p=await fetch(a.upload_url, {method:"PUT", body:bytes[Number(a.id)]});
+          if(!p.ok) return { ok:false, what:"upload", status:p.status, error:(await p.text()).slice(0,300) };
+        }
+        body.attachments=u.body.attachments.map(a=>({id:a.id, filename:files[Number(a.id)].name, uploaded_filename:a.upload_filename}));
+      }
       let r;
-      try{ r=await rest("post", `/channels/${cid}/messages`, {content, nonce, enforce_nonce:true, tts:false}); }
+      try{ r=await rest("post", `/channels/${cid}/messages`, body); }
       catch(e){ return { ok:false, error:"unknown: 届いたか分からない（"+String(e&&e.message||e)+"）。再送する前に read_messages で確かめる" }; }
       if(r.status>=300) return restError("send", r);
       return { ok:true, id:r.body.id };
@@ -601,11 +615,22 @@ def build_server(cdp: CDP):
         return cdp.call_api("readMessages", channel_id, limit, before)
 
     @mcp.tool()
-    def discord_send_message(channel_id: str, content: str) -> dict:
-        """チャンネルにメッセージを送る。write_allow か write_allow_guilds で許可したチャンネルだけ通る。
-        送信は外に出る操作なので、呼ぶ前に送り先と本文を利用者に確認すること。"""
+    def discord_send_message(channel_id: str, content: str = "", files: list[str] | None = None) -> dict:
+        """チャンネルにメッセージを送る。files にローカルファイルの絶対パスを渡すと添付する（画像など。最大10件）。
+        content と files のどちらかは要る。write_allow か write_allow_guilds で許可したチャンネルだけ通る。
+        送信は外に出る操作なので、呼ぶ前に送り先・本文・添付を利用者に確認すること。"""
+        if not content and not files:
+            raise DiscordAppError("content か files のどちらかを渡す")
+        if files and len(files) > 10:
+            raise DiscordAppError("添付は1回に10件まで")
+        payload = []
+        for path in files or []:
+            if not os.path.isfile(path):
+                raise DiscordAppError(f"ファイルが無い: {path}")
+            with open(path, "rb") as f:
+                payload.append({"name": os.path.basename(path), "data": base64.b64encode(f.read()).decode()})
         _require_write_allowed(cdp, channel_id)
-        return cdp.call_api("sendMessage", channel_id, content)
+        return cdp.call_api("sendMessage", channel_id, content, payload)
 
     @mcp.tool()
     def discord_edit_message(channel_id: str, message_id: str, content: str) -> dict:
