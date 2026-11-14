@@ -164,9 +164,15 @@ def stop(data: dict, session_id: str) -> None:
 
 def user_prompt_submit(session_id: str) -> None:
     path = state_path(session_id, "last-reply.json")
-    findings = load_json(path, [])
+    # 読んでから削除すると、そのあいだに Stop が保存した新しい結果まで消えるので、先に別名へ移してから読む
+    taken = f"{path}.{os.getpid()}.taken"
     try:
-        os.remove(path)
+        os.replace(path, taken)
+    except OSError:
+        return
+    findings = load_json(taken, [])
+    try:
+        os.remove(taken)
     except OSError:
         pass
     if not findings:

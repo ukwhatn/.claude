@@ -53,6 +53,9 @@ mkdir -p ~/.agents && ln -sfn ~/.claude/skills ~/.agents/skills
 
 ```toml
 project_doc_fallback_filenames = ["CLAUDE.md"]
+# --model を省いた起動（resume を含む）の既定。選択の根拠は context/agent-cli-guide-details.md「モデル選択」
+model = "gpt-6.1-sol"
+model_reasoning_effort = "medium"
 
 [mcp_servers.context7]
 url = "https://mcp.context7.com/mcp"
