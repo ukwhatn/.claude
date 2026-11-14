@@ -1,0 +1,2 @@
+# 自動化専用 Chrome に入れる Chrome ウェブストアの拡張 ID（1行に1つ。# 以降はコメント）。
+# 反映は bin/playwright-mcp-setup.sh を実行する。1Password 拡張は入れない（context/browser-automation.md）。

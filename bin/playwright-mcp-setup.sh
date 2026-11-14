@@ -9,16 +9,17 @@
 #   4. LaunchAgent plist を実行環境から生成して配置・(再)ロード
 #   5. ~/.claude.json の mcpServers.playwright / mcpServers.chrome-devtools を設定
 #   6. サーバの起動（自動化専用Chromeへのattach）を確認するまで待つ
+#   7. playwright-mcp-extensions.txt の拡張を自動化専用Chromeに入れて有効にする
 #
-# やらないこと（このPCで手動が必要）:
-#   - 自動化専用Chrome（Chrome-automation プロファイル）への実際のログイン
-#     （OAuthフローは自動化できないため。スクリプト完了後に開いたウィンドウで行う）
+# やらないこと:
+#   - サイトへのログイン（エージェントが bin/browser-login で行う。context/browser-automation.md）
 set -eu
 
 BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORT="${PLAYWRIGHT_MCP_PORT:-8931}"
 CDP_PORT="${PLAYWRIGHT_MCP_CDP_PORT:-9223}"
 PLIST_LABEL="com.ukwhatn.playwright-mcp"
+CHROME_PROFILE="${CHROME_PROFILE_DIR:-$HOME/Library/Application Support/Google/Chrome-automation}"
 PLIST_PATH="$HOME/Library/LaunchAgents/${PLIST_LABEL}.plist"
 LOG_PATH="$HOME/Library/Logs/playwright-mcp.log"
 
@@ -28,7 +29,9 @@ die() { echo "[setup] ERROR: $*" >&2; exit 1; }
 log "対象ディレクトリ: $BIN_DIR"
 
 # --- 1. 実行権限 -------------------------------------------------------
-chmod +x "$BIN_DIR/playwright-mcp-server.sh" "$BIN_DIR/playwright-mcp-pin.py"
+chmod +x "$BIN_DIR/playwright-mcp-server.sh" "$BIN_DIR/playwright-mcp-pin.py" \
+  "$BIN_DIR/playwright-mcp-extensions.py" "$BIN_DIR/browser-login"
+command -v uv >/dev/null || die "uv が見つからない。拡張の導入と browser-login に必要"
 log "実行権限を付与した"
 
 # --- 2. node バージョン確認 --------------------------------------------
@@ -55,11 +58,13 @@ fi
 NPX_DIR="$(dirname "$NPX_BIN")"
 
 # --- 3. playwright-mcp-config.json（CDPポートの単一ソース）--------------
+# ignoreDefaultArgs: この2つが付いていると、Chrome は外部拡張の設定を読まず、拡張のダウンロードと更新もしない
 cat > "$BIN_DIR/playwright-mcp-config.json" <<EOF
 {
   "browser": {
     "launchOptions": {
-      "args": ["--remote-debugging-port=${CDP_PORT}"]
+      "args": ["--remote-debugging-port=${CDP_PORT}"],
+      "ignoreDefaultArgs": ["--disable-default-apps", "--disable-background-networking"]
     }
   }
 }
@@ -107,6 +112,7 @@ LOG_OFFSET=0
 [ -f "$LOG_PATH" ] && LOG_OFFSET=$(wc -c < "$LOG_PATH" | tr -d ' ')
 
 launchctl unload "$PLIST_PATH" >/dev/null 2>&1 || true
+"$BIN_DIR/playwright-mcp-extensions.py" sync "$CHROME_PROFILE"
 launchctl load "$PLIST_PATH"
 log "LaunchAgent をロードした"
 
@@ -126,14 +132,15 @@ done
 
 if [ "$ATTACHED" = "yes" ]; then
   log "起動確認OK。自動化専用Chromeが立ち上がっているはず"
+  # --- 5b. 拡張の有効化（やること 7）------------------------------------
+  "$BIN_DIR/playwright-mcp-extensions.py" enable "$CDP_PORT" || log "拡張の一部が入らなかった。上の行を確認すること"
 else
   log "60秒待っても attach ログが出なかった。ログを確認すること: $LOG_PATH"
 fi
 
 cat <<'EOF'
 
-[setup] 完了。残っているのは手動作業のみ:
-  - 開いた自動化専用Chromeのウィンドウで、使うアカウントにログインする
-    （拡張機能は動かない構成。ログイン状態の保持のみが目的）
+[setup] 完了。残っている作業:
   - 他の Claude Code セッションで /mcp を実行し、playwright / chrome-devtools を再接続する
+  - browser-login を使うマシンでは、サービスアカウントのトークンを ~/.config/op/agent-automation-token（権限600）に置く
 EOF
