@@ -67,13 +67,22 @@ reviewerは計画レビューから実装レビューまで存続させてよい
 
 ## モデル選択
 
-モデルslugは2026-10時点のもの。codexでの実在は `~/.codex/models_cache.json` の slug で確認する。cursorにはgpt-6.1-solが無い（2026-10時点）ので、fallbackはgpt-5.6-sol系のまま使う。
+モデルslugと比較の結果は2026-11時点のもの。codexでの実在は `~/.codex/models_cache.json` の slug で確認する。モデルが入れ替わったら、既知のバグを埋めた差分をレビューさせて検出数・所要時間・費用を測り直し、この節を更新する。cursorにはgpt-6.1-solが無い（2026-10時点）ので、fallbackはgpt-5.6-sol系のまま使う。
 
-| CLI | 指定 | 用途 |
-|---|---|---|
-| codex | `--model gpt-6.1-sol -c model_reasoning_effort="high"` | レビュー標準。medium より時間は延びるが、レビューは見落としの損失のほうが大きいので high にする。xhigh 以上は時間がさらに延び、効果の裏付けが割れている |
-| codex | `--model gpt-5.4` | 軽量・低コストの簡易チェック |
-| cursor | `--model gpt-5.6-sol-medium`（合成slug） | fallback時の標準 |
-| fable subagent | `Agent(model: "fable")` | 外部CLIが両方使えないときの暫定（同一ベンダー） |
+比較は、約200行の Python の hook に5件のバグ（入れ子の入力の読み漏れ・並列の競合・状態の更新漏れ・キーの順序・文字種の判定）を埋めた差分で、各設定を2回レビューさせた。どの設定も検出しなかったバグが2件あるので、難しいバグでの上限の差は測れていない。
+
+- codex `--model gpt-6.1-sol -c model_reasoning_effort="high"`: レビューの標準
+  - gpt-6-astra と検出数が同じで（medium・high・xhigh のどれも5件中3件）、1回の費用は4〜6分の1（トークン単価が5分の1）だった
+  - medium も検出数は同じだった。費用の差は1回あたり数セントで、見落としの損失のほうが大きいので high にする
+- codex `--model gpt-6.1-sol -c model_reasoning_effort="xhigh"`: 不可逆な変更（認証・secret・migration・データ削除・対外公開）のレビュー
+  - 費用は high の約1.1倍、所要時間は約200秒（high は130〜300秒）
+  - 埋めたバグとは別の競合を、xhigh は2回とも指摘した（high は2回中1回）
+- codex の gpt-6-astra: レビューには使わない
+  - 上の比較で検出数が gpt-6.1-sol と同じで、費用が4〜6倍だった
+  - `~/.codex/config.toml` の既定のモデルが gpt-6-astra だと、`--model` を省いた起動（`resume` を含む）がこの費用で動く
+- codex の gpt-6-luna: レビューには使わない
+  - 同じ比較で検出は5件中1〜2件で、検査が抜けるバグを Recommended に下げた
+- cursor `--model gpt-5.6-sol-medium`（合成slug）: fallback時の標準
+- fable subagent `Agent(model: "fable")`: 外部CLIが両方使えないときの暫定（同一ベンダー）
 
 codexはモデルslugとreasoning effortを別に指定し、cursorはeffortをslugに含める。両者を混同しない。

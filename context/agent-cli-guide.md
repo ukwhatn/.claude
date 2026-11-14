@@ -45,15 +45,19 @@ codex exec --dangerously-bypass-approvals-and-sandbox \
   -o "<出力先>/review.txt" "$(cat "<プロンプトファイル>")" \
   < /dev/null > "<出力先>/review.log" 2>&1
 
-# 2回目以降（CWD の直近セッションを継続。特定セッションは resume <SESSION_ID>）
-codex exec resume --last --dangerously-bypass-approvals-and-sandbox \
+# 2回目以降（初回のログの session id を指定して継続する）
+codex exec resume <SESSION_ID> --dangerously-bypass-approvals-and-sandbox \
+  --model gpt-6.1-sol -c model_reasoning_effort="high" \
   -o "<出力先>/review-2.txt" "$(cat "<プロンプトファイル>")" \
   < /dev/null > "<出力先>/review-2.log" 2>&1
 ```
 
+- `resume` は会話を引き継ぐが、モデルと effort は引き継がない。`--model` と `-c` を省くと `~/.codex/config.toml` の既定で動くので、初回と同じ値を毎回渡す（起動したら、ログの冒頭の `model:` と `reasoning effort:` の行で確認する）
+- `--last` は作業ディレクトリの直近のセッションを選ぶので、同じディレクトリで別の codex を起動していると別のセッションを継続する。session id を指定する
+
 起動後はAGENTS.md「バックグラウンドプロセス」に従い、進んでいる証拠を確認する。確実に短く終わる確認だけは、`--json "<プロンプト>" < /dev/null 2>/dev/null | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'` の前景実行でよい。
 
-- `-c model_reasoning_effort` は既定値に依存せず明示する。`gpt-5.6-sol-medium` のような合成slugはcodexには存在しない（cursor側の表記）
+- `-c model_reasoning_effort` は既定値に依存せず明示する。不可逆な変更（認証・secret・migration・データ削除・対外公開）のレビューは `xhigh` にする（モデルと effort の比較は details「モデル選択」）。`gpt-5.6-sol-medium` のような合成slugはcodexには存在しない（cursor側の表記）
 - sandboxを使わずに起動する（`--dangerously-bypass-approvals-and-sandbox`）。sandboxはネットワークを止めるので、レビュー中にcodexが依存を取りに行くコマンド（テスト前の依存確認など）を流すと途中で切れ、依存が半端に消えた作業ツリーが残る。指定を省くと、`~/.codex/config.toml` で信頼済みのディレクトリかどうかでsandboxが変わり、挙動が起動場所で揺れる
 - 書き込みの制限が無いので、起動はレビュー対象のworktreeか作業ツリーの外（メモリディレクトリ）で行い、ほかの作業が使う本体のチェックアウトでは起動しない。プロンプトには「ファイルを編集しない」と書く
 - 認証は保存済みログインを再利用する。CI等では `CODEX_API_KEY` を当該コマンド限定で付与する
@@ -87,7 +91,7 @@ diff・ファイル内容をプロンプトに埋め込まない（`$(git diff .
 ## レビューループ
 
 1. 初回を実行し、Severity別にleadが修正 / スキップを判断する
-2. 修正したら `resume --last` で再レビューする
+2. 修正したら、初回の session id を指定した `resume` で再レビューする（「基本コマンド」の2回目以降の形）
 3. 打ち切り条件（いずれか）:
    - Action Requiredがゼロ
    - 同じ指摘が2ラウンド連続（既知制限として記録）
