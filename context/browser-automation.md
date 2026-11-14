@@ -19,7 +19,7 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
 
 使うブラウザ経路は3つに限る: Claude in Chrome（普段使いのChromeを拡張経由で操作）、playwright（自動化専用Chromeを常駐サーバ経由で操作）、chrome-devtools（同じ自動化専用ChromeにCDPで繋いで計測）。ユーザーが起動したブラウザへCDPで繋ぐ構成（chrome-devtools-mcpの `--autoConnect`、playwrightの `--cdp-endpoint` 等）は置かない。接続ごとにブラウザ側の承認ダイアログが出るため。サーバ自身にブラウザを起動させれば承認経路を通らない。
 
-新規PCでのセットアップは `bin/playwright-mcp-setup.sh` を実行するだけ（冪等）。LaunchAgentの生成・配置、CDPポートを開けるplaywright設定の生成、`~/.claude.json` の `mcpServers.playwright`（HTTP）と `mcpServers.chrome-devtools`（`npx chrome-devtools-mcp --browserUrl http://127.0.0.1:<CDPポート>`）の設定、nodeバージョンの確認までを行う。残る手動作業は、スクリプトが起動する自動化専用Chromeへのログインだけ（OAuthフローは自動化できない）。
+新規PCでのセットアップは `bin/playwright-mcp-setup.sh` を実行するだけ（冪等）。LaunchAgentの生成・配置、CDPポートを開けるplaywright設定の生成、`~/.claude.json` の `mcpServers.playwright`（HTTP）と `mcpServers.chrome-devtools`（`npx chrome-devtools-mcp --browserUrl http://127.0.0.1:<CDPポート>`）の設定、nodeバージョンの確認、`bin/playwright-mcp-extensions.txt` に並べた拡張の導入までを行う。サイトへのログインは、下の「自動化Chromeでのログイン」の `browser-login` で行う。
 
 構成は「サーバ1本を常駐させ、各セッションはHTTPクライアントとして接続する」。playwright-mcpの場合:
 
@@ -27,7 +27,10 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
 - 接続: MCP設定は `{"type":"http","url":"http://127.0.0.1:8931/mcp"}`
 - サーバ自身が `--user-data-dir`（自動化専用のuser-data-dir）でブラウザを起動し、`--shared-browser-context` で全クライアントに同一コンテキストを共有させる。起動フラグの追加は `--config` の `browser.launchOptions.args` で渡す
 - **自動化ドライバに普段使いのブラウザプロファイルを開かせない**。ドライバはブラウザ起動時に既定でモックの資格情報ストア（`--use-mock-keychain` / `--password-store=basic`）と `--disable-extensions` を付ける。OSキーチェーン由来の鍵で暗号化されたcookieとアカウントトークンは復号できなくなってcookieストアが再作成され、拡張は無効化されたうえで未参照ディレクトリが削除される。ブックマークと履歴は暗号化されていないため残るので、被害が部分的にしか見えず、プロファイルが壊れたことに気付きにくい
-- 上記の帰結として、自動化ブラウザでは拡張機能が動かない。ログイン状態（cookie）は持てるが、拡張前提の操作は自動化できない
+- 自動化専用Chromeでは拡張が動く。playwright-mcpは `--disable-extensions` を既定の起動引数から外している
+  - 拡張は `bin/playwright-mcp-extensions.txt` にChromeウェブストアのIDを書き、セットアップスクリプトで入れる。外部拡張の設定を置き、起動後に `chrome.management.setEnabled` で有効にするので、人の操作もVNCも使わない
+  - playwright設定の `ignoreDefaultArgs` で `--disable-default-apps` と `--disable-background-networking` を外している。この2つが付いていると、Chromeは外部拡張の設定を読まず、拡張のダウンロードと更新もしない
+  - 1Password拡張は入れない。解除した拡張は個人アカウント全体を読めるので、無認証のCDPポートに繋がるすべてのクライアントから読める状態になる。ページの `navigator.credentials` も置き換えるので、`browser-login` の仮想認証器より先にパスキーの要求を受け取る
 - 接続クライアントが0になるとブラウザが閉じられるため、常駐クライアント（`bin/playwright-mcp-pin.py`）が接続を1本保持し続けてブラウザを閉じさせない
 - 永続プロファイルは同時に1インスタンスからしか開けない。サーバ起動前にブラウザが起動しているとprofile lockで失敗する
 - 共有コンテキストの弱点: 応答しないタブが1枚あると、タブ一覧の取得が返らず全セッションの操作がブロックされる。タブ操作が応答しなくなったら、まず応答しないタブがあるかを確認する（未コミットのタブ・プリレンダーされたタブが該当し得る）
@@ -37,6 +40,45 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
 - 操作の開始時に自分のタブを新規に開き、以後は自分のcurrent tabに対してのみ操作する
 - `browser_tabs` のindex指定でselect / closeしない（indexは他セッションのタブ開閉でずれるため、ユーザーの既存タブや他セッションのタブを誤って閉じてしまう）。自分のタブを閉じるときはindexを省く（current tabが閉じる）
 - タブ一覧にはユーザーの実タブが全て見える。読み取った内容を無関係な文脈で持ち出さない
+
+## 自動化Chromeでのログイン（browser-login）
+
+ログイン画面が出たら、ユーザーにVNCでのログインを頼む前に `bin/browser-login` を使う。ヘルパーが1Passwordの専用vault（`Agent Automation`）の値を入力欄に入れ、エージェントには状態だけを返す。エージェントはID・パスワード・TOTP・秘密鍵を受け取らないので、`browser_type` や `browser_fill_form` に値を書かない。
+
+1. 自分のタブで、titleの末尾に目印を付ける（目印は英数字・`-`・`_` の4〜64文字。ほかのセッションと重ならない値にする）
+
+   ```js
+   // browser_evaluate
+   () => { document.title += ' [browser-login:<目印>]' }
+   ```
+
+2. ヘルパーを背景で起動する（Bashの `run_in_background`）。項目IDは `browser-login items`（専用vaultのLogin項目のID・題・URLだけを出す）で調べる。サービスアカウントのトークンが無いマシンでは使えない
+
+   ```sh
+   ~/.claude/bin/browser-login login --tab-mark <目印> --item <項目ID> [--timeout 120]
+   ```
+
+3. 画面の操作（次へ・ログイン・パスキーでログイン のクリック）は自分で行う。ヘルパーは、ID・パスワード・TOTPの欄が出るたびに1回ずつ値を入れ、パスキーの要求には仮想認証器で応答する。状態は標準出力に1行1つのJSONで出る
+4. 画面でログインの完了を確認したら、`browser-login stop --tab-mark <目印>` で終了させる。パスキーで認証したときと時間切れのときは、ヘルパーが自分で終了する
+
+状態と、そのときにすること:
+
+- `filled`（`field` が `username` / `password` / `totp`）: 値を入れた。次のボタンを押す
+- `passkey-ready` / `passkey-asserted`: このマシン用のパスキーを入れた / 認証した
+- `origin-mismatch`: 入力欄のオリジンが項目のURLと一致しないので入れなかった。正しいサイトなら、ユーザーに項目のURLの追加を頼む
+- `fill-skipped`: 欄を見つけたが入力の直前に確認できなかった
+- `already-running` / `busy`: 同じタブで別のヘルパーが動いている / このマシンで同じパスキーを使うログインが動いている。終わるのを待つ
+- `tab-not-found` / `tab-ambiguous`: 目印の付いたタブが無い / 2つ以上ある
+- `token-missing` / `token-permissions` / `item-not-found` / `rate-limited`: ユーザーに伝えて止まる。再試行しない
+- `timeout`: 入れた欄は `filled` に出る。メールやSMSの確認コード、CAPTCHA、端末の管理状態を確認するSSOで止まっているなら、ユーザーに頼む
+
+パスキーはマシンごとに自動化専用のものを登録する（1Passwordに保存したパスキーは秘密鍵を書き出せないため）。登録は手元のMacで、ユーザー本人の `op` を使って行う（1Passwordの承認が出る）。
+
+```sh
+~/.claude/bin/browser-login enroll-passkey --tab-mark <目印> --item <項目ID> --for-host <マシンのLocalHostName>
+```
+
+起動したらサイトのパスキー追加の操作をする。トークンを置いたマシンの台数分、`--for-host` を変えて繰り返す。マシン名は各マシンの `scutil --get LocalHostName` の値。
 
 ## playwrightとchrome-devtoolsの使い分け
 

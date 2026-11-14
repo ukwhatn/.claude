@@ -11,7 +11,7 @@ Slack のアプリ連携を認可できないワークスペースで、ユー�
 
 ## 前提
 
-- playwright-mcp の常駐サーバ（`context/browser-automation.md`）が動いていて、その Chrome で対象ワークスペースにログイン済みであること。ログインはユーザーが常駐 Chrome のウィンドウで行う（エージェントは代行しない）
+- playwright-mcp の常駐サーバ（`context/browser-automation.md`）が動いていて、その Chrome で対象ワークスペースにログイン済みであること。未ログインなら、専用 vault にそのワークスペースの Login 項目があるときは `browser-login` で入る（手順は `context/browser-automation.md`「自動化Chromeでのログイン」）。項目が無いとき、メールの確認コードや SSO で止まったときは、ユーザーにログインを頼む
 - ワークスペースの対応表 `~/.claude/local/slack-workspaces.json`（git 管理外）に登録してあること:
 
 ```json
@@ -23,7 +23,7 @@ Slack のアプリ連携を認可できないワークスペースで、ユー�
 - `home`: 開いて既読になっても困らない会話（Slackbot か自分の DM）の ID。Web クライアントはどの URL から入っても最後に見た会話を開くので、channels・search はここを起点にする
 - 未登録なら、ユーザーに Slackbot DM を開いた URL を貼ってもらい、そこから `team` と `home` を書く
 
-完了基準: `slack_browser.py channels --ws <domain>` がチャンネルの配列を返す。`クライアントが開かない` が返ったら未ログインかセッション切れなので、ユーザーに常駐 Chrome でのログインを頼んで止まる。
+完了基準: `slack_browser.py channels --ws <domain>` がチャンネルの配列を返す。`クライアントが開かない` が返ったら未ログインかセッション切れなので、上の前提の手順でログインしてから再実行する。
 
 ## コマンド
 

@@ -1,0 +1,619 @@
+#!/usr/bin/env -S uv run --quiet --script
+# /// script
+# requires-python = ">=3.11"
+# dependencies = [
+#   "websocket-client>=1.7",
+# ]
+# ///
+"""自動化 Chrome のタブに CDP で常駐し、1Password の専用 vault の値でログインの入力欄を埋めるヘルパー。
+
+エージェントは画面の操作（次へ・ログイン・パスキーでログイン のクリック）を自分で行い、値はこのヘルパーが入れる。
+エージェントが受け取るのは状態（JSON Lines）だけで、ID・パスワード・TOTP・秘密鍵は受け取らない。
+
+使い方:
+  1. エージェントが自分のタブの title の末尾に目印を付ける（playwright の browser_evaluate で
+     `() => { document.title += ' [browser-login:<目印>]' }`）。目印は英数字・`-`・`_` の4〜64文字
+  2. browser-login login --tab-mark <目印> --item <項目ID> [--timeout 120]   を背景で起動する
+     （項目ID は browser-login items で調べる）
+  3. ログインの完了を画面で確認したら  browser-login stop --tab-mark <目印>
+  パスキーの登録（手元の Mac で、本人の op を使う）:
+     browser-login enroll-passkey --tab-mark <目印> --item <項目ID> --for-host <マシン名>
+  マシン名は `scutil --get LocalHostName` の値。
+
+安全:
+- 値を入れるのは、入力欄があるフレームのオリジンが項目の URL のオリジンと一致し、かつ HTTPS か localhost のときだけ。
+- 各種類の欄（username / password / totp）には1回だけ入れる。失敗しても繰り返さない（アカウントロックを避けるため）。
+- サービスアカウントのトークンは ~/.config/op/agent-automation-token（他人が読めない権限）から読み、op の子プロセスの環境変数にだけ渡す。
+- パスキーはマシンごとに別の資格情報を使い、マシンの中では資格情報ごとにロックを取ってカウンターを単調に増やす。
+"""
+
+from __future__ import annotations
+
+import argparse
+import collections
+import contextlib
+import dataclasses
+import fcntl
+import hashlib
+import json
+import os
+import re
+import signal
+import socket
+import subprocess
+import sys
+import time
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+VAULT = "Agent Automation"
+TOKEN_FILE = Path.home() / ".config/op/agent-automation-token"
+STATE_DIR = Path.home() / ".local/state/browser-login"
+CDP_PORT = int(os.environ.get("PLAYWRIGHT_MCP_CDP_PORT", "9223"))
+MARK_RE = re.compile(r"^[A-Za-z0-9_-]{4,64}$")
+POLL_SECONDS = 0.5
+TOTP_PERIOD = 30
+TOTP_MIN_REMAINING = 3
+
+
+class HelperError(Exception):
+    """状態名（status）を持つ終了理由。メッセージに秘密の値を入れない。"""
+
+    def __init__(self, status: str, detail: str = ""):
+        super().__init__(f"{status}: {detail}")
+        self.status = status
+        self.detail = detail
+
+
+def emit(status: str, **detail: object) -> None:
+    print(json.dumps({"status": status, **detail}, ensure_ascii=False), flush=True)
+
+
+def mark_suffix(mark: str) -> str:
+    return f" [browser-login:{mark}]"
+
+
+def local_host_name() -> str:
+    return subprocess.run(
+        ["scutil", "--get", "LocalHostName"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+
+
+def secure_origin(url: str) -> str | None:
+    """フォームを埋めてよいオリジン（HTTPS か localhost）なら scheme://host[:port] を返す。"""
+    p = urllib.parse.urlsplit(url)
+    if not p.hostname:
+        return None
+    if p.scheme == "https" or (p.scheme == "http" and p.hostname in ("localhost", "127.0.0.1")):
+        return f"{p.scheme}://{p.netloc}"
+    return None
+
+
+# --- 1Password -------------------------------------------------------------
+
+
+@dataclasses.dataclass(frozen=True)
+class LoginItem:
+    username: str | None
+    password: str | None
+    has_totp: bool
+    origins: frozenset[str]
+
+
+class Vault:
+    """op CLI の呼び出し。token=None なら本人の op（デスクトップアプリの承認）を使う。"""
+
+    def __init__(self, token: str | None):
+        env = dict(os.environ)
+        env.pop("OP_SERVICE_ACCOUNT_TOKEN", None)
+        if token is not None:
+            env["OP_SERVICE_ACCOUNT_TOKEN"] = token
+        self._env = env
+
+    @staticmethod
+    def from_token_file(path: Path = TOKEN_FILE) -> Vault:
+        try:
+            st = path.stat()
+        except FileNotFoundError:
+            raise HelperError("token-missing", str(path))
+        if st.st_mode & 0o077:
+            raise HelperError("token-permissions", f"{path} は権限600にする")
+        return Vault(path.read_text().strip())
+
+    def _run(self, args: list[str], stdin: str | None = None) -> str:
+        r = subprocess.run(
+            ["op", *args, "--vault", VAULT], input=stdin, capture_output=True, text=True, env=self._env
+        )
+        if r.returncode == 0:
+            return r.stdout
+        err = (r.stderr.strip().splitlines() or ["(no stderr)"])[0][:300]
+        if re.search(r"rate.?limit|too many requests", err, re.I):
+            raise HelperError("rate-limited", err)
+        if re.search(r"isn't an item|no item found|not found", err, re.I):
+            raise HelperError("item-not-found", err)
+        raise HelperError("op-error", err)
+
+    def login_item(self, item_id: str) -> LoginItem:
+        data = json.loads(self._run(["item", "get", item_id, "--format", "json"]))
+        fields = data.get("fields") or []
+        by_purpose = {f.get("purpose"): f.get("value") for f in fields if f.get("purpose")}
+        origins = frozenset(o for u in data.get("urls") or [] if (o := secure_origin(u.get("href", ""))))
+        return LoginItem(
+            username=by_purpose.get("USERNAME") or None,
+            password=by_purpose.get("PASSWORD") or None,
+            has_totp=any(f.get("type") == "OTP" for f in fields),
+            origins=origins,
+        )
+
+    def list_items(self) -> list[dict]:
+        data = json.loads(self._run(["item", "list", "--format", "json"]))
+        return [{"id": d["id"], "title": d.get("title"), "urls": [u.get("href") for u in d.get("urls") or []]}
+                for d in data if d.get("category") == "LOGIN"]
+
+    def totp(self, item_id: str) -> str:
+        return self._run(["item", "get", item_id, "--otp"]).strip()
+
+    @staticmethod
+    def passkey_title(item_id: str, host: str) -> str:
+        return f"browser-login passkey {item_id} {host}"
+
+    def passkey(self, item_id: str, host: str) -> dict | None:
+        try:
+            data = json.loads(self._run(["item", "get", self.passkey_title(item_id, host), "--format", "json"]))
+        except HelperError as e:
+            if e.status == "item-not-found":
+                return None
+            raise
+        for f in data.get("fields") or []:
+            if f.get("label") == "credential":
+                return json.loads(f["value"])
+        raise HelperError("op-error", "パスキーの項目に credential の欄が無い")
+
+    def save_passkey(self, item_id: str, host: str, credential: dict) -> None:
+        template = {
+            "title": self.passkey_title(item_id, host),
+            "category": "SECURE_NOTE",
+            "tags": ["browser-login"],
+            "fields": [
+                {"id": "credential", "type": "CONCEALED", "label": "credential", "value": json.dumps(credential)},
+                {"id": "login_item", "type": "STRING", "label": "login_item", "value": item_id},
+                {"id": "host", "type": "STRING", "label": "host", "value": host},
+            ],
+        }
+        self._run(["item", "create", "-"], stdin=json.dumps(template))
+
+
+# --- ロックと状態ファイル ------------------------------------------------------
+
+
+def _key(s: str) -> str:
+    return hashlib.sha256(s.encode()).hexdigest()[:16]
+
+
+@contextlib.contextmanager
+def exclusive_lock(name: str, busy_status: str):
+    """プロセスが落ちると OS が外すロック。取れなければ busy_status で終了する。"""
+    STATE_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+    fd = os.open(STATE_DIR / f"{name}.lock", os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            raise HelperError(busy_status)
+        yield
+    finally:
+        os.close(fd)
+
+
+def _write_atomic(path: Path, text: str) -> None:
+    tmp = path.with_name(path.name + f".{os.getpid()}.tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        f.write(text)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
+class SignCounter:
+    """このマシンでこの資格情報に次に入れる signCount。呼び出し側がロックを持っている前提。"""
+
+    def __init__(self, credential_id: str):
+        self._path = STATE_DIR / f"passkey-{_key(credential_id)}.json"
+
+    def next_value(self, now: float) -> int:
+        saved = 0
+        with contextlib.suppress(FileNotFoundError, ValueError, KeyError):
+            saved = int(json.loads(self._path.read_text())["next"])
+        # 保存値を失っても下がらないよう、現在の UNIX 秒を下限にする
+        return max(saved, int(now))
+
+    def save(self, value: int) -> None:
+        _write_atomic(self._path, json.dumps({"next": value}))
+
+
+def run_file(mark: str) -> Path:
+    return STATE_DIR / f"run-{_key(mark)}.json"
+
+
+# --- CDP ------------------------------------------------------------------
+
+
+class Cdp:
+    """1つのタブへの同期 CDP 接続。応答を待つ間に届いたイベントは溜めておく。"""
+
+    def __init__(self, ws_url: str):
+        import websocket  # websocket-client
+
+        # suppress_origin: CDP は Origin ヘッダ付きの WebSocket を 403 で弾く
+        self._ws = websocket.create_connection(ws_url, timeout=30, suppress_origin=True)
+        self._id = 0
+        self._events: collections.deque[dict] = collections.deque()
+
+    def send(self, method: str, params: dict | None = None, session: str | None = None) -> dict:
+        import websocket
+
+        self._id += 1
+        msg = {"id": self._id, "method": method, "params": params or {}}
+        if session:
+            msg["sessionId"] = session
+        try:
+            self._ws.settimeout(30)
+            self._ws.send(json.dumps(msg))
+            while True:
+                m = json.loads(self._ws.recv())
+                if m.get("id") == self._id:
+                    break
+                if "method" in m:
+                    self._events.append(m)
+        except (websocket.WebSocketException, OSError):
+            raise HelperError("tab-closed")
+        if "error" in m:
+            raise HelperError("cdp-error", f"{method}: {m['error'].get('message')}")
+        return m["result"]
+
+    def next_event(self, timeout: float) -> dict | None:
+        import websocket
+
+        if self._events:
+            return self._events.popleft()
+        try:
+            self._ws.settimeout(timeout)
+            m = json.loads(self._ws.recv())
+        except websocket.WebSocketTimeoutException:
+            return None
+        except (websocket.WebSocketException, OSError):
+            raise HelperError("tab-closed")
+        return m if "method" in m else None
+
+    def close(self) -> None:
+        with contextlib.suppress(Exception):
+            self._ws.close()
+
+
+def find_tab(mark: str) -> dict:
+    with urllib.request.urlopen(f"http://127.0.0.1:{CDP_PORT}/json/list", timeout=5) as r:
+        targets = json.load(r)
+    hits = [t for t in targets if t.get("type") == "page" and t.get("title", "").endswith(mark_suffix(mark))]
+    if len(hits) != 1:
+        raise HelperError("tab-not-found" if not hits else "tab-ambiguous", f"{len(hits)} tabs")
+    return hits[0]
+
+
+def clear_mark(cdp: Cdp, mark: str) -> None:
+    suffix = json.dumps(mark_suffix(mark))
+    cdp.send("Runtime.evaluate", {
+        "expression": f"if (document.title.endsWith({suffix})) document.title = document.title.slice(0, -{suffix}.length)"
+    })
+
+
+# 入力欄の判定と focus。引数 kind が null なら見えている欄の種類を返し、kind を渡すとその欄を focus して選択する。
+FIELD_JS = r"""
+(kind) => {
+  const visible = el => {
+    if (el.disabled || el.readOnly) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return false;
+    const s = getComputedStyle(el);
+    return s.visibility !== 'hidden' && s.display !== 'none' && s.opacity !== '0';
+  };
+  const inputs = [...document.querySelectorAll('input')].filter(visible);
+  const hasPassword = scope => [...(scope || document).querySelectorAll('input[type=password]')].some(visible);
+  const kindOf = el => {
+    const t = (el.getAttribute('type') || 'text').toLowerCase();
+    const ac = (el.getAttribute('autocomplete') || '').toLowerCase().split(/\s+/);
+    const words = [el.name, el.id, el.getAttribute('aria-label'), el.placeholder].join(' ').toLowerCase();
+    if (t === 'password') return ac.includes('new-password') ? null : 'password';
+    if (!['text', 'email', 'tel', 'number'].includes(t)) return null;
+    if (ac.includes('one-time-code') || /\b(otp|totp|2fa|mfa)\b|one.?time|verification.?code|auth(entication)?.?code|security.?code/.test(words)) return 'totp';
+    if (ac.includes('username') || ac.includes('email') || t === 'email') return 'username';
+    if (/user|email|login|account|identifier/.test(words) && hasPassword(el.form)) return 'username';
+    return null;
+  };
+  if (kind === null) return { origin: location.origin, kinds: [...new Set(inputs.map(kindOf).filter(Boolean))] };
+  const el = inputs.find(e => kindOf(e) === kind);
+  if (!el) return { origin: location.origin, focused: false };
+  el.focus();
+  el.select();
+  return { origin: location.origin, focused: document.activeElement === el };
+}
+"""
+
+
+class TabSession:
+    """タブとその iframe（別プロセスのものを含む）の実行コンテキストを追跡する。"""
+
+    def __init__(self, cdp: Cdp):
+        self.cdp = cdp
+        self.contexts: set[tuple[str | None, int]] = set()
+
+    def start(self) -> None:
+        self.cdp.send("Target.setAutoAttach", {"autoAttach": True, "waitForDebuggerOnStart": False, "flatten": True})
+        self.cdp.send("Runtime.enable")
+
+    def handle(self, ev: dict) -> None:
+        method, params, session = ev["method"], ev.get("params", {}), ev.get("sessionId")
+        if method == "Target.attachedToTarget":
+            sid = params["sessionId"]
+            with contextlib.suppress(HelperError):
+                self.cdp.send("Target.setAutoAttach", {"autoAttach": True, "waitForDebuggerOnStart": False, "flatten": True}, sid)
+                self.cdp.send("Runtime.enable", None, sid)
+        elif method == "Target.detachedFromTarget":
+            sid = params.get("sessionId")
+            self.contexts = {k for k in self.contexts if k[0] != sid}
+        elif method == "Runtime.executionContextCreated":
+            ctx = params["context"]
+            if (ctx.get("auxData") or {}).get("isDefault"):
+                self.contexts.add((session, ctx["id"]))
+        elif method == "Runtime.executionContextDestroyed":
+            self.contexts.discard((session, params["executionContextId"]))
+        elif method == "Runtime.executionContextsCleared":
+            self.contexts = {k for k in self.contexts if k[0] != session}
+
+    def call(self, key: tuple[str | None, int], kind: str | None) -> dict | None:
+        session, ctx_id = key
+        try:
+            r = self.cdp.send("Runtime.evaluate", {
+                "expression": f"({FIELD_JS})({json.dumps(kind)})", "contextId": ctx_id, "returnByValue": True,
+            }, session)
+        except HelperError as e:
+            if e.status == "tab-closed":
+                raise
+            self.contexts.discard(key)
+            return None
+        return (r.get("result") or {}).get("value")
+
+
+def wait_for_totp_window(now: float) -> float:
+    """コードの残り時間が短いときは、次の周期まで待つ秒数を返す。"""
+    remaining = TOTP_PERIOD - (now % TOTP_PERIOD)
+    return remaining if remaining < TOTP_MIN_REMAINING else 0.0
+
+
+# --- login ----------------------------------------------------------------
+
+
+class Stop(Exception):
+    pass
+
+
+def _on_signal(signum, frame):
+    raise Stop()
+
+
+AUTHENTICATOR = {
+    "protocol": "ctap2", "transport": "internal", "hasResidentKey": True, "hasUserVerification": True,
+    "isUserVerified": True, "automaticPresenceSimulation": True,
+}
+
+
+def cmd_login(args: argparse.Namespace) -> None:
+    vault = Vault.from_token_file()
+    tab = find_tab(args.tab_mark)
+    with exclusive_lock(f"target-{_key(tab['id'])}", "already-running"):
+        STATE_DIR.mkdir(parents=True, exist_ok=True, mode=0o700)
+        _write_atomic(run_file(args.tab_mark), json.dumps({"pid": os.getpid(), "target_id": tab["id"]}))
+        try:
+            item = vault.login_item(args.item)
+            if not item.origins:
+                raise HelperError("item-has-no-secure-url", "項目に HTTPS か localhost の URL が無い")
+            cdp = Cdp(tab["webSocketDebuggerUrl"])
+            try:
+                clear_mark(cdp, args.tab_mark)
+                with contextlib.ExitStack() as stack:
+                    passkey = vault.passkey(args.item, local_host_name())
+                    if passkey is not None:
+                        stack.enter_context(exclusive_lock(f"passkey-{_key(passkey['credentialId'])}", "busy"))
+                    _login_loop(cdp, vault, args, item, passkey)
+            finally:
+                cdp.close()
+        finally:
+            with contextlib.suppress(FileNotFoundError):
+                run_file(args.tab_mark).unlink()
+
+
+def _login_loop(cdp: Cdp, vault: Vault, args: argparse.Namespace, item: LoginItem, passkey: dict | None) -> None:
+    counter = None
+    if passkey is not None:
+        counter = SignCounter(passkey["credentialId"])
+        cdp.send("WebAuthn.enable", {"enableUI": False})
+        auth_id = cdp.send("WebAuthn.addVirtualAuthenticator", {"options": AUTHENTICATOR})["authenticatorId"]
+        value = counter.next_value(time.time())
+        # 先に保存値を進める。認証の直後に落ちても、次回の値がサイトの記録以下にならない
+        counter.save(value + 1)
+        cdp.send("WebAuthn.addCredential", {"authenticatorId": auth_id, "credential": {**passkey, "signCount": value}})
+        emit("passkey-ready")
+
+    available = {"username": item.username is not None, "password": item.password is not None, "totp": item.has_totp}
+    filled: set[str] = set()
+    skipped: set[str] = set()
+    reported_mismatch: set[str] = set()
+    tab_session = TabSession(cdp)
+    tab_session.start()
+    deadline = time.monotonic() + args.timeout
+    next_scan = 0.0
+    while time.monotonic() < deadline:
+        ev = cdp.next_event(POLL_SECONDS)
+        if ev is not None:
+            if ev["method"] == "WebAuthn.credentialAsserted" and counter is not None:
+                counter.save(int(ev["params"]["credential"]["signCount"]))
+                emit("passkey-asserted")
+                return
+            if ev["method"] == "Inspector.detached":
+                raise HelperError("tab-closed")
+            tab_session.handle(ev)
+            continue
+        if time.monotonic() < next_scan:
+            continue
+        next_scan = time.monotonic() + POLL_SECONDS
+        for key in list(tab_session.contexts):
+            found = tab_session.call(key, None)
+            if not found:
+                continue
+            for kind in found["kinds"]:
+                if kind in filled or not available[kind]:
+                    continue
+                if found["origin"] not in item.origins:
+                    if found["origin"] not in reported_mismatch:
+                        reported_mismatch.add(found["origin"])
+                        emit("origin-mismatch", origin=found["origin"], field=kind)
+                    continue
+                if _fill(cdp, tab_session, key, kind, vault, args.item, item):
+                    filled.add(kind)
+                elif kind not in skipped:
+                    skipped.add(kind)
+                    emit("fill-skipped", field=kind)
+    emit("timeout", filled=sorted(filled))
+
+
+def _fill(cdp: Cdp, tab_session: TabSession, key: tuple[str | None, int], kind: str,
+          vault: Vault, item_id: str, item: LoginItem) -> bool:
+    if kind == "totp":
+        time.sleep(wait_for_totp_window(time.time()))
+        value = vault.totp(item_id)
+    else:
+        value = item.username if kind == "username" else item.password
+    focused = tab_session.call(key, kind)
+    # focus した時点のオリジンをもう一度確認してから入力する
+    if not focused or not focused.get("focused") or focused["origin"] not in item.origins:
+        return False
+    cdp.send("Input.insertText", {"text": value}, key[0])
+    emit("filled", field=kind, origin=focused["origin"])
+    return True
+
+
+# --- items ----------------------------------------------------------------
+
+
+def cmd_items(args: argparse.Namespace) -> None:
+    for item in Vault.from_token_file().list_items():
+        emit("item", **item)
+
+
+# --- stop -----------------------------------------------------------------
+
+
+def cmd_stop(args: argparse.Namespace) -> None:
+    try:
+        info = json.loads(run_file(args.tab_mark).read_text())
+    except FileNotFoundError:
+        emit("not-running")
+        return
+    pid = int(info["pid"])
+    cmdline = subprocess.run(["ps", "-o", "command=", "-p", str(pid)], capture_output=True, text=True).stdout
+    if "browser-login" not in cmdline:
+        run_file(args.tab_mark).unlink(missing_ok=True)
+        emit("not-running")
+        return
+    os.kill(pid, signal.SIGTERM)
+    for _ in range(50):
+        if subprocess.run(["ps", "-p", str(pid)], capture_output=True).returncode != 0:
+            emit("stopped")
+            return
+        time.sleep(0.2)
+    raise HelperError("stop-timeout", f"pid {pid}")
+
+
+# --- enroll-passkey ---------------------------------------------------------
+
+
+def _rp_matches(rp_id: str, origins: frozenset[str]) -> bool:
+    hosts = {urllib.parse.urlsplit(o).hostname or "" for o in origins}
+    return any(h == rp_id or h.endswith("." + rp_id) for h in hosts)
+
+
+def cmd_enroll(args: argparse.Namespace) -> None:
+    vault = Vault(token=None)
+    item = vault.login_item(args.item)
+    if vault.passkey(args.item, args.for_host) is not None:
+        raise HelperError("passkey-exists", Vault.passkey_title(args.item, args.for_host))
+    tab = find_tab(args.tab_mark)
+    with exclusive_lock(f"target-{_key(tab['id'])}", "already-running"):
+        cdp = Cdp(tab["webSocketDebuggerUrl"])
+        try:
+            clear_mark(cdp, args.tab_mark)
+            cdp.send("WebAuthn.enable", {"enableUI": False})
+            auth_id = cdp.send("WebAuthn.addVirtualAuthenticator", {"options": AUTHENTICATOR})["authenticatorId"]
+            emit("waiting-for-registration")
+            deadline = time.monotonic() + args.timeout
+            while time.monotonic() < deadline:
+                ev = cdp.next_event(POLL_SECONDS)
+                if ev is None or ev["method"] != "WebAuthn.credentialAdded":
+                    continue
+                cred = cdp.send("WebAuthn.getCredentials", {"authenticatorId": auth_id})["credentials"][0]
+                if not _rp_matches(cred["rpId"], item.origins):
+                    raise HelperError("rp-mismatch", cred["rpId"])
+                keep = ("credentialId", "isResidentCredential", "rpId", "privateKey", "userHandle", "userName")
+                vault.save_passkey(args.item, args.for_host, {k: cred[k] for k in keep if k in cred})
+                emit("passkey-saved", rp_id=cred["rpId"], host=args.for_host)
+                return
+            emit("timeout")
+        finally:
+            cdp.close()
+
+
+# --- main -----------------------------------------------------------------
+
+
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    p = argparse.ArgumentParser(prog="browser-login", description="自動化 Chrome のログインの入力欄を 1Password の値で埋める")
+    sub = p.add_subparsers(dest="command", required=True)
+    login = sub.add_parser("login", help="タブに常駐し、出てきた入力欄を埋める")
+    login.add_argument("--tab-mark", required=True)
+    login.add_argument("--item", required=True, help="専用 vault の Login 項目の ID")
+    login.add_argument("--timeout", type=int, default=120)
+    sub.add_parser("items", help="専用 vault の Login 項目の ID・題・URL を出す（値は出さない）")
+    stop = sub.add_parser("stop", help="login で起動したヘルパーを終了させる")
+    stop.add_argument("--tab-mark", required=True)
+    enroll = sub.add_parser("enroll-passkey", help="自動化専用のパスキーを登録して専用 vault に保存する（手元の Mac で使う）")
+    enroll.add_argument("--tab-mark", required=True)
+    enroll.add_argument("--item", required=True)
+    enroll.add_argument("--for-host", required=True, help="このパスキーを使うマシンの LocalHostName")
+    enroll.add_argument("--timeout", type=int, default=180)
+    args = p.parse_args(argv)
+    if hasattr(args, "tab_mark") and not MARK_RE.match(args.tab_mark):
+        p.error("--tab-mark は英数字・-・_ の4〜64文字")
+    return args
+
+
+def main(argv: list[str]) -> int:
+    args = parse_args(argv)
+    signal.signal(signal.SIGTERM, _on_signal)
+    signal.signal(signal.SIGINT, _on_signal)
+    handlers = {"login": cmd_login, "items": cmd_items, "stop": cmd_stop, "enroll-passkey": cmd_enroll}
+    try:
+        handlers[args.command](args)
+    except Stop:
+        emit("stopped")
+    except HelperError as e:
+        emit(e.status, **({"detail": e.detail} if e.detail else {}))
+        return 1
+    except (urllib.error.URLError, socket.timeout) as e:
+        emit("cdp-unreachable", detail=str(e)[:200])
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
