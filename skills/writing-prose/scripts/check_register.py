@@ -77,9 +77,9 @@ class Finding:
     excerpt: str
 
 
-def load_vocab_table(path: str = PROSE_MD) -> dict[str, str]:
+def load_vocab_table() -> dict[str, str]:
     """prose.md §2-5 の表を {左列: 右列} で返す。"""
-    with open(path, encoding="utf-8") as f:
+    with open(PROSE_MD, encoding="utf-8") as f:
         lines = f.read().split("\n")
     start = next(i for i, line in enumerate(lines) if line.startswith(TABLE_HEADING))
     rows: dict[str, str] = {}

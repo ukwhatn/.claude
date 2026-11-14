@@ -7,7 +7,9 @@ skills/writing-prose/scripts/check_register.py に任せ、ここは渡す経路
 
 - PreToolUse（外へ出す送信・taskboard への提示）: 本文に該当があれば1回だけ deny して該当を返す。
   同じ本文の2回目は通す（引用として残す語や、媒体のテンプレートが定める表があるため）。
-  送信の判定は skill-gate.py と同じで、MCP は入力の文字列を入れ子まで、gh は本文の引数と本文のファイルを読む
+  送信の判定は skill-gate.py の MCP の一覧と同じで、入力の文字列を入れ子まで読む。Bash の gh は見ない
+  （シェルのコマンドから本文を取り出すとパスと cd の解釈を抱えるため。gh の投稿は skill-gate.py が
+  writing-prose の発動を強制し、writing-prose の手順が check_register.py を実行する）
 - Stop: 直前の返答を検査し、該当を状態ファイルに書く（返答のたびに止めると、書き直しで返答が二重になるため）
 - UserPromptSubmit: 前の返答に該当があったときだけ、1行の注意を additionalContext で入れる
 
@@ -21,7 +23,6 @@ import importlib.util
 import json
 import os
 import re
-import shlex
 import sys
 import tempfile
 from collections import Counter
@@ -30,10 +31,6 @@ CONFIG_DIR = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claud
 CHECKER = os.path.join(CONFIG_DIR, "skills", "writing-prose", "scripts", "check_register.py")
 SKILL_GATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "skill-gate.py")
 PRESENT_MCP = re.compile(r"^mcp__taskboard__(doc_publish|ask_user|review_request)$")
-# gh の本文を渡す引数。gh pr の -F は本文のファイル、gh api の -F は key=value のフィールド
-GH_TEXT_FLAGS = ("--body", "-b", "--title", "-t")
-GH_FILE_FLAGS = ("--body-file", "-F")
-GH_FIELD_FLAGS = ("-f", "--raw-field", "-F", "--field")
 MAX_LISTED = 15
 
 
@@ -62,62 +59,27 @@ def read_text(path: str, cwd: str) -> str:
         return ""
 
 
-def strings_in(value, skip_key: str = "path") -> list[str]:
+def strings_in(value) -> list[str]:
     """入力の文字列を入れ子（ask_user の questions[].options[] など）まで集める。
     キーは整列して読む（同じ入力をキーの順序を変えて再実行しても、同じ本文として扱うため）。"""
     if isinstance(value, str):
         return [value]
     if isinstance(value, dict):
-        return [s for key, item in sorted(value.items()) if key != skip_key for s in strings_in(item)]
+        return [s for key, item in sorted(value.items()) if key != "path" for s in strings_in(item)]
     if isinstance(value, list):
         return [s for item in value for s in strings_in(item)]
     return []
 
 
-def gh_texts(command: str, cwd: str) -> list[str]:
-    try:
-        words = shlex.split(command)
-    except ValueError:
-        return []
-    texts = []
-    for flag, value in zip(words, words[1:]):
-        if flag in GH_FIELD_FLAGS and value.startswith("body="):
-            body = value[len("body="):]
-            texts.append(read_text(body[1:], cwd) if flag in ("-F", "--field") and body.startswith("@") else body)
-        elif flag in GH_FILE_FLAGS and "=" not in value and value != "-":
-            texts.append(read_text(value, cwd))
-        elif flag in GH_TEXT_FLAGS:
-            texts.append(value)
-    for word in (w for w in words if "=" in w):
-        name, _, value = word.partition("=")
-        if name in ("--body", "--title"):
-            texts.append(value)
-        elif name == "--body-file":
-            texts.append(read_text(value, cwd))
-    return texts
-
-
 def outgoing_text(data: dict, skill_gate) -> str | None:
     tool_name = data.get("tool_name") or ""
     tool_input = data.get("tool_input") or {}
-    if tool_name == "Bash":
-        if not skill_gate.sends_text_outward(tool_name, tool_input, data):
-            return None
-        command = tool_input.get("command") or ""
-        send = skill_gate.OUTWARD_GH.search(command) or skill_gate.OUTWARD_GH_API.search(command)
-        # 本文のファイルの相対パスは、送信の前にある最後の cd から解決する（skill-gate.py の書き込み先と同じ）
-        cwd = data.get("cwd") or os.getcwd()
-        cd_paths = [cd.group(1) for cd in skill_gate.BASH_CD.finditer(command) if cd.start() < send.start()]
-        if cd_paths:
-            cwd = os.path.join(cwd, os.path.expanduser(cd_paths[-1]))
-        texts = gh_texts(command, cwd)
-    elif skill_gate.OUTWARD_MCP.match(tool_name) or PRESENT_MCP.match(tool_name):
-        texts = strings_in(tool_input)
-        path = tool_input.get("path")
-        if tool_name.endswith("__doc_publish") and isinstance(path, str):
-            texts.append(read_text(path, data.get("cwd") or os.getcwd()))
-    else:
+    if not (skill_gate.OUTWARD_MCP.match(tool_name) or PRESENT_MCP.match(tool_name)):
         return None
+    texts = strings_in(tool_input)
+    path = tool_input.get("path")
+    if tool_name.endswith("__doc_publish") and isinstance(path, str):
+        texts.append(read_text(path, data.get("cwd") or os.getcwd()))
     text = "\n\n".join(t for t in texts if t.strip())
     return text or None
 
@@ -129,7 +91,7 @@ def state_dir() -> str:
 
 
 def state_path(session_id: str, suffix: str) -> str:
-    safe = re.sub(r"[^A-Za-z0-9_-]", "_", session_id) or "unknown"
+    safe = re.sub(r"[^A-Za-z0-9_-]", "_", session_id)
     return os.path.join(state_dir(), f"{safe}.{suffix}")
 
 

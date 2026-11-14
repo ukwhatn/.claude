@@ -47,7 +47,7 @@
         ]
       },
       {
-        "matcher": "Bash|mcp__taskboard__(doc_publish|ask_user|review_request)|mcp__slack.*|mcp__google-workspace__.*_draft|mcp__github.*|mcp__atlassian.*",
+        "matcher": "mcp__taskboard__(doc_publish|ask_user|review_request)|mcp__slack.*|mcp__google-workspace__.*_draft|mcp__github.*|mcp__atlassian.*",
         "hooks": [
           {
             "type": "command",
