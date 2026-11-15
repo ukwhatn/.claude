@@ -3,7 +3,7 @@
 # 冪等: 何度実行しても同じ状態に収束する。既存の LaunchAgent・MCP設定は上書きされる。
 #
 # やること:
-#   1. bin/*.sh, bin/*.py に実行権限を付与
+#   1. bin/*.sh, bin/*.py に実行権限を付与し、自動化専用の Chrome Beta が無ければ brew で入れる
 #   2. node バージョンが chrome-devtools-mcp の engines を満たすか確認（満たさなければ警告のみ）
 #   3. playwright-mcp-config.json（CDPポート指定）を生成
 #   4. LaunchAgent plist を実行環境から生成して配置・(再)ロード
@@ -32,6 +32,11 @@ log "対象ディレクトリ: $BIN_DIR"
 chmod +x "$BIN_DIR/playwright-mcp-server.sh" "$BIN_DIR/playwright-mcp-pin.py" \
   "$BIN_DIR/playwright-mcp-extensions.py" "$BIN_DIR/browser-login"
 command -v uv >/dev/null || die "uv が見つからない。拡張の導入と browser-login に必要"
+if [ ! -d "/Applications/Google Chrome Beta.app" ]; then
+  command -v brew >/dev/null || die "Chrome Beta が無く、brew も見つからない。Chrome Beta を入れてから再実行すること"
+  log "Chrome Beta を入れる（自動化専用。普段使いの Chrome と別アプリにするため）"
+  brew install --cask google-chrome@beta
+fi
 log "実行権限を付与した"
 
 # --- 2. node バージョン確認 --------------------------------------------

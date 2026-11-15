@@ -24,6 +24,8 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
 構成は「サーバ1本を常駐させ、各セッションはHTTPクライアントとして接続する」。playwright-mcpの場合:
 
 - 常駐: `~/.claude/bin/playwright-mcp-server.sh`（LaunchAgent。ラベルとログパスはセットアップスクリプトが決める）
+- 自動化専用Chromeは Chrome Beta で動かす（セットアップスクリプトが brew で入れる。無いマシンでは普段使いと同じChromeで動く）。macOSはアプリをbundle IDで1つに扱うので、普段使いと同じ `Google Chrome.app` で起動すると、Dockやリンクから開いたChromeが自動化側に吸われる
+  - 安定版で使っていたプロファイルをBetaで開くと、Betaはcookieを読めずに空にする。切り替えるときは、プロファイルの写しを安定版で開いてcookieをCDPで読み出し、Betaに書き込む。Googleアカウントのcookieは移しても再起動で消えるので、Googleにはログインし直す
 - 接続: MCP設定は `{"type":"http","url":"http://127.0.0.1:8931/mcp"}`
 - サーバ自身が `--user-data-dir`（自動化専用のuser-data-dir）でブラウザを起動し、`--shared-browser-context` で全クライアントに同一コンテキストを共有させる。起動フラグの追加は `--config` の `browser.launchOptions.args` で渡す
 - **自動化ドライバに普段使いのブラウザプロファイルを開かせない**。ドライバはブラウザ起動時に既定でモックの資格情報ストア（`--use-mock-keychain` / `--password-store=basic`）と `--disable-extensions` を付ける。OSキーチェーン由来の鍵で暗号化されたcookieとアカウントトークンは復号できなくなってcookieストアが再作成され、拡張は無効化されたうえで未参照ディレクトリが削除される。ブックマークと履歴は暗号化されていないため残るので、被害が部分的にしか見えず、プロファイルが壊れたことに気付きにくい

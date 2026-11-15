@@ -16,18 +16,23 @@ PORT="${PLAYWRIGHT_MCP_PORT:-8931}"
 HOST="${PLAYWRIGHT_MCP_HOST:-127.0.0.1}"
 # 普段使いのプロファイルは共有しない（自動化側の事故が業務プロファイルに波及するため）。
 # 自動化専用の user-data-dir を playwright に所有させ、普段使いブラウザとは別インスタンスで動かす。
+# Chrome Beta を使うのは、macOS がアプリを bundle ID で1つに扱うため。普段使いと同じ Google Chrome.app で
+# 起動すると、Dock やリンクから開いた Chrome が自動化側のインスタンスに吸われる。
 CHROME_PROFILE="${CHROME_PROFILE_DIR:-$HOME/Library/Application Support/Google/Chrome-automation}"
 NPX="${NPX_BIN:-$HOME/.local/share/mise/shims/npx}"
+# Chrome Beta が無いマシン（setup 未実行）では、普段使いと同じ Chrome で動かす
+BROWSER=chrome-beta
+[ -d "/Applications/Google Chrome Beta.app" ] || BROWSER=chrome
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
-log "starting (profile: $CHROME_PROFILE, port: $PORT)"
+log "starting (browser: $BROWSER, profile: $CHROME_PROFILE, port: $PORT)"
 
 "$NPX" -y @playwright/mcp@latest \
   --port "$PORT" \
   --host "$HOST" \
   --allowed-hosts "127.0.0.1:$PORT,localhost:$PORT,[::1]:$PORT" \
-  --browser chrome \
+  --browser "$BROWSER" \
   --user-data-dir "$CHROME_PROFILE" \
   --config "$(dirname "$0")/playwright-mcp-config.json" \
   --shared-browser-context &
