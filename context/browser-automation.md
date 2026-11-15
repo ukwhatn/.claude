@@ -46,7 +46,9 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
 
 ## 自動化Chromeでのログイン（browser-login）
 
-ログイン画面が出たら、ユーザーにVNCでのログインを頼む前に `bin/browser-login` を使う。ヘルパーが1Passwordの専用vault（`Agent Automation`）の値を入力欄に入れ、エージェントには状態だけを返す。エージェントはID・パスワード・TOTP・秘密鍵を受け取らないので、`browser_type` や `browser_fill_form` に値を書かない。
+ログイン画面が出たら、ユーザーにVNCでのログインを頼む前に `bin/browser-login` を使う。ヘルパーが1Passwordの専用vault（`Z_Automation`）の値を入力欄に入れ、エージェントには状態だけを返す。エージェントはID・パスワード・TOTP・秘密鍵を受け取らないので、`browser_type` や `browser_fill_form` に値を書かない。
+
+専用vaultには、自動化に使うサイトのLogin項目だけを、ユーザーが元のvaultからコピーして置く（サービスアカウントは組み込みのPersonal vaultを読めず、権限も作成後に変えられないため、読ませるのは専用vaultだけにしている）。コピーなので、元の項目でパスワードを変えたら専用vault側も更新する必要がある。ログインが失敗し続けるときは、ユーザーにコピーが古くないかを確認してもらう。
 
 1. 自分のタブで、titleの末尾に目印を付ける（目印は英数字・`-`・`_` の4〜64文字。ほかのセッションと重ならない値にする）
 
