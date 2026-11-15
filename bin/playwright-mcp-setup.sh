@@ -10,6 +10,7 @@
 #   5. ~/.claude.json の mcpServers.playwright / mcpServers.chrome-devtools を設定
 #   6. サーバの起動（自動化専用Chromeへのattach）を確認するまで待つ
 #   7. playwright-mcp-extensions.txt の拡張を自動化専用Chromeに入れて有効にする
+#      （このマシンだけの未パッケージ拡張は、ブラウザが起動するたびに playwright-mcp-pin.py が読み込む）
 #
 # やらないこと:
 #   - サイトへのログイン（エージェントが bin/browser-login で行う。context/browser-automation.md）
@@ -31,7 +32,8 @@ log "対象ディレクトリ: $BIN_DIR"
 # --- 1. 実行権限 -------------------------------------------------------
 chmod +x "$BIN_DIR/playwright-mcp-server.sh" "$BIN_DIR/playwright-mcp-pin.py" \
   "$BIN_DIR/playwright-mcp-extensions.py" "$BIN_DIR/browser-login"
-command -v uv >/dev/null || die "uv が見つからない。拡張の導入と browser-login に必要"
+UV_BIN="$(command -v uv || true)"
+[ -n "$UV_BIN" ] || die "uv が見つからない。拡張の導入と browser-login に必要"
 if [ ! -d "/Applications/Google Chrome Beta.app" ]; then
   command -v brew >/dev/null || die "Chrome Beta が無く、brew も見つからない。Chrome Beta を入れてから再実行すること"
   log "Chrome Beta を入れる（自動化専用。普段使いの Chrome と別アプリにするため）"
@@ -64,11 +66,12 @@ NPX_DIR="$(dirname "$NPX_BIN")"
 
 # --- 3. playwright-mcp-config.json（CDPポートの単一ソース）--------------
 # ignoreDefaultArgs: この2つが付いていると、Chrome は外部拡張の設定を読まず、拡張のダウンロードと更新もしない
+# --enable-unsafe-extension-debugging: 未パッケージ拡張を CDP の Extensions.loadUnpacked で読み込むのに必要
 cat > "$BIN_DIR/playwright-mcp-config.json" <<EOF
 {
   "browser": {
     "launchOptions": {
-      "args": ["--remote-debugging-port=${CDP_PORT}"],
+      "args": ["--remote-debugging-port=${CDP_PORT}", "--enable-unsafe-extension-debugging"],
       "ignoreDefaultArgs": ["--disable-default-apps", "--disable-background-networking"]
     }
   }
@@ -104,7 +107,7 @@ cat > "$PLIST_PATH" <<EOF
     <key>EnvironmentVariables</key>
     <dict>
         <key>PATH</key>
-        <string>${NPX_DIR}:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <string>${NPX_DIR}:$(dirname "$UV_BIN"):/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
         <key>PLAYWRIGHT_MCP_PORT</key>
         <string>${PORT}</string>
     </dict>

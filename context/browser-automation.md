@@ -32,6 +32,7 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
 - 自動化専用Chromeでは拡張が動く。playwright-mcpは `--disable-extensions` を既定の起動引数から外している
   - 拡張は `bin/playwright-mcp-extensions.txt` にChromeウェブストアのIDを書き、セットアップスクリプトで入れる。外部拡張の設定を置き、起動後に `chrome.management.setEnabled` で有効にするので、人の操作もVNCも使わない
   - playwright設定の `ignoreDefaultArgs` で `--disable-default-apps` と `--disable-background-networking` を外している。この2つが付いていると、Chromeは外部拡張の設定を読まず、拡張のダウンロードと更新もしない
+  - ストアに無い拡張（手元で開発している拡張など）は、そのマシンだけの一覧 `~/.claude/local/playwright-mcp-unpacked-extensions.txt`（git管理外）にディレクトリのパスを書く。ブランド版のChromeは `--load-extension` を受け付けないので、`--enable-unsafe-extension-debugging` を付けて起動し、CDPの `Extensions.loadUnpacked` で読み込む。読み込んだ拡張は再起動で消えるので、`bin/playwright-mcp-pin.py` がブラウザの起動を検知するたびに読み込む（最大で約1分遅れる）
   - 1Password拡張は入れない。解除した拡張は個人アカウント全体を読めるので、無認証のCDPポートに繋がるすべてのクライアントから読める状態になる。ページの `navigator.credentials` も置き換えるので、`browser-login` の仮想認証器より先にパスキーの要求を受け取る
 - 接続クライアントが0になるとブラウザが閉じられるため、常駐クライアント（`bin/playwright-mcp-pin.py`）が接続を1本保持し続けてブラウザを閉じさせない
 - 永続プロファイルは同時に1インスタンスからしか開けない。サーバ起動前にブラウザが起動しているとprofile lockで失敗する

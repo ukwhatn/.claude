@@ -5,15 +5,22 @@
 #   "websocket-client>=1.7",
 # ]
 # ///
-"""自動化専用 Chrome に、playwright-mcp-extensions.txt に並べた Chrome ウェブストアの拡張を入れる。
+"""自動化専用 Chrome に拡張を入れる。
 
-  playwright-mcp-extensions.py sync <user-data-dir>   # 一覧どおりに外部拡張の設定を置く（一覧から消した拡張は Chrome が外す）
-  playwright-mcp-extensions.py enable <CDP ポート>     # 起動後に、外部から入った拡張を有効にする
+  playwright-mcp-extensions.py sync <user-data-dir>        # 一覧どおりに外部拡張の設定を置く（一覧から消した拡張は Chrome が外す）
+  playwright-mcp-extensions.py enable <CDP ポート>          # 起動後に、外部から入った拡張を有効にする
+  playwright-mcp-extensions.py load-unpacked <CDP ポート>   # 起動中のブラウザに、このマシンの未パッケージ拡張を読み込む
 
+Chrome ウェブストアの拡張は playwright-mcp-extensions.txt（全マシン共通）に ID を書く。
 外部拡張の設定（<user-data-dir>/External Extensions/<ID>.json）で入った拡張は、Chrome が無効の状態で入れる。
 人が拡張の管理画面で有効にするのと同じ chrome.management.setEnabled を、chrome://extensions のページから呼ぶ。
 playwright の既定の起動引数のうち --disable-default-apps と --disable-background-networking が付いていると、
 Chrome は外部拡張の設定を読まない・ダウンロードしないので、playwright-mcp-config.json でこの2つを外しておく。
+
+ストアに無い拡張は、このマシンだけの一覧 ~/.claude/local/playwright-mcp-unpacked-extensions.txt（git 管理外）に
+ディレクトリのパスを書く。ブランド版の Chrome は --load-extension を受け付けないので、CDP の Extensions.loadUnpacked で
+読み込む（--enable-unsafe-extension-debugging が必要）。読み込んだ拡張はブラウザを再起動すると消えるため、
+playwright-mcp-pin.py がブラウザの起動を検知するたびに load-unpacked を呼ぶ。
 """
 
 from __future__ import annotations
@@ -26,6 +33,7 @@ import urllib.request
 from pathlib import Path
 
 LIST_FILE = Path(__file__).with_name("playwright-mcp-extensions.txt")
+UNPACKED_LIST_FILE = Path(__file__).resolve().parent.parent / "local" / "playwright-mcp-unpacked-extensions.txt"
 UPDATE_URL = "https://clients2.google.com/service/update2/crx"
 ID_RE = re.compile(r"^[a-p]{32}$")
 INSTALL_TIMEOUT = 120
@@ -108,12 +116,56 @@ def enable(port: int) -> int:
     return 1 if pending else 0
 
 
+def listed_unpacked_dirs() -> list[Path]:
+    if not UNPACKED_LIST_FILE.exists():
+        return []
+    dirs = []
+    for n, line in enumerate(UNPACKED_LIST_FILE.read_text().splitlines(), 1):
+        token = line.split("#", 1)[0].strip()
+        if not token:
+            continue
+        path = Path(token).expanduser()
+        if not (path / "manifest.json").is_file():
+            sys.exit(f"{UNPACKED_LIST_FILE}:{n}: manifest.json のあるディレクトリではない: {token}")
+        dirs.append(path)
+    return dirs
+
+
+def load_unpacked(port: int) -> int:
+    import websocket  # websocket-client
+
+    dirs = listed_unpacked_dirs()
+    if not dirs:
+        return 0
+    with urllib.request.urlopen(f"http://127.0.0.1:{port}/json/version", timeout=10) as r:
+        browser_ws_url = json.load(r)["webSocketDebuggerUrl"]
+    ws = websocket.create_connection(browser_ws_url, timeout=30, suppress_origin=True)
+    failed = 0
+    try:
+        for n, path in enumerate(dirs, 1):
+            ws.send(json.dumps({"id": n, "method": "Extensions.loadUnpacked", "params": {"path": str(path)}}))
+            while True:
+                msg = json.loads(ws.recv())
+                if msg.get("id") == n:
+                    break
+            if "error" in msg:
+                print(f"[extensions] 読み込めなかった: {path}（{msg['error'].get('message')}）")
+                failed += 1
+            else:
+                print(f"[extensions] 読み込んだ: {path}（{msg['result']['id']}）")
+    finally:
+        ws.close()
+    return 1 if failed else 0
+
+
 def main(argv: list[str]) -> int:
     if len(argv) == 2 and argv[0] == "sync":
         sync(Path(argv[1]))
         return 0
     if len(argv) == 2 and argv[0] == "enable":
         return enable(int(argv[1]))
+    if len(argv) == 2 and argv[0] == "load-unpacked":
+        return load_unpacked(int(argv[1]))
     sys.exit(__doc__)
 
 
