@@ -85,9 +85,22 @@ def secure_origin(url: str) -> str | None:
     p = urllib.parse.urlsplit(url)
     if not p.hostname:
         return None
-    if p.scheme == "https" or (p.scheme == "http" and p.hostname in ("localhost", "127.0.0.1")):
+    local = p.hostname in ("localhost", "127.0.0.1") or p.hostname.endswith(".localhost")
+    if p.scheme == "https" or (p.scheme == "http" and local):
         return f"{p.scheme}://{p.netloc}"
     return None
+
+
+def origin_allowed(origin: str, item_origins: frozenset[str]) -> bool:
+    """入力欄のオリジンが項目の URL と同じか、そのサブドメインなら True（1Password の自動入力と同じ範囲）。"""
+    if secure_origin(origin) is None:
+        return False
+    o = urllib.parse.urlsplit(origin)
+    for item_origin in item_origins:
+        i = urllib.parse.urlsplit(item_origin)
+        if (o.scheme, o.port) == (i.scheme, i.port) and (o.hostname == i.hostname or o.hostname.endswith("." + i.hostname)):
+            return True
+    return False
 
 
 # --- 1Password -------------------------------------------------------------
@@ -474,7 +487,7 @@ def _login_loop(cdp: Cdp, vault: Vault, args: argparse.Namespace, item: LoginIte
             for kind in found["kinds"]:
                 if kind in filled or not available[kind]:
                     continue
-                if found["origin"] not in item.origins:
+                if not origin_allowed(found["origin"], item.origins):
                     if found["origin"] not in reported_mismatch:
                         reported_mismatch.add(found["origin"])
                         emit("origin-mismatch", origin=found["origin"], field=kind)
@@ -496,7 +509,7 @@ def _fill(cdp: Cdp, tab_session: TabSession, key: tuple[str | None, int], kind: 
         value = item.username if kind == "username" else item.password
     focused = tab_session.call(key, kind)
     # focus した時点のオリジンをもう一度確認してから入力する
-    if not focused or not focused.get("focused") or focused["origin"] not in item.origins:
+    if not focused or not focused.get("focused") or not origin_allowed(focused["origin"], item.origins):
         return False
     cdp.send("Input.insertText", {"text": value}, key[0])
     emit("filled", field=kind, origin=focused["origin"])

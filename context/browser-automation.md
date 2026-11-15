@@ -71,7 +71,7 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
 
 - `filled`（`field` が `username` / `password` / `totp`）: 値を入れた。次のボタンを押す
 - `passkey-ready` / `passkey-asserted`: このマシン用のパスキーを入れた / 認証した
-- `origin-mismatch`: 入力欄のオリジンが項目のURLと一致しないので入れなかった。正しいサイトなら、ユーザーに項目のURLの追加を頼む
+- `origin-mismatch`: 入力欄のオリジンが、項目のURLのホストともそのサブドメインとも一致しないので入れなかった。正しいサイトなら、ユーザーに項目のURLの追加を頼む
 - `fill-skipped`: 欄を見つけたが入力の直前に確認できなかった
 - `already-running` / `busy`: 同じタブで別のヘルパーが動いている / このマシンで同じパスキーを使うログインが動いている。終わるのを待つ
 - `tab-not-found` / `tab-ambiguous`: 目印の付いたタブが無い / 2つ以上ある
