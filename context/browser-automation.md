@@ -25,6 +25,7 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
 
 - 常駐: `~/.claude/bin/playwright-mcp-server.sh`（LaunchAgent。ラベルとログパスはセットアップスクリプトが決める）
 - 自動化専用Chromeは Chrome Beta で動かす（セットアップスクリプトが brew で入れる。無いマシンでは普段使いと同じChromeで動く）。macOSはアプリをbundle IDで1つに扱うので、普段使いと同じ `Google Chrome.app` で起動すると、Dockやリンクから開いたChromeが自動化側に吸われる
+  - playwrightはタブを作るときに背景の指定を付けないので、Chromeはタブのたびに前面に出て、仮想デスクトップも移る。`bin/playwright-mcp-background-tabs.cjs` を `NODE_OPTIONS` の `--require` で読み込ませ、タブの作成に `background: true` を付けている。playwrightの更新で書き換える箇所が無くなると、サーバのログに `[background-tabs] pattern not found` が出て、前面に出る動作に戻る。タブの選択（`browser_tabs` の select）は playwright-mcp が明示的に前面に出すので、今も前面に出る
   - 安定版で使っていたプロファイルをBetaで開くと、Betaはcookieを読めずに空にする。切り替えるときは、プロファイルの写しを安定版で開いてcookieをCDPで読み出し、Betaに書き込む。Googleアカウントのcookieは移しても再起動で消えるので、Googleにはログインし直す
 - 接続: MCP設定は `{"type":"http","url":"http://127.0.0.1:8931/mcp"}`
 - サーバ自身が `--user-data-dir`（自動化専用のuser-data-dir）でブラウザを起動し、`--shared-browser-context` で全クライアントに同一コンテキストを共有させる。起動フラグの追加は `--config` の `browser.launchOptions.args` で渡す

@@ -28,6 +28,9 @@ log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
 log "starting (browser: $BROWSER, profile: $CHROME_PROFILE, port: $PORT)"
 
+# playwright が作るタブを背景で作らせ、タブのたびに Chrome が前面に出て仮想デスクトップが移るのを防ぐ
+# （中身は playwright-mcp-background-tabs.cjs。適用されるとログに [background-tabs] applied が出る）
+NODE_OPTIONS="${NODE_OPTIONS:+$NODE_OPTIONS }--require $(dirname "$0")/playwright-mcp-background-tabs.cjs" \
 "$NPX" -y @playwright/mcp@latest \
   --port "$PORT" \
   --host "$HOST" \
