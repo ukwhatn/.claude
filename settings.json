@@ -55,6 +55,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "mcp__playwright__.*|mcp__chrome-devtools__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -x \"$HOME/.claude/hooks/browser-login-guard.py\" ]; then python3 \"$HOME/.claude/hooks/browser-login-guard.py\"; fi",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "SessionStart": [

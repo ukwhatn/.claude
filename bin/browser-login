@@ -345,6 +345,20 @@ FIELD_JS = r"""
     return null;
   };
   if (kind === null) return { origin: location.origin, kinds: [...new Set(inputs.map(kindOf).filter(Boolean))] };
+  if (kind === 'clear') {
+    // 見えない欄も含めて、パスワードと TOTP の欄に残った値を空にする
+    const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    let cleared = 0;
+    for (const el of document.querySelectorAll('input')) {
+      const k = kindOf(el);
+      if ((k === 'password' || k === 'totp' || el.type === 'password') && el.value) {
+        set.call(el, '');
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        cleared++;
+      }
+    }
+    return { origin: location.origin, cleared };
+  }
   const el = inputs.find(e => kindOf(e) === kind);
   if (!el) return { origin: location.origin, focused: false };
   el.focus();
@@ -460,12 +474,24 @@ def _login_loop(cdp: Cdp, vault: Vault, args: argparse.Namespace, item: LoginIte
         cdp.send("WebAuthn.addCredential", {"authenticatorId": auth_id, "credential": {**passkey, "signCount": value}})
         emit("passkey-ready")
 
+    tab_session = TabSession(cdp)
+    tab_session.start()
+    try:
+        _watch(cdp, vault, args, item, counter, tab_session)
+    finally:
+        # 画面に残ったパスワードと TOTP は、エージェントがページの要素一覧（スナップショット）を取ると
+        # 平文で写る。ログインが進まないまま終わった場合に備えて、終わるときに空にする
+        for key in list(tab_session.contexts):
+            with contextlib.suppress(Exception):
+                tab_session.call(key, "clear")
+
+
+def _watch(cdp: Cdp, vault: Vault, args: argparse.Namespace, item: LoginItem,
+           counter: "SignCounter | None", tab_session: TabSession) -> None:
     available = {"username": item.username is not None, "password": item.password is not None, "totp": item.has_totp}
     filled: set[str] = set()
     skipped: set[str] = set()
     reported_mismatch: set[str] = set()
-    tab_session = TabSession(cdp)
-    tab_session.start()
     deadline = time.monotonic() + args.timeout
     next_scan = 0.0
     while time.monotonic() < deadline:
