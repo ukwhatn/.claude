@@ -339,7 +339,7 @@ FIELD_JS = r"""
     const words = [el.name, el.id, el.getAttribute('aria-label'), el.placeholder].join(' ').toLowerCase();
     if (t === 'password') return ac.includes('new-password') ? null : 'password';
     if (!['text', 'email', 'tel', 'number'].includes(t)) return null;
-    if (ac.includes('one-time-code') || /\b(otp|totp|2fa|mfa)\b|one.?time|verification.?code|auth(entication)?.?code|security.?code/.test(words)) return 'totp';
+    if (ac.includes('one-time-code') || /\b(otp|totp|2fa|mfa)|one.?time|verification.?code|auth(entication)?.?code|security.?code/.test(words)) return 'totp';
     if (ac.includes('username') || ac.includes('email') || t === 'email') return 'username';
     if (/user|email|login|account|identifier/.test(words) && hasPassword(el.form)) return 'username';
     return null;
@@ -448,10 +448,12 @@ def cmd_login(args: argparse.Namespace) -> None:
 
 def _login_loop(cdp: Cdp, vault: Vault, args: argparse.Namespace, item: LoginItem, passkey: dict | None) -> None:
     counter = None
+    # パスキーが無いときも空の仮想認証器を入れる。入れないと Chrome 自体のパスキーのダイアログが出て、
+    # 要求が保留のまま残り、サイトの「別の方法を試す」も進まない。空なら要求はすぐ失敗する
+    cdp.send("WebAuthn.enable", {"enableUI": False})
+    auth_id = cdp.send("WebAuthn.addVirtualAuthenticator", {"options": AUTHENTICATOR})["authenticatorId"]
     if passkey is not None:
         counter = SignCounter(passkey["credentialId"])
-        cdp.send("WebAuthn.enable", {"enableUI": False})
-        auth_id = cdp.send("WebAuthn.addVirtualAuthenticator", {"options": AUTHENTICATOR})["authenticatorId"]
         value = counter.next_value(time.time())
         # 先に保存値を進める。認証の直後に落ちても、次回の値がサイトの記録以下にならない
         counter.save(value + 1)
