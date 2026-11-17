@@ -55,6 +55,7 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 - **計画が承認されたら、全項目を `work_add` で登録する**（Phase 2 の計画書の作業項目と 1 対 1。1 項目 = PR 1 本か、PR 内の 1 段階）。順序は計画順。前の項目が終わらないと始められないものは `depends_on`
 - **着手で `state: doing`、終わったら `state: done`** と成果物（`deliverable_kind` / `deliverable_ref`: PR の URL、コミットの SHA、ファイルのパス、文書の id）
 - **待ちに入ったら `state: wait` と `blocker_kind`**（`approval` 自分の承認か回答 / `review` 他者のレビュー / `ci` / `deploy` / `item` 別の項目 / `external`）と `blocker_text` 1 行。待ちが解けて作業に戻るときに `doing` へ動かすと blocker は消える
+- **利用者に手作業（実機での確認・ケーブルの接続・ログイン）を頼むときは、その項目を `state: wait`・`blocker_kind: manual` にし、`blocker_text` に頼む作業を 1 文で書く**。受信箱に手作業の依頼として出て、利用者が［対応済みにする］を押すと項目は作業中に戻り、「taskboard で手作業を済ませました」が質問の回答と同じ経路で届く。応答の文だけで頼んだことは受信箱に出ない。判断は manual でなく `ask_user` か AskUserQuestion で聞く
 - **委譲した項目は `owner`** に委譲先の名前（会話の題か id の先頭 8 字）。自分なら省く
 - やらないと決めた項目は `state: drop`（母数から外れる）
 - `work_list` は計画順に状態・待ち理由・成果物・依存を返す。再開・compaction 復帰の後は、メモリの記録より先にこれを読んで今の状態を取る
