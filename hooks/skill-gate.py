@@ -13,6 +13,8 @@ AGENTS.md「文章とスキル」「コミット・ブランチ・PR」が求め
 - SessionStart（compact）: 状態ファイルを消す。compaction でスキル本文が落ちることがあるため
 
 subagent の中の呼び出し（agent_id がある）は止めない。入力・記録が読めないときも止めない。
+permission_mode が dontAsk の会話も止めない。dontAsk は無人の定期起動が許可リストで操作を絞って使うモードで、
+手順書が Skill を禁じているため、deny しても解消できず処理が止まるだけになる。
 """
 from __future__ import annotations
 
@@ -247,7 +249,7 @@ def main() -> int:
     except ValueError:
         return 0
     session_id = data.get("session_id") or ""
-    if not session_id or data.get("agent_id"):
+    if not session_id or data.get("agent_id") or data.get("permission_mode") == "dontAsk":
         return 0
     event = data.get("hook_event_name")
     if event == "SessionStart" and data.get("source") == "compact":
