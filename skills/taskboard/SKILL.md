@@ -124,14 +124,14 @@ description: taskboard の MCP tool でタスク・作業項目・文書と、�
 | タスク | `task_update` の `board`（別の案件へ）・`remove_links`・`unlink_session` / `unlink_sessions`（紐づけを外す。セッションは止めない）/ `task_delete` |
 | 作業項目・文書・質問 | `work_delete`（`drop` と違い母数からも履歴からも消える）/ `doc_read` / `doc_delete` / `ask_cancel` |
 | 定期起動 | `schedule_runs`（各回の結果と失敗の理由）/ `schedule_delete`。`schedule_create` / `schedule_update` の `task_id`・`new_task`（`board`）で常設タスクに結ぶ（結ばないと各回のセッションはどのタスクにも結ばれない）、`clear_task` で外す。新しく作るときは /scheduling-jobs スキルで中身を決めてから登録する |
-| セッション | `session_answer`（会話の問い。答えを省くと何を待っているかを返す）/ `session_control` / `session_account` / `session_fork` / `session_stop` / `session_resume` / `session_history` / `session_rename` |
+| セッション | `session_answer`（会話の問い。答えを省くと何を待っているかを返す）/ `session_control` / `session_account` / `session_fork` / `session_stop` / `session_exit`（自分の会話をこのターンの後に終了する）/ `session_resume` / `session_history` / `session_rename` |
 | マシン | `orchestrator_status` / `orchestrator_start` / `orchestrator_prompt` / `orchestrator_restart` / `settings_get` / `settings_update` / `inbox_list` / `inbox_dismiss` / `inbox_restore` / `prs_list` / `prs_refresh` / `usage_get` |
 
 - **見回りの順**: `health` → 回答待ちの会話は `session_answer`（答えを省く）で何を待っているかを読む → 失敗・スキップした定期起動は `schedule_runs` で理由を見る → 戻すなら `session_stop`・`session_resume`・`schedule_run`
 - **削除する tool（`task_delete`・`board_delete`・`work_delete`・`doc_delete`・`schedule_delete`）と `session_stop` の `force` は、1 回目は何が消える（止まる）かを返すだけで実行しない。** 中身を読んで、削除してよいと確認してから同じ引数に `confirm: true` を付けて呼び直す。削除するのも PR の操作も、人の指示があるときだけ
 - 自分のセッションに紐づくタスク以外の列・作業項目は、health のために動かすときだけ触り、理由をそのタスクの `note` に 1 行追加する（`note` は丸ごと置き換わるので、`task_get` で今の備考を読んでから追記する）
 - `orchestrator_restart` はオーケストレーターを止め、今の会話を破棄して新しく起こす（引数なし。常駐を切っていても起こす。設定の引数と起動プロンプトで、`--resume` なし）。会話が長くなった・様子がおかしいときに使う。元に戻せないので、人に確認してから呼ぶ。オーケストレーター自身から呼ぶと、自分の会話が止まって応答は届かない
-- `session_stop`・`session_prompt`・`session_answer` は自分の会話には使えない
+- `session_stop`・`session_prompt`・`session_answer` は自分の会話には使えない。用済みになった自分の会話は `session_exit` で、報告を書いてターンを終えた後に終了する
 - 利用枠の上限で止まった会話には、taskboard が戻った時刻に「利用枠が戻ったので、止まったところから続けてください。」を送る（`session_list` に予定の時刻が出る）。送らせないときは `session_stop`（止まっている会話でも予定を削除する）
 
 ## Gotchas
