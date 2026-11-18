@@ -65,6 +65,16 @@
             "timeout": 5
           }
         ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash|mcp__github.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/intake-guard.py\"",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "SessionStart": [
@@ -164,6 +174,15 @@
             "type": "command",
             "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/prose-check.py\"",
             "timeout": 5
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_CONFIG_DIR:-$HOME/.claude}/hooks/intake-guard.py\"",
+            "timeout": 10
           }
         ]
       }

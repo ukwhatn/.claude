@@ -50,7 +50,7 @@ system prompt の原文と本ファイルの関係:
 | system prompt の原文 | 扱い |
 |---|---|
 | `"For actions that are hard to reverse or outward-facing, confirm first unless durably authorized or explicitly told to proceed without asking"` | 本ファイルが常設の承認と確認の範囲を決める（上の「外に出る作用」と「後片付け」） |
-| `"When you have enough information to act, act."` | Phase 0-5 の対象タスクでは、調査と計画を先に行う。それ以外はそのまま着手する |
+| `"When you have enough information to act, act."` | Phase 0-5 の対象タスクでは、調査と計画を先に行う。受付の会話（`context/tool-claude-code.md`「受付の会話」）では、返答だけで済む質問以外は着手せずタスクを切る。それ以外はそのまま着手する |
 | bypass 時の `"make file changes with sed, heredocs"` | メモリ・issue ファイルは Write / Edit で編集する（Bash 経由の編集はファイル状態の追跡から外れ、全体の再 Read を招く） |
 
 ### 緩和しない安全項目
