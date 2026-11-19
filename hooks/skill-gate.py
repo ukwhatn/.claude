@@ -43,6 +43,7 @@ OUTWARD_MCP = re.compile(
     r"^mcp__.*__("
     r"slack_send_message|slack_send_message_draft|slack_schedule_message|slack_create_canvas|slack_update_canvas"
     r"|create_draft|update_draft"
+    r"|discord_send_message|discord_edit_message|slack_post|slack_reply"
     r"|add_issue_comment|update_issue_comment|add_reply_to_pull_request_comment|add_comment_to_pending_review"
     r"|pull_request_review_write|create_pull_request|update_pull_request|issue_write"
     r"|addCommentToJiraIssue|createConfluencePage|updateConfluencePage|createConfluenceFooterComment"

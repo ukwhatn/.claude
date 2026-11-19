@@ -131,7 +131,9 @@ def pre_tool_use(data: dict, session_id: str) -> None:
     if not text or not is_japanese(text):
         return
     checker = load_checker()
-    findings = checker.check(text)
+    # taskboard への提示は ukwhatn が読む文なので、相手に出す文面の語は下書きのコードブロックの中だけで数える
+    outbound = "fences" if PRESENT_MCP.match(data.get("tool_name") or "") else "all"
+    findings = checker.check(text, outbound=outbound)
     if not findings or not first_denial(session_id, text):
         return
     listed = "\n".join(checker.format_finding(f) for f in findings[:MAX_LISTED])
@@ -156,7 +158,7 @@ def stop(data: dict, session_id: str) -> None:
     # Stop は止められた後の書き直しで同じターンに何度も来るので、毎回、最後の返答の結果で置き換える
     path = state_path(session_id, "last-reply.json")
     text = data.get("last_assistant_message") or ""
-    findings = load_checker().check(text) if is_japanese(text) else []
+    findings = load_checker().check(text, outbound="fences") if is_japanese(text) else []
     if findings:
         save_json(path, [[f.kind, f.term, f.suggestion] for f in findings])
         return

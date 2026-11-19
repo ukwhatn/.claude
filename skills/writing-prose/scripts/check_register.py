@@ -67,13 +67,33 @@ VOCAB_PATTERNS: dict[str, str] = {
         r"|ちゃ[うっいえお]|(?<=[るいたなう])んです|けど"
     ),
 }
+# prose.md §2-5 の「相手に出す文面だけに適用する語」の表 → 検出の正規表現。指示の文や返答では普通に使う語なので、
+# 相手に出す文面（送信の本文・言語名の無いコードブロックの下書き・writing-prose で検査するファイル）だけで数える
+OUTBOUND_PATTERNS: dict[str, str] = {
+    "決める": rf"{STANDALONE}決め(?:る|て|た|ま|な|ば|ず|よ|ら)",
+    "書く（文書・投稿に）": (rf"(?<![一-龥々]){STANDALONE}書(?:く|き(?![言方込直足換出手分起])|い[たて]"
+                       r"|か[なれず]|け[るばまな])"),
+    "移す": rf"(?<![一-龥々]){STANDALONE}移(?:す|さ[なれずせ]|し|せ|そう)",
+    "挙げる（名前・項目を）": rf"{STANDALONE}挙げ(?:る|て|た|ま|な|ば|ず|よ|ら)",
+    "済む": r"(?<![一-龥々])済(?:む|ま[せなず]|み[まそ]|ん[だで])",
+    "埋まる（count・枠が）": r"埋ま(?:る|っ|り|ら|れ)",
+    "使える": rf"{STANDALONE}使え(?:る|な|ま|た|ず|ば)",
+    "手元（に保存する）": r"手元",
+    "文中の「〜なので」": r"(?<![。！？\s])なので",
+}
 COMPILED = [(term, re.compile(pattern, re.M)) for term, pattern in VOCAB_PATTERNS.items()]
+OUTBOUND_COMPILED = [(term, re.compile(pattern, re.M)) for term, pattern in OUTBOUND_PATTERNS.items()]
+# 相手に出す文面の語を数える範囲: all は本文全体、fences は言語名の無いコードブロックの中だけ、none は数えない
+OUTBOUND_SCOPES = ("all", "fences", "none")
 
 # 3つ以上の ` か ~ で開き、同じ字で同じ長さ以上の行で閉じるフェンス。閉じていなければ末尾まで
 FENCE = re.compile(r"^[ \t]*((`|~)\2{2,})[^\n]*\n.*?(?:^[ \t]*\1\2*[ \t]*$|\Z)", re.S | re.M)
+# Discord などへ貼る文面はコードブロックに入れて示すので、言語名の無いブロックと文章の言語名は本文として読む
+PROSE_FENCE_LANGUAGES = {"", "text", "txt", "plain", "markdown", "md"}
 TABLE_ROW = re.compile(r"^\s*\|.*\|\s*$")
 # この見出しで始まる表は語の対照表なので、左列の語を数えない
 VOCAB_TABLE_HEADER = "| 話し言葉・和語の作業動詞 |"
+OUTBOUND_TABLE_HEADER = "| 相手に出す文面の和語 |"
 TABLE_SEPARATOR = re.compile(r"^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$")
 SENTENCE_CELL_CHARS = 30
 
@@ -108,14 +128,14 @@ class Finding:
 
 
 def load_vocab_table() -> dict[str, str]:
-    """prose.md §2-5 の表を {左列: 右列} で返す。"""
+    """prose.md §2-5 の表（全文書の語と、相手に出す文面だけの語）を {左列: 右列} で返す。"""
     with open(PROSE_MD, encoding="utf-8") as f:
         lines = f.read().split("\n")
     start = next(i for i, line in enumerate(lines) if line.startswith(TABLE_HEADING))
     rows: dict[str, str] = {}
     in_table = False
     for line in lines[start + 1:]:
-        if line.startswith("#"):
+        if re.match(r"^#{1,3} ", line):
             break
         if TABLE_ROW.match(line):
             if TABLE_SEPARATOR.match(line):
@@ -124,8 +144,8 @@ def load_vocab_table() -> dict[str, str]:
             if in_table:
                 cells = split_cells(line)
                 rows[cells[0]] = cells[1] if len(cells) > 1 else ""
-        elif in_table:
-            break
+        else:
+            in_table = False
     return rows
 
 
@@ -133,12 +153,29 @@ def split_cells(line: str) -> list[str]:
     return [cell.strip() for cell in line.strip().strip("|").split("|")]
 
 
-def mask_quoted(text: str) -> str:
-    """引用（コードブロック・バッククォート・「」『』・> 行・URL）を、行の数と位置を保ったまま空白にする。"""
-    def blank(match: re.Match[str]) -> str:
-        return re.sub(r"[^\n]", " ", match.group(0))
+def blank_text(text: str) -> str:
+    return re.sub(r"[^\n]", " ", text)
 
-    text = FENCE.sub(blank, text)
+
+def mask_code_fences(text: str) -> str:
+    """言語名の付いたコードブロックを空白にする。言語名の無いブロックは下書きの文面なので、囲みの行だけを空白にして中を読む。"""
+    def replace(match: re.Match[str]) -> str:
+        block = match.group(0)
+        head, newline, body = block.partition("\n")
+        language = head.strip().lstrip("`~").strip().split(" ")[0].lower()
+        if language not in PROSE_FENCE_LANGUAGES:
+            return blank_text(block)
+        return blank_text(head) + newline + mask_code_fences(body)
+
+    return FENCE.sub(replace, text)
+
+
+def mask_quoted(text: str) -> str:
+    """引用（言語名の付いたコードブロック・バッククォート・「」『』・> 行・URL）を、行の数と位置を保ったまま空白にする。"""
+    def blank(match: re.Match[str]) -> str:
+        return blank_text(match.group(0))
+
+    text = mask_code_fences(text)
     text = re.sub(r"`[^`\n]*`", blank, text)
     text = re.sub(r"「[^」]*」", blank, text)
     text = re.sub(r"『[^』]*』", blank, text)
@@ -146,19 +183,37 @@ def mask_quoted(text: str) -> str:
     lines = []
     in_vocab_table = False
     for line in text.split("\n"):
-        in_vocab_table = line.startswith(VOCAB_TABLE_HEADER) or (in_vocab_table and bool(TABLE_ROW.match(line)))
+        in_vocab_table = (line.startswith((VOCAB_TABLE_HEADER, OUTBOUND_TABLE_HEADER))
+                          or (in_vocab_table and bool(TABLE_ROW.match(line))))
         lines.append(" " * len(line) if in_vocab_table or line.lstrip().startswith(">") else line)
     return "\n".join(lines)
 
 
-def find_vocab(text: str, suggestions: dict[str, str]) -> list[Finding]:
+def keep_prose_fences(masked: str, text: str) -> str:
+    """masked のうち、言語名の無いコードブロックの中身だけを残し、ほかを空白にする。"""
+    keep = bytearray(len(text))
+    for match in FENCE.finditer(text):
+        head = match.group(0).split("\n", 1)[0]
+        language = head.strip().lstrip("`~").strip().split(" ")[0].lower()
+        if language in PROSE_FENCE_LANGUAGES:
+            body_start = match.start() + len(head) + 1
+            keep[body_start:match.end()] = b"\x01" * (match.end() - body_start)
+    return "".join(char if keep[i] or char == "\n" else " " for i, char in enumerate(masked))
+
+
+def find_vocab(text: str, suggestions: dict[str, str], outbound: str = "all") -> list[Finding]:
+    """outbound は相手に出す文面の語を数える範囲（OUTBOUND_SCOPES）。"""
     masked = mask_quoted(text)
     original_lines = text.split("\n")
     line_starts = [0] + [i + 1 for i, char in enumerate(masked) if char == "\n"]
     taken = bytearray(len(masked))
     findings: list[tuple[int, Finding]] = []
-    for term, regex in COMPILED:
-        for match in regex.finditer(masked):
+    targets = [(term, regex, masked) for term, regex in COMPILED]
+    if outbound != "none":
+        outbound_masked = masked if outbound == "all" else keep_prose_fences(masked, text)
+        targets += [(term, regex, outbound_masked) for term, regex in OUTBOUND_COMPILED]
+    for term, regex, source in targets:
+        for match in regex.finditer(source):
             start, end = match.span()
             if any(taken[start:end]):
                 continue
@@ -200,11 +255,12 @@ def mask_quoted_blocks_only(text: str) -> str:
     return FENCE.sub(lambda m: re.sub(r"[^\n]", " ", m.group(0)), text)
 
 
-def check(text: str, suggestions: dict[str, str] | None = None) -> list[Finding]:
-    """text の該当を行順に返す。suggestions を省くと prose.md §2-5 から読む。"""
+def check(text: str, suggestions: dict[str, str] | None = None, outbound: str = "all") -> list[Finding]:
+    """text の該当を行順に返す。suggestions を省くと prose.md §2-5 から読む。
+    outbound は相手に出す文面の語を数える範囲で、チャットの返答は fences（下書きのコードブロックの中だけ）にする。"""
     if suggestions is None:
         suggestions = load_vocab_table()
-    return sorted(find_vocab(text, suggestions) + find_tables(text), key=lambda f: f.line)
+    return sorted(find_vocab(text, suggestions, outbound) + find_tables(text), key=lambda f: f.line)
 
 
 def find_omissions(text: str) -> list[Finding]:
@@ -241,16 +297,28 @@ REGRESSION_CASES: list[tuple[str, int]] = [
     ("直す。だけ直さず。必ず直す。突き合わせて直す。漢語に直す。の直し方。", 6),
     ("改変を当て直す。長引く見込み。", 0),
     ("書き直す。書き足す。足す。消す。", 4),
-    ("「直す」と `消す` は引用なので数えない。", 0),
+    ("「直す」と `消す` は引用のため数えない。", 0),
     ("これ直す。見て直す。見てる。確認してるので。", 4),
     ("下書き直後に確認する。作り直前の版。", 0),
-    ("~~~text\n直す\n~~~\n````\n```\n直す\n```\n````\n「引用の続きとして\n直す」", 0),
-    ("```text\n```~\n直す\n```", 0),
+    ("~~~python\n直す\n~~~\n````bash\n```\n直す\n```\n````\n「引用の続きとして\n直す」", 0),
+    ("```json\n```~\n直す\n```", 0),
+    # 貼り付ける文面は言語名の無いコードブロックで示すので、中を読む。入れ子のコードは言語名で除外する
+    ("````\n下書きを決めます。\n```\n直す\n```\n```python\n直す\n```\n````", 2),
+    ("```text\n27ページに入っています。手元に保存し、移しません。\n```", 3),
+    ("方針を決める。投稿に書いた。ページへ移す。名前を挙げておらず。確認が済むまで。count が埋まったら。"
+     "使える枠。翻訳記事なので、", 8),
+    ("取り決める。下書きを残す。書き言葉で書き換える。推移する。検証済み。移動する。列挙する。", 0),
     (f"{VOCAB_TABLE_HEADER} 書き言葉 |\n|---|---|\n| 直す | 修正する |", 0),
     ("CSV を出す。PR を出しました。設定を入れる。値を入れ直す。スクリプトを流す。409 で止める。", 6),
     ("欠けを埋める。作業を引き取る。これで足りる。main に入った。", 4),
     ("提出する。検出した。呼び出す。見出しを付ける。受け入れる。取り入れた。仕入れる。", 0),
     ("停止める。歯止めをかける。物足りない。受け流す。穴埋めする。範囲が入力された。", 0),
+]
+
+# outbound="fences" の回帰の例: 相手に出す文面の語は、言語名の無いコードブロックの中だけで数える
+FENCES_SCOPE_CASES: list[tuple[str, int]] = [
+    ("方針は自分で決める。\n```\n別途決めます。\n```\n```python\n決める\n```", 1),
+    ("下書きに書いた。手元の値。直す。", 1),
 ]
 
 # 載せないものの候補の回帰の例: (本文, 候補の数)。短い太字のラベル・数値のある評価・範囲の明示・引用を数えない
@@ -267,13 +335,17 @@ OMISSION_CASES: list[tuple[str, int]] = [
 
 def self_test() -> list[str]:
     table = set(load_vocab_table())
-    patterns = set(VOCAB_PATTERNS)
+    patterns = set(VOCAB_PATTERNS) | set(OUTBOUND_PATTERNS)
     errors = [f"prose.md §2-5 にあり、検出の語に無い: {term}" for term in sorted(table - patterns)]
     errors += [f"検出の語にあり、prose.md §2-5 に無い: {term}" for term in sorted(patterns - table)]
     for text, expected in REGRESSION_CASES:
         found = len(find_vocab(text, {}))
         if found != expected:
             errors.append(f"回帰: {expected}件のはずが{found}件: {text[:40]}")
+    for text, expected in FENCES_SCOPE_CASES:
+        found = len(find_vocab(text, {}, "fences"))
+        if found != expected:
+            errors.append(f"回帰（fences）: {expected}件のはずが{found}件: {text[:40]}")
     for text, expected in OMISSION_CASES:
         found = len(find_omissions(text))
         if found != expected:
@@ -294,6 +366,8 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="話し言葉・作業動詞と表の形を検査する")
     parser.add_argument("paths", nargs="*", help="検査するファイル。- で標準入力")
     parser.add_argument("--self-test", action="store_true", help="prose.md §2-5 と検出の語の一致と回帰の例を確認する")
+    parser.add_argument("--outbound", choices=OUTBOUND_SCOPES, default="all",
+                        help="相手に出す文面の語を数える範囲（既定 all。チャットの返答は fences）")
     args = parser.parse_args(argv)
     try:
         if args.self_test:
@@ -309,7 +383,7 @@ def main(argv: list[str]) -> int:
         total = candidates = 0
         for path in args.paths:
             text = sys.stdin.read() if path == "-" else open(path, encoding="utf-8").read()
-            findings = check(text, suggestions)
+            findings = check(text, suggestions, args.outbound)
             omissions = find_omissions(text)
             total += len(findings)
             candidates += len(omissions)
