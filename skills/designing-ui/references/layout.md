@@ -195,7 +195,7 @@
 | state layer の不透明度（hover・focus・pressed の %）、motion の ms、Carbon data table の行の高さ、補助ペインの幅の比率（Android の 70/30・50/50） | 原文で確認できたものも含め、sources.md の採否どおり数値はスキルに持たない。比率は「主内容に幅の多くを割く」とだけ書いた |
 | 画面幅の区切り（window size class の dp、Carbon のブレークポイント） | sources.md の採否どおり持たない。PJ・CSSフレームワークの値を使う |
 | 押下で形が変わる等の M3 Expressive 固有の演出 | sources.md の採否どおり入れない |
-| unslop の数値（4px の余白の段階、サイドバーの幅、文字の太さ 400/500、easing の曲線、ms、色コード）と英語の文言・欧文書体・チャートの規則 | sources.md の採否どおり数値は持たない。文言は `/writing-ui-text`、チャートは dataviz に従う。unslop を使うときは unslop の中で扱う |
+| unslop の数値（4px の余白の段階、サイドバーの幅、文字の太さ 400/500、easing の曲線、ms、色コード）と英語の文言・欧文書体・チャートの規則 | sources.md の採否どおり数値は持たない。文言は `/writing-ui-text`、チャートは dataviz スキルが使えればそれに従い、使えなければ PJ の既存のチャートに合わせる。unslop を使うときは unslop の中で扱う |
 | 重ねた影（ambient＋direct）、境界線と影を背景の色相に寄せる（Vercel の Design 節） | 原文は確認したが SHOULD の見た目の好みで、ほかの出典と一致を確認していないので入れない（入れ子の角丸は Astryx・unslop と一致したので3節に入れた） |
 | shadcn の変数と M3 の役割の対応表（card = surface-container-low 等） | フレームワーク固有なので shadcn の対応付けの参照の担当。本ファイルには入れない |
 | Linear の LCH・3入力（ベース色・アクセント色・コントラスト）からのテーマ生成 | 原文は確認したが、トークンの生成方法は PJ の実装判断で、型の選択の規則にならないので入れない |

@@ -128,18 +128,20 @@ def unpublished_paths(text: str, unpublished_skills: list[str]) -> list[str]:
     return [f"同梱しないスキルのパス: {m.group(0)}" for m in path.finditer(text)]
 
 
-def raw_leftovers(text: str, unpublished_skills: list[str]) -> list[str]:
+def unpublished_contexts(text: str, published: dict) -> list[str]:
+    return [f"同梱しない context: {m.group(0)}" for m in CONTEXT_REF.finditer(text)
+            if m.group(1) + ".md" not in published["context"]]
+
+
+def raw_leftovers(text: str, published: dict, unpublished_skills: list[str]) -> list[str]:
     found = [f"{label}: {m.group(0)}" for pattern, label in RAW_LEFTOVER for m in pattern.finditer(text)]
-    return found + unpublished_paths(text, unpublished_skills)
+    return found + unpublished_paths(text, unpublished_skills) + unpublished_contexts(text, published)
 
 
 def leftovers(text: str, published: dict, unpublished_skills: list[str]) -> list[str]:
-    found = unpublished_paths(text, unpublished_skills)
+    found = unpublished_paths(text, unpublished_skills) + unpublished_contexts(text, published)
     for pattern, label in LEFTOVER:
         found += [f"{label}: {m.group(0)}" for m in pattern.finditer(text)]
-    for m in CONTEXT_REF.finditer(text):
-        if m.group(1) + ".md" not in published["context"]:
-            found.append(f"同梱しない context: {m.group(0)}")
     other = re.compile(r"(?<![\w/.:-])/(" + "|".join(map(re.escape, unpublished_skills)) + r")(?![\w/-])")
     found += [f"同梱しないスキル: {m.group(0)}" for m in other.finditer(text)]
     return found
@@ -269,7 +271,7 @@ def main() -> int:
             continue
         data = entry.src.read_bytes()
         if entry.kind == "raw" and b"\0" not in data[:8000]:
-            problems += [f"{rel}: {p}" for p in raw_leftovers(data.decode(errors="replace"), unpublished)]
+            problems += [f"{rel}: {p}" for p in raw_leftovers(data.decode(errors="replace"), published, unpublished)]
         elif entry.kind not in ("raw", "vendor"):
             text, used, marker_problems = transform(data.decode(), entry.kind, published)
             sections.update(used)
@@ -278,6 +280,9 @@ def main() -> int:
         write_if_changed(dst / rel, data, entry.src.stat().st_mode & 0o777)
     removed = remove_unlisted(dst, set(files))
     write_plugin_manifests(dst, files)
+    for rel, entry in files.items():
+        if entry.kind == "plugin":
+            problems += [f"{rel}: {p}" for p in raw_leftovers((dst / rel).read_text(), published, unpublished)]
     problems += check_dev_flow(dst, sections)
     if "--no-validate" not in sys.argv:
         problems += validate(dst)
