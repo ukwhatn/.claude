@@ -461,14 +461,23 @@ def build_server():
     @mcp.tool()
     def slack_post(workspace: str, channel: str, text: str, thread_ts: str | None = None) -> dict:
         """チャンネルかスレッドに投稿する。post_allow で明示許可したチャンネルだけ通る。
-        text は Slack mrkdwn で解釈される（`*太字*`・`_斜体_`・`~打ち消し~`・`` `code` ``・
-        ```code block```・`<url|text>`・`>引用`）。標準 Markdown の `**太字**`・`[text](url)` は
-        付かず字面のまま出る（URL のみ自動リンク）。"""
+        text は標準 Markdown で書く（`- ` と 4 スペースの字下げの箇条書き・`1. `・`**太字**`・
+        `` `code` ``・`[語](URL)`）。Slack のネイティブの箇条書きとして描画される。
+        メンション `<@U...>` と `<URL|語>` のリンクもそのまま使える。"""
         ws = session.resolve(workspace)
         _require_post_allowed(ws["domain"], channel)
         r = session.call(
-            ws["domain"], "chat.postMessage", channel=channel, text=text, thread_ts=thread_ts
+            ws["domain"], "chat.postMessage", channel=channel, markdown_text=text, thread_ts=thread_ts
         )
+        return {"ok": True, "ts": r.get("ts"), "channel": r.get("channel")}
+
+    @mcp.tool()
+    def slack_update(workspace: str, channel: str, ts: str, text: str) -> dict:
+        """自分の投稿の本文を書き換える。post_allow で明示許可したチャンネルだけ通る。
+        text の書き方は slack_post と同じ（標準 Markdown）。"""
+        ws = session.resolve(workspace)
+        _require_post_allowed(ws["domain"], channel)
+        r = session.call(ws["domain"], "chat.update", channel=channel, ts=ts, markdown_text=text)
         return {"ok": True, "ts": r.get("ts"), "channel": r.get("channel")}
 
     @mcp.tool()
