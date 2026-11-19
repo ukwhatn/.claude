@@ -13,7 +13,8 @@
 
 引数（plugin の hooks.json から渡す。手元の settings.json は渡さず全規則を使う）:
   --skills a,b   使う規則をスキル名で絞る。配っていないスキルを要求しないため
-  --namespace n  拒否の文のスキル名に `n:` を付ける。plugin のスキルは名前空間付きで呼ぶため
+  --namespace n  スキルを `n:<名前>` の名前で照合し、拒否の文にもその名前を書く。別の plugin の同じ名前のスキルで
+                 通らないようにするため。発動の記録も名前空間ごとに分ける（手元の hook と同じセッションで動くため）
 
 subagent の中の呼び出し（agent_id がある）は止めない。入力・記録が読めないときも止めない。
 permission_mode が dontAsk の会話も止めない。dontAsk は無人の定期起動が許可リストで操作を絞って使うモードで、
@@ -129,12 +130,21 @@ RULES: list[tuple[str, Callable[[str, dict, dict], bool], str]] = [
 ]
 
 
+# --namespace の値。起動時に1回だけ決める
+NAMESPACE = ""
+
+
 def skill_name(raw: str) -> str:
-    return raw.split(":")[-1]
+    """記録と照合に使う名前。名前空間を指定したときは呼ばれた名前のまま、しないときは名前空間を外す。"""
+    return raw if NAMESPACE else raw.split(":")[-1]
+
+
+def qualified(skill: str) -> str:
+    return f"{NAMESPACE}:{skill}" if NAMESPACE else skill
 
 
 def state_path(session_id: str) -> str:
-    safe = re.sub(r"[^A-Za-z0-9_-]", "_", session_id) or "unknown"
+    safe = re.sub(r"[^A-Za-z0-9_-]", "_", session_id + (f"-{NAMESPACE}" if NAMESPACE else "")) or "unknown"
     directory = os.path.join(tempfile.gettempdir(), "claude-skill-gate")
     os.makedirs(directory, exist_ok=True)
     return os.path.join(directory, safe + ".json")
@@ -189,10 +199,6 @@ def skills_in_transcript(transcript_path: str) -> set[str]:
     return invoked
 
 
-def qualified(skill: str, namespace: str) -> str:
-    return f"{namespace}:{skill}" if namespace else skill
-
-
 def deny(skill: str, note: str) -> None:
     reason = (
         f"この操作の前に Skill ツールで `{skill}` を発動する（対象: {note}）。"
@@ -213,28 +219,28 @@ def turn_key(session_id: str) -> str:
     return session_id + "-turn"
 
 
-def stop_gate(data: dict, session_id: str, namespace: str) -> None:
+def stop_gate(data: dict, session_id: str) -> None:
     # block 後の再停止は通す。止め続けると、スキルを呼べない状況で終われなくなる
     if data.get("stop_hook_active"):
         return
     if not DRAFT_LINE.search(data.get("last_assistant_message") or ""):
         return
-    missing = [skill for skill in DRAFT_SKILLS if skill not in load_state(turn_key(session_id))]
+    missing = [qualified(skill) for skill in DRAFT_SKILLS if qualified(skill) not in load_state(turn_key(session_id))]
     if not missing:
         return
     reason = (
         "返答に人に宛てた文案がある（お疲れ様です・よろしくお願いします等で始まる行）が、"
-        f"このターンで {'・'.join('`/' + qualified(skill, namespace) + '`' for skill in missing)} を発動していない。"
+        f"このターンで {'・'.join('`/' + skill + '`' for skill in missing)} を発動していない。"
         "Skill ツールで発動し、その規則（相手にしか答えられない問いだけを書く、など）で文案を書き直して出し直す"
         "（スキルの発動を hook で強制している）。"
     )
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
 
 
-def gate(data: dict, session_id: str, rules: list, namespace: str) -> None:
+def gate(data: dict, session_id: str, rules: list) -> None:
     tool_name = data.get("tool_name") or ""
     tool_input = data.get("tool_input") or {}
-    required = [(skill, note) for skill, triggered, note in rules if triggered(tool_name, tool_input, data)]
+    required = [(qualified(skill), note) for skill, triggered, note in rules if triggered(tool_name, tool_input, data)]
     if not required:
         return
     invoked = load_state(session_id)
@@ -246,7 +252,7 @@ def gate(data: dict, session_id: str, rules: list, namespace: str) -> None:
         save_state(session_id, invoked)
     for skill, note in required:
         if skill not in invoked:
-            deny(qualified(skill, namespace), note)
+            deny(skill, note)
             return
 
 
@@ -258,7 +264,8 @@ def parse_args(argv: list[str]) -> tuple[list, str]:
 
 
 def main() -> int:
-    rules, namespace = parse_args(sys.argv[1:])
+    global NAMESPACE
+    rules, NAMESPACE = parse_args(sys.argv[1:])
     try:
         data = json.load(sys.stdin)
     except ValueError:
@@ -277,9 +284,9 @@ def main() -> int:
         for key in (session_id, turn_key(session_id)):
             save_state(key, load_state(key) | {skill})
     elif event == "PreToolUse":
-        gate(data, session_id, rules, namespace)
+        gate(data, session_id, rules)
     elif event == "Stop":
-        stop_gate(data, session_id, namespace)
+        stop_gate(data, session_id)
     return 0
 
 

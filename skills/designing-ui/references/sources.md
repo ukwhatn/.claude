@@ -39,7 +39,7 @@
 | 面の高さの表し方 | Atlassian は上位の面で明るさと影を併用、Material は面の色の段階 | 面の区別は明暗の段階で付け、影は浮く要素に限る。浮く要素は明暗と影を対で使う |
 | スクロールでヘッダを隠す | Modern Web Guidance は下へのスクロール中に上端のバーを隠す、Carbon はヘッダを全画面で常に出す | アプリの殻では常に出す。隠すのは読み物のページに限る |
 | 関連項目の並べ方 | Modern Web Guidance は横スクロールのカルーセルにする、ほかの出典に同じ規則は無い | 規則にしない（1出典） |
-| unslop の数値・文言・チャート | unslop は余白・幅・文字の太さ・easing・色の値、英語の文言、チャートの色の規則を持つ | 本スキルには入れない。unslop の中では、PJ の値・`/writing-ui-text`・dataviz を優先する（`skills/unslop/SKILL.md` の Precedence 節） |
+| unslop の数値・文言・チャート | unslop は余白・幅・文字の太さ・easing・色の値、英語の文言、チャートの色の規則を持つ | 本スキルには入れない。unslop を実行するときも、PJ の値・`/writing-ui-text`・dataviz を unslop の規則より優先する<!-- publish:omit -->（`skills/unslop/SKILL.md` の Precedence 節）<!-- /publish:omit --> |
 | 画面を磨くか型を選ぶか | unslop は既存の画面を見た目で磨く、本スキルは型を選んで統一する | 新しく作る・型を選ぶのは本スキル。見た目の仕上げは unslop で、新しい画面では本スキルの手順2で方向を決め、手順9で呼ぶ。既存の画面を磨く依頼は unslop を直接使う。unslop は外枠とナビゲーションの型を変えない |
 
 ## 3. 取り込まなかったもの

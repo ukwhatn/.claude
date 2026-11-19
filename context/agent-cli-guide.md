@@ -18,7 +18,12 @@
 
 ## CLIの選択とfallback
 
-1. `command -v codex` があればcodex。無ければcursor<!-- publish:omit -->（手順はdetails）<!-- /publish:omit -->
+<!-- publish:omit -->
+1. `command -v codex` があればcodex。無ければcursor（手順はdetails）
+<!-- /publish:omit -->
+<!-- publish:only（公開版だけの文。原本では使わない）
+1. `command -v codex` があればcodex。無ければ手順3の代替に進む
+-->
 <!-- publish:omit -->
 2. 実行前にcodexの残枠を確認する（枯渇の申告をユーザーに求めない）:
    ```bash

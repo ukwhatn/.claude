@@ -95,6 +95,26 @@
       "plugins/ukwhatn-guards/output-styles/ukwhatn-style.md",
       "output-styles/ukwhatn-style.md",
       "style"
+    ],
+    [
+      "plugins/ukwhatn-skills/LICENSE",
+      "publish/skills/LICENSE",
+      "raw"
+    ],
+    [
+      "plugins/ukwhatn-skills/NOTICE.md",
+      "publish/skills/NOTICE.md",
+      "doc"
+    ],
+    [
+      "plugins/ukwhatn-guards/LICENSE",
+      "publish/skills/LICENSE",
+      "raw"
+    ],
+    [
+      "plugins/ukwhatn-guards/NOTICE.md",
+      "publish/skills/NOTICE.md",
+      "doc"
     ]
   ]
 }
