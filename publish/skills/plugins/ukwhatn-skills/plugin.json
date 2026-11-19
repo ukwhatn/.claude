@@ -1,0 +1,8 @@
+{
+  "name": "ukwhatn-skills",
+  "description": "Skills for writing prose and UI text, writing and debugging code, designing screens, and reviewing changes, with an entry skill that describes the workflow",
+  "author": { "name": "Yuki Watanabe", "url": "https://github.com/ukwhatn" },
+  "repository": "https://github.com/ukwhatn/skills",
+  "license": "MIT",
+  "keywords": ["writing", "code-review", "ui-design", "japanese"]
+}

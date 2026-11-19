@@ -1,0 +1,18 @@
+{
+  "name": "ukwhatn",
+  "owner": { "name": "Yuki Watanabe", "url": "https://github.com/ukwhatn" },
+  "metadata": { "description": "Yuki Watanabe's development workflow for Claude Code: writing, coding, review and UI skills, plus optional guard hooks" },
+  "plugins": [
+    {
+      "name": "ukwhatn-skills",
+      "source": "./plugins/ukwhatn-skills",
+      "description": "Skills for writing prose and UI text, writing and debugging code, designing screens, and reviewing changes, with an entry skill that describes the workflow"
+    },
+    {
+      "name": "ukwhatn-guards",
+      "source": "./plugins/ukwhatn-guards",
+      "description": "Optional hooks that stop edits and posts until the matching skill is invoked, and an output style. Disabled until you enable it",
+      "defaultEnabled": false
+    }
+  ]
+}

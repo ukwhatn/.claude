@@ -26,6 +26,8 @@
 !/bin/**
 !/vendor/
 !/vendor/**
+!/publish/
+!/publish/**
 !/.github/
 !/.github/**
 __pycache__/

@@ -1,0 +1,9 @@
+{
+  "name": "ukwhatn-guards",
+  "description": "Optional hooks that stop edits and posts until the matching ukwhatn-skills skill is invoked, and the ukwhatn-style output style",
+  "author": { "name": "Yuki Watanabe", "url": "https://github.com/ukwhatn" },
+  "repository": "https://github.com/ukwhatn/skills",
+  "license": "MIT",
+  "defaultEnabled": false,
+  "dependencies": ["ukwhatn-skills"]
+}
