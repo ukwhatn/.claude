@@ -27,9 +27,10 @@ import sys
 import tempfile
 from collections import Counter
 
-CONFIG_DIR = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
-CHECKER = os.path.join(CONFIG_DIR, "skills", "writing-prose", "scripts", "check_register.py")
-SKILL_GATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "skill-gate.py")
+HERE = os.path.dirname(os.path.abspath(__file__))
+# 検査器は hook から見た相対の位置で探す。手元は skills/ の下、plugin は skills/ に置くとスキルとして読まれるので lib/ の下
+CHECKERS = [os.path.join(HERE, "..", base, "writing-prose", "scripts", "check_register.py") for base in ("skills", "lib")]
+SKILL_GATE = os.path.join(HERE, "skill-gate.py")
 PRESENT_MCP = re.compile(r"^mcp__taskboard__(doc_publish|ask_user|review_request)$")
 MAX_LISTED = 15
 
@@ -44,7 +45,10 @@ def load_module(name: str, path: str):
 
 
 def load_checker():
-    return load_module("check_register", CHECKER)
+    path = next((c for c in CHECKERS if os.path.exists(c)), None)
+    if path is None:
+        raise ImportError("check_register.py が見つからない")
+    return load_module("check_register", path)
 
 
 def is_japanese(text: str) -> bool:

@@ -12,6 +12,10 @@ AGENTS.md「文章とスキル」「コミット・ブランチ・PR」が求め
   ユーザーが投稿する文案はツールを通らないので、PreToolUse では止められないため
 - SessionStart（compact）: 状態ファイルを消す。compaction でスキル本文が落ちることがあるため
 
+引数（plugin の hooks.json から渡す。手元の settings.json は渡さず全規則を使う）:
+  --skills a,b   使う規則をスキル名で絞る。配っていないスキルを要求しないため
+  --namespace n  拒否の文のスキル名に `n:` を付ける。plugin のスキルは名前空間付きで呼ぶため
+
 subagent の中の呼び出し（agent_id がある）は止めない。入力・記録が読めないときも止めない。
 permission_mode が dontAsk の会話も止めない。dontAsk は無人の定期起動が許可リストで操作を絞って使うモードで、
 手順書が Skill を禁じているため、deny しても解消できず処理が止まるだけになる。
@@ -186,11 +190,15 @@ def skills_in_transcript(transcript_path: str) -> set[str]:
     return invoked
 
 
+def qualified(skill: str, namespace: str) -> str:
+    return f"{namespace}:{skill}" if namespace else skill
+
+
 def deny(skill: str, note: str) -> None:
     reason = (
         f"この操作の前に Skill ツールで `{skill}` を発動する（対象: {note}）。"
         "このセッションでまだ発動していないか、compaction の後に発動し直していない"
-        "（AGENTS.md「文章とスキル」「コミット・ブランチ・PR」の規則を hook で強制している）。"
+        "（スキルの発動を hook で強制している）。"
         "発動したら同じ操作をやり直す。"
     )
     print(json.dumps({
@@ -206,7 +214,7 @@ def turn_key(session_id: str) -> str:
     return session_id + "-turn"
 
 
-def stop_gate(data: dict, session_id: str) -> None:
+def stop_gate(data: dict, session_id: str, namespace: str) -> None:
     # block 後の再停止は通す。止め続けると、スキルを呼べない状況で終われなくなる
     if data.get("stop_hook_active"):
         return
@@ -217,17 +225,17 @@ def stop_gate(data: dict, session_id: str) -> None:
         return
     reason = (
         "返答に人に宛てた文案がある（お疲れ様です・よろしくお願いします等で始まる行）が、"
-        f"このターンで {'・'.join('`/' + skill + '`' for skill in missing)} を発動していない。"
+        f"このターンで {'・'.join('`/' + qualified(skill, namespace) + '`' for skill in missing)} を発動していない。"
         "Skill ツールで発動し、その規則（相手にしか答えられない問いだけを書く、など）で文案を書き直して出し直す"
-        "（AGENTS.md「文章とスキル」の規則を hook で強制している）。"
+        "（スキルの発動を hook で強制している）。"
     )
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))
 
 
-def gate(data: dict, session_id: str) -> None:
+def gate(data: dict, session_id: str, rules: list, namespace: str) -> None:
     tool_name = data.get("tool_name") or ""
     tool_input = data.get("tool_input") or {}
-    required = [(skill, note) for skill, triggered, note in RULES if triggered(tool_name, tool_input, data)]
+    required = [(skill, note) for skill, triggered, note in rules if triggered(tool_name, tool_input, data)]
     if not required:
         return
     invoked = load_state(session_id)
@@ -239,11 +247,19 @@ def gate(data: dict, session_id: str) -> None:
         save_state(session_id, invoked)
     for skill, note in required:
         if skill not in invoked:
-            deny(skill, note)
+            deny(qualified(skill, namespace), note)
             return
 
 
+def parse_args(argv: list[str]) -> tuple[list, str]:
+    options = dict(zip(argv[::2], argv[1::2]))
+    names = options.get("--skills")
+    rules = [rule for rule in RULES if names is None or rule[0] in names.split(",")]
+    return rules, options.get("--namespace", "")
+
+
 def main() -> int:
+    rules, namespace = parse_args(sys.argv[1:])
     try:
         data = json.load(sys.stdin)
     except ValueError:
@@ -262,9 +278,9 @@ def main() -> int:
         for key in (session_id, turn_key(session_id)):
             save_state(key, load_state(key) | {skill})
     elif event == "PreToolUse":
-        gate(data, session_id)
+        gate(data, session_id, rules, namespace)
     elif event == "Stop":
-        stop_gate(data, session_id)
+        stop_gate(data, session_id, namespace)
     return 0
 
 
