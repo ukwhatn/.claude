@@ -2,11 +2,13 @@
 
 別ベンダーのLLM（既定はcodex CLI）のnon-interactive modeで計画・実装をレビューする手順。空振りする条件は末尾「注意事項」に、ループを止める条件は「レビューループ」にある。
 
+<!-- publish:omit -->
 次に該当するときは、本ファイルに加えて `context/agent-cli-guide-details.md` をReadする:
 
 - codexが無くcursor（`agent` / `cursor-agent`）で実行するとき、または実行主体がCodexのとき
 - レビューループをpane（`bin/herdr-delegate.sh --kind codex`）で回すとき、reviewerを別agentに分けるとき
 - 使うモデルを既定から変えるとき
+<!-- /publish:omit -->
 
 ## いつ回すか
 
@@ -16,12 +18,14 @@
 
 ## CLIの選択とfallback
 
-1. `command -v codex` があればcodex。無ければcursor（手順はdetails）
+1. `command -v codex` があればcodex。無ければcursor<!-- publish:omit -->（手順はdetails）<!-- /publish:omit -->
+<!-- publish:omit -->
 2. 実行前にcodexの残枠を確認する（枯渇の申告をユーザーに求めない）:
    ```bash
    python3 ~/.claude/codex-usage.py --refresh >/dev/null 2>&1
    python3 ~/.claude/codex-usage.py --show   # monthly が null なら credits を見る。両方 null なら照会失敗とみなし実行して判断
    ```
+<!-- /publish:omit -->
 3. 外部CLIが両方使えない（不在・枠の枯渇・`Your workspace is out of credits`・ネットワーク遮断）ときは fable subagent で代替し、切り替えた旨だけ報告して進める:
    ```
    Agent(subagent_type: "general-purpose", model: "fable", prompt: "<下記プロンプト本文をそのまま>")
@@ -31,13 +35,14 @@ fable subagentはleadと同一ベンダーでbiasの独立性を持たないた�
 
 - 完了報告に「別ベンダーのレビュー未実施（fable subagentで代替）」と1行書く
 - 変更が認証・secret・migration・対外公開・データ削除を含むときに限り、外部CLIの復旧後にcodexで裏取りする（PRマージ前に間に合えばよい）。それ以外は報告の1行で足りる
-- leadと同じモデルでreviewer roleのsubagentは立てない（`context/tool-claude-code.md`「委譲判断」）
+- leadと同じモデルでreviewer roleのsubagentは立てない<!-- publish:omit -->（`context/tool-claude-code.md`「委譲判断」）<!-- /publish:omit -->
 - `Agent` ツールが無い環境では外部レビューを省略し、その旨を完了報告に書く
 
 ## 基本コマンド（codex）
 
 レビューはツールのタイムアウトを超えることが多いので、最初から `-o <file>` で結果をファイルへ落とす形で起動する。パイプを付けたまま背景に回さず、整形は読む側で行う。プロンプトはファイルに書いて `"$(cat ...)"` で渡す（ヒアドキュメントでargvに埋めると引用の入れ子でプロンプトが意図と変わり、変わっても気付けない）:
 
+<!-- publish:omit -->
 ```bash
 # 初回
 codex exec --dangerously-bypass-approvals-and-sandbox \
@@ -51,15 +56,37 @@ codex exec resume <SESSION_ID> --dangerously-bypass-approvals-and-sandbox \
   -o "<出力先>/review-2.txt" "$(cat "<プロンプトファイル>")" \
   < /dev/null > "<出力先>/review-2.log" 2>&1
 ```
+<!-- /publish:omit -->
+<!-- publish:only（公開版だけの文。原本では使わない）
+承認と sandbox は、利用者の codex の設定に従う。
+
+```bash
+# 初回
+codex exec --model gpt-6.1-sol -c model_reasoning_effort="high" \
+  -o "<出力先>/review.txt" "$(cat "<プロンプトファイル>")" \
+  < /dev/null > "<出力先>/review.log" 2>&1
+
+# 2回目以降（初回のログの session id を指定して継続する）
+codex exec resume <SESSION_ID> --model gpt-6.1-sol -c model_reasoning_effort="high" \
+  -o "<出力先>/review-2.txt" "$(cat "<プロンプトファイル>")" \
+  < /dev/null > "<出力先>/review-2.log" 2>&1
+```
+-->
 
 - `resume` は会話を引き継ぐが、モデルと effort は引き継がない。`--model` と `-c` を省くと `~/.codex/config.toml` の既定で動くので、初回と同じ値を毎回渡す（起動したら、ログの冒頭の `model:` と `reasoning effort:` の行で確認する）
 - `--last` は作業ディレクトリの直近のセッションを選ぶので、同じディレクトリで別の codex を起動していると別のセッションを継続する。session id を指定する
 
 起動後はAGENTS.md「バックグラウンドプロセス」に従い、進んでいる証拠を確認する。確実に短く終わる確認だけは、`--json "<プロンプト>" < /dev/null 2>/dev/null | jq -r 'select(.type=="item.completed" and .item.type=="agent_message") | .item.text'` の前景実行でよい。
 
-- `-c model_reasoning_effort` は既定値に依存せず明示する。不可逆な変更（認証・secret・migration・データ削除・対外公開）のレビューは `xhigh` にする（モデルと effort の比較は details「モデル選択」）。`gpt-5.6-sol-medium` のような合成slugはcodexには存在しない（cursor側の表記）
+- `-c model_reasoning_effort` は既定値に依存せず明示する。不可逆な変更（認証・secret・migration・データ削除・対外公開）のレビューは `xhigh` にする<!-- publish:omit -->（モデルと effort の比較は details「モデル選択」）<!-- /publish:omit -->。`gpt-5.6-sol-medium` のような合成slugはcodexには存在しない（cursor側の表記）
+<!-- publish:omit -->
 - sandboxを使わずに起動する（`--dangerously-bypass-approvals-and-sandbox`）。sandboxはネットワークを止めるので、レビュー中にcodexが依存を取りに行くコマンド（テスト前の依存確認など）を流すと途中で切れ、依存が半端に消えた作業ツリーが残る。指定を省くと、`~/.codex/config.toml` で信頼済みのディレクトリかどうかでsandboxが変わり、挙動が起動場所で揺れる
 - 書き込みの制限が無いので、起動はレビュー対象のworktreeか作業ツリーの外（メモリディレクトリ）で行い、ほかの作業が使う本体のチェックアウトでは起動しない。プロンプトには「ファイルを編集しない」と書く
+<!-- /publish:omit -->
+<!-- publish:only（公開版だけの文。原本では使わない）
+- sandbox がネットワークを遮断する設定だと、レビュー中に依存を取りに行くコマンドが途中で切れる。そのときは利用者に設定の変更を頼み、自分で sandbox を外すフラグを付けない
+- 起動はレビュー対象の worktree か作業ツリーの外で行う。プロンプトには「ファイルを編集しない」と書く
+-->
 - 認証は保存済みログインを再利用する。CI等では `CODEX_API_KEY` を当該コマンド限定で付与する
 
 ## プロンプト
@@ -68,7 +95,9 @@ diff・ファイル内容をプロンプトに埋め込まない（`$(git diff .
 
 どのレビュー種別でも、本文に次を含める:
 
-- `~/.claude/context/code-review-checklist.md` をReadして各セクションをチェックせよ（抽象観点だけでは具体的なanti-patternを見落とす）
+- `~/.claude/context/code-review-checklist.md` をReadして各セクションをチェックせよ（抽象観点だけでは具体的なanti-patternを見落とす）<!-- publish:only（公開版だけの文。原本では使わない）
+  - プロンプトには、このファイルと同じフォルダの code-review-checklist.md の絶対パスを書く
+-->
 - あなたはレビュアーとして呼ばれている。他のCLI・LLMへ再委託せず、自分で完遂せよ
 - 差分が読み書きするもの（テーブル・レコード・セッションキー・URL空間・外部API）を列挙し、既存の触っている箇所をgrepで洗い出し、既存経路のガード（認可・ロック・入力検証・履歴記録・冪等性・削除ガード）と差分側を突き合わせて、差分側に無いものを挙げよ（diffの内側だけを見るレビューの構造的な盲点。人間レビューの指摘の多くはこの型）
 - 差分が新たに依存する共通ラッパー・ミドルウェア・フレームワークAPIの実装か公式ドキュメントを読み、失敗時の挙動・副作用の順序・状態の反映タイミングが差分側の前提と一致するか確認せよ
@@ -97,7 +126,12 @@ diff・ファイル内容をプロンプトに埋め込まない（`$(git diff .
    - 同じ指摘が2ラウンド連続（既知制限として記録）
    - 安全上限: 実装差分は5ラウンド（残存指摘はissueファイルへ）、設計文書（計画・方針・要件）は2〜3ラウンド。設計文書で毎ラウンド新規指摘が出るのはLLMレビューの非収束特性で、品質不足の証拠ではない
    - 膨張シグナル: 成果物の機構数・文書量・diffの分岐やガードがラウンドごとに単調増加している。修正を続けず、減算パスへ移るかユーザー確認で打ち切る
+<!-- publish:omit -->
 4. ラウンド3到達時・膨張シグナル検知時は、次の修正ラウンドの前に `/gal-check` スキルを1回実行する（leadはループ継続の妥当性を自己判定できない）
+<!-- /publish:omit -->
+<!-- publish:only（公開版だけの文。原本では使わない）
+4. ラウンド3到達時・膨張シグナル検知時は、次の修正ラウンドの前に、続けるかをユーザーに確認する（leadはループ継続の妥当性を自己判定できない）
+-->
 5. 減算パス: 実装レビューで修正ラウンドが2回以上あった、または修正でdiffが増えたときに、収束後（または打ち切り時）1回だけ行う。ビルトイン `/simplify`、または外部CLIに「git diff $BASE_BRANCHを実行し、削除・簡素化できるもののみを挙げてください。バグ探し・堅牢性向上の提案は不要です。特に: 型・上流・DB制約で保証済みの値への再ガード、利用実績のない抽象化、レビュー中に追加された重複防御」。減算適用後の再レビューは1回だけで、そこで出た新規指摘はAction Requiredのみ対応する（加算と減算を同じレビューに混ぜると加算が常に優先されるため別パスにする）
 
 ## Severity別のlead判断
@@ -112,7 +146,7 @@ diff・ファイル内容をプロンプトに埋め込まない（`$(git diff .
 - 新しい機構（テーブル・状態 / enum・インフラ・運用プロセス）を伴う指摘は、「データ損失」と書かれていても自動では修正せず、ユーザー確認に回す（AGENTS.md「確認が必要なもの」の他者由来の機構拡大）。事実として正しい指摘と採用すべき指摘は別物で、採否は中長期の最適で決める
 - 指摘が名指しした機構を、自分の判断で別機構に置き換えない。置き換えるなら実機で動くことを確認してから入れる（後続ラウンドのレビューは自分が入れた機構を検証しない）
 - 同じRecommendedを2ラウンド続けてスキップするなら、スキップ理由を再検証するかユーザーに判断を仰ぐ（繰り返し指摘されるテスト不足の層はバグが出る層と一致しやすい）
-- スキップした指摘と理由は05_log.mdに1行ずつ記録する。同じ類型を同じ理由でスキップすることが2タスク以上続いたら、PJ CLAUDE.md「レビュー方針」の却下類型に追記する（`/update-inst`）
+- スキップした指摘と理由は05_log.mdに1行ずつ記録する。同じ類型を同じ理由でスキップすることが2タスク以上続いたら、PJ CLAUDE.md「レビュー方針」の却下類型に追記する<!-- publish:omit -->（`/update-inst`）<!-- /publish:omit -->
 
 ## 注意事項
 

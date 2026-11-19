@@ -1,8 +1,8 @@
 # shadcn/ui への対応付け
 
-PJ に `components.json` があるときに読む。型の選び方は SKILL.md の手順と各参照で決め、本ファイルは選んだ型を shadcn のどの部品とトークンで作るかだけを扱う。部品の API と組み立ての正誤（Group の入れ子・`asChild` と `render` の違い・Title の必須など）は `/shadcn` スキルに従う。
+PJ に `components.json` があるときに読む。型の選び方は SKILL.md の手順と各参照で決め、本ファイルは選んだ型を shadcn のどの部品とトークンで作るかだけを扱う。部品の API と組み立ての正誤（Group の入れ子・`asChild` と `render` の違い・Title の必須など）は `/shadcn` スキルに従う（入っていなければ shadcn の公式ドキュメントで確認する）。
 
-- 使える部品は、`npx shadcn@latest info --json` の `components` と `resolvedPaths.ui` で確認する。`package.json` が無いなどで実行できないときは、`components.json` の `aliases.ui` が指すディレクトリの中身を見る。入っていない部品を使うなら `/shadcn` スキルの手順で追加する
+- 使える部品は、`npx shadcn@latest info --json` の `components` と `resolvedPaths.ui` で確認する。`package.json` が無いなどで実行できないときは、`components.json` の `aliases.ui` が指すディレクトリの中身を見る。入っていない部品を使うなら `/shadcn` スキルの手順（入っていなければ `npx shadcn@latest add`）で追加する
 - `base`（`radix` か `base`）で API が違う部品がある。toast の部品も `base` で変わる
 
 ## 型と部品

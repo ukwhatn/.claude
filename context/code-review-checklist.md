@@ -164,7 +164,9 @@
 
 ### ✅ D1 / SQLite制約
 
+<!-- publish:omit -->
 D1 / SQLite固有の制約（バインドパラメータの上限・空のIN）は `context/cloudflare-development.md`「wrangler / D1の落とし穴」。
+<!-- /publish:omit -->
 
 ### ✅ Migrationの可逆性
 

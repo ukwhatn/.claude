@@ -49,7 +49,9 @@
 
 ## メモリディレクトリのファイル
 
+<!-- publish:omit -->
 作業項目と進み具合は、taskboardのMCPが繋がっていれば作業項目で持つ（`/taskboard`）。メモリには、作業項目に載らない経緯と判断を書く。
+<!-- /publish:omit -->
 
 | ファイル | 用途 | 作成タイミング |
 |---------|------|--------------|
@@ -58,7 +60,7 @@
 | 20_survey.md | 調査結果・実測の生データと導出過程 | 調査完了後 |
 | 30_plan.md | 実装計画 | 計画立案後 |
 | 40_progress.md | 実装中に発生した問題 | 問題が起きたとき |
-| 50_handoff.md | 引き継ぎスナップショット | 区切りで `/handoff` |
+| 50_handoff.md | 引き継ぎスナップショット | 区切りで<!-- publish:omit --> `/handoff`<!-- /publish:omit -->書く |
 | 80_review.md | レビュー指摘と対応の履歴 | レビュー実施後 |
 | 90_pr.md | PR内容 | PR作成時 |
 | 99_history.md | 意思決定ログ | 随時 |
@@ -69,7 +71,7 @@
 
 ### 05_log.md
 
-compaction・セッション切替の後にtranscriptからは復元できない情報だけを書く。書くのは、メモリディレクトリの絶対パス・委譲の起動記録（agent名・tab_id）・ユーザー裁定・スキップしたレビュー指摘とその理由。やり取りや実施内容の複写はしない（transcriptと重複し、書き込みの往復だけが増える）。区切りでの状態保存は `/handoff`（50_handoff.md）が担う。
+compaction・セッション切替の後にtranscriptからは復元できない情報だけを書く。書くのは、メモリディレクトリの絶対パス・委譲の起動記録（agent名・tab_id）・ユーザー裁定・スキップしたレビュー指摘とその理由。やり取りや実施内容の複写はしない（transcriptと重複し、書き込みの往復だけが増える）。区切りでの状態保存は<!-- publish:omit --> `/handoff`（<!-- /publish:omit -->50_handoff.md<!-- publish:omit -->）<!-- /publish:omit -->が担う。
 
 ```markdown
 # 作業ログ

@@ -49,7 +49,7 @@
 - Refactoring UI と、生成系サービスの system prompt。本文の一次ソースを開けなかった
 - 密度の既定（業務画面は高密度にする等）。どの出典も既定を定めていない
 - vercel-labs/ui（UI SDK）・Astryx・Hallmark のスキル本体。前の2つはそのライブラリを使う PJ でだけ意味を持ち、Hallmark はランディングページ専用。規則のうち他の出典と一致したものだけを採った
-- Modern Web Guidance の実装の手段（Popover API・`<dialog>`・anchor positioning のコード）。型の選択ではなく作り方の層なので、`/modern-web-guidance` でその場で取得する
+- Modern Web Guidance の実装の手段（Popover API・`<dialog>`・anchor positioning のコード）。型の選択ではなく作り方の層なので、`/modern-web-guidance` でその場で取得する（入っていなければブラウザの機能の公式ドキュメント）
 
 ## 4. 出典を更新するとき
 
