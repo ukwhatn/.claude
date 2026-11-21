@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """日本語の文から、話し言葉・和語に開いた作業動詞と、基準に合わない Markdown の表を検出する。
-あわせて、references/prose.md §2-6（載せないもの）に当たる文と節を削除の候補として出す。
+あわせて、references/prose.md §2-6（載せないもの）に当たる文と節を削除の候補として、
+§2-4 の同じ文末の文の連続を書き換えの候補として出す。
 
 語の対照表は references/prose.md §2-5 が真実源で、ここには検出の正規表現だけを置く。
 表とここの語が食い違うと --self-test が失敗する（片方だけ更新されるのを防ぐため）。
@@ -9,7 +10,7 @@
   check_register.py <ファイル>...   ファイルを検査する（- で標準入力）
   check_register.py --self-test     prose.md §2-5 の表と検出の語の一致と、検出の回帰の例を確認する
 
-終了コード: 0 該当なし、1 該当あり、2 実行できない（載せないものの候補は数えない）
+終了コード: 0 該当なし、1 該当あり、2 実行できない（候補は数えない）
 """
 from __future__ import annotations
 
@@ -119,11 +120,28 @@ OMISSION_SUGGESTIONS = {
     "作業の経緯・手順の節": "判断・報告の文書なら削除するか、経緯の文書へ移す",
 }
 
+# prose.md §2-4 の同じ文末の連続。改まった語尾と報告の「〜しました」が段落の中で続いたら候補にする。
+# 挨拶・頼み・結びの決まり文句は散らさないので数えず、連続も切る
+ENDING_CLASSES: list[tuple[str, re.Pattern[str]]] = [
+    ("〜いたします", re.compile(r"いたします$")),
+    ("〜しております", re.compile(r"[てで]おります$")),
+    ("〜しました", re.compile(r"しました$")),
+]
+SET_PHRASE = re.compile(r"(?:お願い|失礼|承知)いたし(?:ます|ました)$|ご連絡いたしました$|お願い申し上げます$"
+                        r"|(?:お世話になって|ご無沙汰して|感謝して)おります$")
+# 句点を省いた行末（Slack の短文）も、文末の形で終わり、次の行が接続の語で始まらなければ文の終わりとみなす。
+# それ以外の改行は、文の途中の折り返しとして次の行とつなぐ
+SENTENCE_END = re.compile(r"[^。！？!?\n]+[。！？!?\n]?")
+LINE_END_SENTENCE = re.compile(r"[すただい]$")
+LINE_START_CONTINUATION = re.compile(r"^(?:ので|から|が|けど|けれど|と|ため|、)")
+PARAGRAPH_START = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)]|#{1,6})[ \t]")
+ENDING_SUGGESTION = "同じ対象の文は1文につなぎ、状態・担当は「〜です」、予定は「〜予定です」で書く（prose.md §2-4）"
+
 
 @dataclass(frozen=True)
 class Finding:
     line: int
-    kind: str  # "語" か "表"
+    kind: str  # "語"・"表"・"載せない"・"文末"
     term: str
     suggestion: str
     excerpt: str
@@ -293,6 +311,53 @@ def find_omissions(text: str) -> list[Finding]:
     return sorted(findings, key=lambda f: f.line)
 
 
+def find_repeated_endings(text: str) -> list[Finding]:
+    """段落の中で同じ文末（ENDING_CLASSES）の文が続く箇所を、連続ごとに1件、2文目の行で返す。引用と表は見ない。"""
+    original_lines = text.split("\n")
+    masked_lines = mask_quoted(text).split("\n")
+    findings: list[Finding] = []
+    paragraph: list[tuple[int, str]] = []
+
+    def flush() -> None:
+        chunks = []
+        for i, (line_no, chunk) in enumerate(paragraph):
+            following = paragraph[i + 1][1] if i + 1 < len(paragraph) else ""
+            ends = LINE_END_SENTENCE.search(chunk) and not LINE_START_CONTINUATION.match(following)
+            chunks.append((line_no, chunk + "\n" if ends else chunk))
+        body = "".join(chunk for _, chunk in chunks)
+        offsets = []
+        position = 0
+        for line_no, chunk in chunks:
+            offsets.append((position, line_no))
+            position += len(chunk)
+        previous = None
+        run = 0
+        for match in SENTENCE_END.finditer(body):
+            sentence = match.group(0).strip().rstrip("。！？!?").strip()
+            if not sentence:
+                continue
+            ending = None
+            if not SET_PHRASE.search(sentence):
+                ending = next((name for name, regex in ENDING_CLASSES if regex.search(sentence)), None)
+            run = run + 1 if ending and ending == previous else 1
+            if ending and run == 2:
+                line_no = offsets[bisect.bisect_right([o for o, _ in offsets], match.end() - 1) - 1][1]
+                findings.append(Finding(line_no, "文末", ending, ENDING_SUGGESTION,
+                                        original_lines[line_no - 1].strip()[:80]))
+            previous = ending
+        paragraph.clear()
+
+    for line_no, line in enumerate(masked_lines, start=1):
+        if not line.strip() or TABLE_ROW.match(line) or PARAGRAPH_START.match(line):
+            flush()
+            if line.strip() and not TABLE_ROW.match(line):
+                paragraph.append((line_no, line.strip()))
+            continue
+        paragraph.append((line_no, line.strip()))
+    flush()
+    return findings
+
+
 # 検出の回帰の例: (本文, 該当の数)。複合動詞・引用・対照表を数えず、単独の用法を数えることを固定する
 REGRESSION_CASES: list[tuple[str, int]] = [
     ("確認し直す。言い直さない。読み直す。並べ直す。付け足す。取り消す。絞り直す。", 0),
@@ -336,6 +401,29 @@ OMISSION_CASES: list[tuple[str, int]] = [
     ("## 作業の経緯\n本文\n### 調査の過程\n## 確認したこと\n```\n## 作業ログ\n```", 2),
 ]
 
+# 同じ文末の連続の候補の回帰の例: (本文, 候補の数)。決まり文句・段落の区切り・引用・働きの違う文末を数えない
+REPEATED_ENDING_CASES: list[tuple[str, int]] = [
+    ("手続きを進めております。名義を変更いたします。\n記載のみを変更いたします。\n後任が担当いたします。", 1),
+    ("変更いたします。確認いたします。\n\n作業を開始しました。手順を記録しました。", 2),
+    ("名義を変更いたします。よろしくお願いいたします。", 0),
+    ("お世話になっております、運営の者でございます。\n手続きを進めております。", 0),
+    ("名義を変更いたします。\n\n記載を変更いたします。", 0),
+    ("- 名義を変更いたします。\n- 記載を変更いたします。", 0),
+    ("作業を開始しました。手順を記録しました。", 1),
+    ("「変更いたします。」「確認いたします。」は例である。", 0),
+    ("名義を変更いたします。担当は後任です。記載の変更は来週の予定です。", 0),
+    # 句点を省いた行末と、読点で折り返した文
+    ("名義を変更いたします。記載を変更いたします", 1),
+    ("作業を開始しました\n手順を記録しました", 1),
+    ("名義の変更につきましては、\n本日中に変更いたします。\n記載も変更いたします。", 1),
+    ("名義を変更いたします。記載の変更につきましては、\n来週の予定です。", 0),
+    ("名義を変更いたします。記載については\n来週変更いたします。", 1),
+    ("本日中に名義を変更いたします\nので、記載も変更いたします。", 0),
+    # 決まり文句: 挨拶は数えず、本文の「ご連絡いたします」は数える
+    ("資料を確認いたします。完了後にご連絡いたします。", 1),
+    ("ご無沙汰しております。日頃よりお力添えをいただき、感謝しております。", 0),
+]
+
 
 def self_test() -> list[str]:
     table = set(load_vocab_table())
@@ -354,6 +442,10 @@ def self_test() -> list[str]:
         found = len(find_omissions(text))
         if found != expected:
             errors.append(f"回帰（載せないもの）: {expected}件のはずが{found}件: {text[:40]}")
+    for text, expected in REPEATED_ENDING_CASES:
+        found = len(find_repeated_endings(text))
+        if found != expected:
+            errors.append(f"回帰（文末の連続）: {expected}件のはずが{found}件: {text[:40]}")
     return errors
 
 
@@ -363,6 +455,8 @@ def format_finding(finding: Finding, label: str = "") -> str:
         return f"{prefix}L{finding.line} {finding.term} → {finding.suggestion}: {finding.excerpt}"
     if finding.kind == "載せない":
         return f"{prefix}L{finding.line} 候補（{finding.term}）→ {finding.suggestion}: {finding.excerpt}"
+    if finding.kind == "文末":
+        return f"{prefix}L{finding.line} 候補（同じ文末の連続: {finding.term}）→ {finding.suggestion}: {finding.excerpt}"
     return f"{prefix}L{finding.line} 表（{finding.term}）→ {finding.suggestion}: {finding.excerpt}"
 
 
@@ -388,7 +482,7 @@ def main(argv: list[str]) -> int:
         for path in args.paths:
             text = sys.stdin.read() if path == "-" else open(path, encoding="utf-8").read()
             findings = check(text, suggestions, args.outbound)
-            omissions = find_omissions(text)
+            omissions = find_omissions(text) + find_repeated_endings(text)
             total += len(findings)
             candidates += len(omissions)
             for finding in sorted(findings + omissions, key=lambda f: f.line):
@@ -396,7 +490,8 @@ def main(argv: list[str]) -> int:
     except (OSError, StopIteration) as error:
         print(f"実行できない: {error}", file=sys.stderr)
         return 2
-    print(f"該当: {total}件、載せないものの候補: {candidates}件（候補は終了コードに数えない）", file=sys.stderr)
+    print(f"該当: {total}件、候補（載せないもの・同じ文末の連続）: {candidates}件（候補は終了コードに数えない）",
+          file=sys.stderr)
     return 1 if total else 0
 
 
