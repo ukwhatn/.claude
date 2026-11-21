@@ -129,10 +129,10 @@ ENDING_CLASSES: list[tuple[str, re.Pattern[str]]] = [
 ]
 SET_PHRASE = re.compile(r"(?:お願い|失礼|承知)いたし(?:ます|ました)$|ご連絡いたしました$|お願い申し上げます$"
                         r"|(?:お世話になって|ご無沙汰して|感謝して)おります$")
-# 句点を省いた行末（Slack の短文）も、文末の形で終わり、次の行が接続の語で始まらなければ文の終わりとみなす。
-# それ以外の改行は、文の途中の折り返しとして次の行とつなぐ
+# 句点を省いた行末（Slack の短文）も文の終わりとみなす。ただし読点・助詞・接続の形で終わる行と、
+# 次の行が接続の語で始まる行は、文の途中の折り返しとして次の行とつなぐ
 SENTENCE_END = re.compile(r"[^。！？!?\n]+[。！？!?\n]?")
-LINE_END_SENTENCE = re.compile(r"[すただい]$")
+LINE_END_CONTINUATION = re.compile(r"(?:[、，,はがをにでともへのやて]|から|けど|けれど|ので|ため)$")
 LINE_START_CONTINUATION = re.compile(r"^(?:ので|から|が|けど|けれど|と|ため|、)")
 PARAGRAPH_START = re.compile(r"^[ \t]*(?:[-*+]|\d+[.)]|#{1,6})[ \t]")
 ENDING_SUGGESTION = "同じ対象の文は1文につなぎ、状態・担当は「〜です」、予定は「〜予定です」で書く（prose.md §2-4）"
@@ -322,7 +322,7 @@ def find_repeated_endings(text: str) -> list[Finding]:
         chunks = []
         for i, (line_no, chunk) in enumerate(paragraph):
             following = paragraph[i + 1][1] if i + 1 < len(paragraph) else ""
-            ends = LINE_END_SENTENCE.search(chunk) and not LINE_START_CONTINUATION.match(following)
+            ends = not LINE_END_CONTINUATION.search(chunk) and not LINE_START_CONTINUATION.match(following)
             chunks.append((line_no, chunk + "\n" if ends else chunk))
         body = "".join(chunk for _, chunk in chunks)
         offsets = []
@@ -419,6 +419,8 @@ REPEATED_ENDING_CASES: list[tuple[str, int]] = [
     ("名義を変更いたします。記載の変更につきましては、\n来週の予定です。", 0),
     ("名義を変更いたします。記載については\n来週変更いたします。", 1),
     ("本日中に名義を変更いたします\nので、記載も変更いたします。", 0),
+    ("確認しました\n問題はありません\n対応を完了しました", 0),
+    ("進め方を確認しました\nこの形で問題ないでしょうか\n手順も記録しました", 0),
     # 決まり文句: 挨拶は数えず、本文の「ご連絡いたします」は数える
     ("資料を確認いたします。完了後にご連絡いたします。", 1),
     ("ご無沙汰しております。日頃よりお力添えをいただき、感謝しております。", 0),
