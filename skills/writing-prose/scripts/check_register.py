@@ -80,6 +80,8 @@ OUTBOUND_PATTERNS: dict[str, str] = {
     "使える": rf"{STANDALONE}使え(?:る|な|ま|た|ず|ば)",
     "手元（に保存する）": r"手元",
     "文中の「〜なので」": r"(?<![。！？\s])なので",
+    "〜していただけますか、〜いただけますでしょうか": (
+        r"いただけ(?:ますか|ますでしょうか|ませんか|ないでしょうか)|お願いでき(?:ますか|ますでしょうか|ませんか)"),
 }
 COMPILED = [(term, re.compile(pattern, re.M)) for term, pattern in VOCAB_PATTERNS.items()]
 OUTBOUND_COMPILED = [(term, re.compile(pattern, re.M)) for term, pattern in OUTBOUND_PATTERNS.items()]
@@ -313,6 +315,8 @@ REGRESSION_CASES: list[tuple[str, int]] = [
     ("欠けを埋める。作業を引き取る。これで足りる。main に入った。", 4),
     ("提出する。検出した。呼び出す。見出しを付ける。受け入れる。取り入れた。仕入れる。", 0),
     ("停止める。歯止めをかける。物足りない。受け流す。穴埋めする。範囲が入力された。", 0),
+    ("作成していただけますか。確認いただけますでしょうか。お願いできますでしょうか。", 3),
+    ("ご確認いただけますと幸いです。対応をお願いします。", 0),
 ]
 
 # outbound="fences" の回帰の例: 相手に出す文面の語は、言語名の無いコードブロックの中だけで数える
