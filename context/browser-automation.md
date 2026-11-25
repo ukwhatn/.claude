@@ -47,9 +47,9 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
 
 ## 自動化Chromeでのログイン（browser-login）
 
-ログイン画面が出たら、ユーザーにVNCでのログインを頼む前に `bin/browser-login` を使う。ヘルパーが1Passwordの専用vault（`Z_Automation`）の値を入力欄に入れ、エージェントには状態だけを返す。エージェントはID・パスワード・TOTP・秘密鍵を受け取らないので、`browser_type` や `browser_fill_form` に値を書かない。
+ログイン画面が出たら、ユーザーにVNCでのログインを頼む前に `bin/browser-login` を使う。ヘルパーが1Passwordのvault（`0_Primary`）の値を入力欄に入れ、エージェントには状態だけを返す。エージェントはID・パスワード・TOTP・秘密鍵を受け取らないので、`browser_type` や `browser_fill_form` に値を書かない。
 
-専用vaultには、自動化に使うサイトのLogin項目だけを、ユーザーが元のvaultからコピーして置く（サービスアカウントは組み込みのPersonal vaultを読めず、権限も作成後に変えられないため、読ませるのは専用vaultだけにしている）。コピーなので、元の項目でパスワードを変えたら専用vault側も更新する必要がある。ログインが失敗し続けるときは、ユーザーにコピーが古くないかを確認してもらう。
+サービスアカウントは組み込みのPersonal vaultを読めないので、自動化に使うLogin項目はサービスアカウントが読める `0_Primary` に置く（2026-11-25 に専用vault `Z_Automation` から移設した）。ログインが失敗し続けるときは、ユーザーに項目の値が古くないかを確認してもらう。
 
 1. 自分のタブで、titleの末尾に目印を付ける（目印は英数字・`-`・`_` の4〜64文字。ほかのセッションと重ならない値にする）
 
@@ -58,7 +58,7 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
    () => { document.title += ' [browser-login:<目印>]' }
    ```
 
-2. ヘルパーを背景で起動する（Bashの `run_in_background`）。項目IDは `browser-login items`（専用vaultのLogin項目のID・題・URLだけを出す）で調べる。サービスアカウントのトークンが無いマシンでは使えない
+2. ヘルパーを背景で起動する（Bashの `run_in_background`）。項目IDは `browser-login items`（vaultのLogin項目のID・題・URLだけを出す）で調べる。サービスアカウントのトークンが無いマシンでは使えない
 
    ```sh
    ~/.claude/bin/browser-login login --tab-mark <目印> --item <項目ID> [--timeout 120]

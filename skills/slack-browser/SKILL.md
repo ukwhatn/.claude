@@ -11,7 +11,7 @@ Slack のアプリ連携を認可できないワークスペースで、ユー�
 
 ## 前提
 
-- playwright-mcp の常駐サーバ（`context/browser-automation.md`）が動いていて、その Chrome で対象ワークスペースにログイン済みであること。未ログインなら、専用 vault にそのワークスペースの Login 項目があるときは `browser-login` で入る（手順は `context/browser-automation.md`「自動化Chromeでのログイン」）。項目が無いとき、メールの確認コードや SSO で止まったときは、ユーザーにログインを頼む
+- playwright-mcp の常駐サーバ（`context/browser-automation.md`）が動いていて、その Chrome で対象ワークスペースにログイン済みであること。未ログインなら、vault（`0_Primary`）にそのワークスペースの Login 項目があるときは `browser-login` で入る（手順は `context/browser-automation.md`「自動化Chromeでのログイン」）。項目が無いとき、メールの確認コードや SSO で止まったときは、ユーザーにログインを頼む
 - ワークスペースの対応表 `~/.claude/local/slack-workspaces.json`（git 管理外）に登録してあること:
 
 ```json

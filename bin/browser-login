@@ -5,7 +5,7 @@
 #   "websocket-client>=1.7",
 # ]
 # ///
-"""自動化 Chrome のタブに CDP で常駐し、1Password の専用 vault の値でログインの入力欄を埋めるヘルパー。
+"""自動化 Chrome のタブに CDP で常駐し、1Password のvault（0_Primary） の値でログインの入力欄を埋めるヘルパー。
 
 エージェントは画面の操作（次へ・ログイン・パスキーでログイン のクリック）を自分で行い、値はこのヘルパーが入れる。
 エージェントが受け取るのは状態（JSON Lines）だけで、ID・パスワード・TOTP・秘密鍵は受け取らない。
@@ -47,7 +47,7 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-VAULT = "Z_Automation"
+VAULT = "0_Primary"
 TOKEN_FILE = Path.home() / ".config/op/agent-automation-token"
 STATE_DIR = Path.home() / ".local/state/browser-login"
 CDP_PORT = int(os.environ.get("PLAYWRIGHT_MCP_CDP_PORT", "9223"))
@@ -622,12 +622,12 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     sub = p.add_subparsers(dest="command", required=True)
     login = sub.add_parser("login", help="タブに常駐し、出てきた入力欄を埋める")
     login.add_argument("--tab-mark", required=True)
-    login.add_argument("--item", required=True, help="専用 vault の Login 項目の ID")
+    login.add_argument("--item", required=True, help="vault（0_Primary） の Login 項目の ID")
     login.add_argument("--timeout", type=int, default=120)
-    sub.add_parser("items", help="専用 vault の Login 項目の ID・題・URL を出す（値は出さない）")
+    sub.add_parser("items", help="vault（0_Primary） の Login 項目の ID・題・URL を出す（値は出さない）")
     stop = sub.add_parser("stop", help="login で起動したヘルパーを終了させる")
     stop.add_argument("--tab-mark", required=True)
-    enroll = sub.add_parser("enroll-passkey", help="自動化専用のパスキーを登録して専用 vault に保存する（手元の Mac で使う）")
+    enroll = sub.add_parser("enroll-passkey", help="自動化専用のパスキーを登録してvault（0_Primary） に保存する（手元の Mac で使う）")
     enroll.add_argument("--tab-mark", required=True)
     enroll.add_argument("--item", required=True)
     enroll.add_argument("--for-host", required=True, help="このパスキーを使うマシンの LocalHostName")
