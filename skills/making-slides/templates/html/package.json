@@ -1,0 +1,12 @@
+{
+  "name": "slides-html",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "reveal.js": "^6.0.2",
+    "@fontsource/noto-sans-jp": "^5.3.1"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.65.1"
+  }
+}

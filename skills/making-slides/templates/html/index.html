@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>資料の題</title>
+    <!-- reveal.js は npm install で node_modules に置く。CDN から読まないのは、オフラインの会場で表示できなくなるため -->
+    <link rel="stylesheet" href="node_modules/reveal.js/dist/reset.css" />
+    <link rel="stylesheet" href="node_modules/reveal.js/dist/reveal.css" />
+    <link rel="stylesheet" href="node_modules/reveal.js/dist/theme/white.css" />
+    <!-- 書体も node_modules から読む。CFF 形式のシステム書体（ヒラギノ）と可変フォントは、Chrome の PDF で Type3 になり書体名が消える -->
+    <link rel="stylesheet" href="node_modules/@fontsource/noto-sans-jp/400.css" />
+    <link rel="stylesheet" href="node_modules/@fontsource/noto-sans-jp/700.css" />
+    <link rel="stylesheet" href="theme.css" />
+  </head>
+  <body>
+    <div class="reveal">
+      <div class="slides">
+        <section>
+          <h1>資料の題（2行まで）</h1>
+          <p>発表者の名前・所属<br />日付</p>
+        </section>
+
+        <!-- auto-animate: 隣り合う2ページで data-id が同じ要素が、位置と大きさを変えて移る -->
+        <section data-auto-animate>
+          <h1>主張を1行の文で書く</h1>
+          <div class="box" data-id="client" style="margin: 120px 0 0 420px; font-size: 48px">要素A</div>
+        </section>
+        <section data-auto-animate>
+          <h1>主張を1行の文で書く</h1>
+          <div style="display: flex; gap: 48px; align-items: center">
+            <div class="box" data-id="client">要素A</div>
+            <div class="box is-key" data-id="cache">要素B</div>
+          </div>
+          <aside class="notes">発表者ノート。S キーで発表者表示を開く。</aside>
+        </section>
+
+        <!-- fragment: 1回の操作で1段階ずつ表示する。PDF では最終状態の1ページにまとまる -->
+        <section>
+          <h1>段階を追って示す主張を1行で書く</h1>
+          <ul>
+            <li class="fragment fade-in">1段階目</li>
+            <li class="fragment fade-in">2段階目</li>
+            <li class="fragment fade-in">3段階目</li>
+          </ul>
+        </section>
+
+        <!-- data-count: fragment を表示したときに 0 から数える。本文には最終の値を書く（PDF と reduce-motion では最終の値が出る） -->
+        <section>
+          <h1>数値が示す主張を1行で書く</h1>
+          <span class="metric fragment" data-count="30" data-suffix="%">30%</span>
+          <p>比べた2つの値と条件を1文で書く</p>
+          <p class="note">出典: 計測の条件と時点</p>
+        </section>
+      </div>
+    </div>
+
+    <script src="node_modules/reveal.js/dist/reveal.js"></script>
+    <script src="node_modules/reveal.js/dist/plugin/notes.js"></script>
+    <script>
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      Reveal.initialize({
+        width: 1280,
+        height: 720,
+        // スライドの端の余白（幅に対する割合）。0.1 で左右に約 64px
+        margin: 0.1,
+        center: false,
+        hash: true,
+        slideNumber: "c/t",
+        transition: reduceMotion ? "none" : "fade",
+        autoAnimate: !reduceMotion,
+        // PDF では fragment をページに分けず、最終状態の1ページにする
+        pdfSeparateFragments: false,
+        pdfMaxPagesPerSlide: 1,
+        plugins: [RevealNotes],
+      });
+
+      Reveal.on("fragmentshown", (event) => {
+        const el = event.fragment;
+        const target = Number(el.dataset.count);
+        if (!Number.isFinite(target) || reduceMotion) return;
+        const suffix = el.dataset.suffix ?? "";
+        const duration = 800;
+        const start = performance.now();
+        const step = (now) => {
+          const t = Math.min((now - start) / duration, 1);
+          el.textContent = `${Math.round(target * t)}${suffix}`;
+          if (t < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      });
+    </script>
+  </body>
+</html>

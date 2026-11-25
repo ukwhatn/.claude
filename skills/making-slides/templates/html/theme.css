@@ -1,0 +1,104 @@
+/* reveal.js の white テーマの上に重ねる。色・書体はここだけで決める */
+:root {
+  --fg: #1f2328;
+  --muted: #59636e;
+  --accent: #0b5cad;
+  --surface: #f6f8fa;
+  --line: #d1d9e0;
+
+  --r-background-color: #ffffff;
+  --r-main-font: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  --r-main-font-size: 32px; /* 1280x720 で 24pt 相当 */
+  --r-main-color: var(--fg);
+  --r-heading-font: var(--r-main-font);
+  --r-heading-color: var(--fg);
+  --r-heading-font-weight: 700;
+  --r-heading-text-transform: none;
+  --r-heading-letter-spacing: normal;
+  --r-heading-line-height: 1.3;
+  --r-heading1-size: 44px;
+  --r-heading2-size: 36px;
+  --r-heading3-size: 32px;
+  --r-code-font: "SF Mono", "Menlo", "Consolas", monospace;
+  --r-link-color: var(--accent);
+}
+
+/* 端の余白は index.html の margin で取る。印刷用の CSS が section の padding を 0 にするため */
+.reveal .slides section {
+  text-align: left;
+  line-height: 1.5;
+  word-break: auto-phrase;
+}
+
+.reveal h1 {
+  margin-bottom: 32px;
+}
+
+.reveal strong {
+  color: var(--accent);
+}
+
+.reveal ul,
+.reveal ol {
+  display: block;
+  margin-left: 1.2em;
+}
+
+/* 出典・定義・前提の注記 */
+.reveal .note {
+  color: var(--muted);
+  font-size: 20px;
+}
+
+/* 既定は Helvetica で、PDF の書体の検査で代替として出る。印刷時は .slide-number-pdf になる */
+.reveal .slide-number,
+.reveal .slide-number-pdf {
+  background: none;
+  color: var(--muted);
+  font-family: var(--r-main-font);
+  font-size: 20px;
+}
+
+/* 画面では右下の送りの矢印と重なるので左下に置く */
+.reveal .slide-number {
+  left: 16px;
+  right: auto;
+  bottom: 12px;
+}
+
+/* 図の箱。auto-animate で同じ data-id の箱が位置と大きさを変えて移る */
+.reveal .box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 24px;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 28px;
+}
+
+.reveal .box.is-key {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.reveal .metric {
+  display: block;
+  font-size: 120px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 遠い席の聴衆に段階を示すときは、表示前の要素を薄く残さず消す */
+.reveal .fragment.fade-in {
+  transition-duration: 0.4s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal .fragment {
+    transition: none !important;
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: designing-ui
-description: 画面の設計判断（ナビゲーション・重ね方・通知と空状態と読み込み・外枠とトークンと状態表現）の型を決定表で選び、アプリ内の全画面で統一する。画面・ページ・レイアウト・ナビゲーション・ダイアログ・コンポーネントを新しく作る・再作成する時、モックやダッシュボードを作る時、サイドバー・タブ・モーダル・シート・toast・バナー・空状態のどれを使うか決める時に使用。PJ に components.json があれば shadcn の部品とトークンへの対応も扱う。主要なデザインシステム（Material・HIG・Carbon・Primer・Atlassian・Fluent・GOV.UK・NN/g・WAI-ARIA APG・WCAG）の一致点を規則にし、食い違いの採否を定めてある。境界: 画面の文言は writing-ui-text、画面に何を出すかと提示前の完了基準は context/ui-artifact-standards.md、コードの実装原則は writing-code、shadcn 部品の API と組み立ては shadcn、見た目の仕上げは unslop（新しい画面では本スキルの手順から呼ぶ）、選んだ型を Web プラットフォームの機能でどう作るかは modern-web-guidance。
+description: 画面の設計判断（ナビゲーション・重ね方・通知と空状態と読み込み・外枠とトークンと状態表現）の型を決定表で選び、アプリ内の全画面で統一する。画面・ページ・レイアウト・ナビゲーション・ダイアログ・コンポーネントを新しく作る・再作成する時、モックやダッシュボードを作る時、サイドバー・タブ・モーダル・シート・toast・バナー・空状態のどれを使うか決める時に使用。PJ に components.json があれば shadcn の部品とトークンへの対応も扱う。主要なデザインシステム（Material・HIG・Carbon・Primer・Atlassian・Fluent・GOV.UK・NN/g・WAI-ARIA APG・WCAG）の一致点を規則にし、食い違いの採否を定めてある。境界: 画面の文言は writing-ui-text、画面に何を出すかと提示前の完了基準は context/ui-artifact-standards.md、コードの実装原則は writing-code、shadcn 部品の API と組み立ては shadcn、見た目の仕上げは unslop（新しい画面では本スキルの手順から呼ぶ）、選んだ型を Web プラットフォームの機能でどう作るかは modern-web-guidance。スライド資料（登壇・投影・PDF で配るデッキ）は対象外。
 ---
 
 # designing-ui

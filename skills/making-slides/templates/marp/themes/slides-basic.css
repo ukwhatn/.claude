@@ -1,0 +1,224 @@
+/*
+ * @theme slides-basic
+ * @auto-scaling fittingHeader,math
+ * @size 16:9 1280px 720px
+ * @size 4:3 960px 720px
+ */
+
+@import 'slides-fonts';
+
+/* 色・書体はここだけで決める。PJ のブランドに合わせるときはこのブロックを書き換える */
+:root {
+  --fg: #1f2328;
+  --muted: #59636e;
+  --accent: #0b5cad;
+  --bg: #ffffff;
+  --surface: #f6f8fa;
+  --line: #d1d9e0;
+  --font: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  --mono: "SF Mono", "Menlo", "Consolas", monospace;
+}
+
+section {
+  width: 1280px;
+  height: 720px;
+  box-sizing: border-box;
+  padding: 56px 72px 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  font-size: 32px; /* 24pt 相当。投影の本文の既定 */
+  line-height: 1.5;
+  word-break: auto-phrase;
+}
+
+h1 {
+  margin: 0 0 32px;
+  font-size: 44px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+h2 {
+  margin: 0 0 24px;
+  font-size: 36px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+
+h3 {
+  margin: 0 0 12px;
+  font-size: 32px;
+  font-weight: 700;
+}
+
+p,
+li {
+  margin: 0 0 0.4em;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding-left: 1.2em;
+}
+
+strong {
+  color: var(--accent);
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.85em;
+  background: var(--surface);
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+}
+
+pre {
+  margin: 0;
+  padding: 20px 24px;
+  background: var(--surface);
+  border-radius: 8px;
+  font-size: 24px;
+  line-height: 1.45;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 1em;
+}
+
+table {
+  border-collapse: collapse;
+  font-size: 26px;
+}
+
+th,
+td {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+th {
+  color: var(--muted);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+blockquote {
+  margin: 0;
+  padding: 16px 24px;
+  border-left: 6px solid var(--accent);
+  background: var(--surface);
+}
+
+img {
+  max-width: 100%;
+}
+
+/* 出典・定義・前提の注記。<p class="note"> で書く */
+.note {
+  margin-top: auto;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+header,
+footer {
+  position: absolute;
+  left: 72px;
+  color: var(--muted);
+  font-size: 20px;
+}
+
+header {
+  top: 20px;
+}
+
+footer {
+  bottom: 24px;
+}
+
+/* ページ番号。Marp の既定は padding: inherit でセクションの余白が加わるので 0 にし、注記の行（本文の下端）に揃える */
+section::after {
+  position: absolute;
+  right: 72px;
+  bottom: 80px;
+  padding: 0;
+  color: var(--muted);
+  font-size: 20px;
+  line-height: 1.4;
+}
+
+/* 表紙 */
+section.lead {
+  justify-content: center;
+}
+
+section.lead h1 {
+  font-size: 56px;
+  margin-bottom: 24px;
+}
+
+section.lead p {
+  color: var(--muted);
+}
+
+/* 章扉 */
+section.chapter {
+  justify-content: center;
+  border-left: 16px solid var(--accent);
+}
+
+section.chapter h1 {
+  font-size: 52px;
+}
+
+/* 2段。見出しの後の2つのまとまりを左右に置く（3つ目以降は次の行に回る） */
+section.cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: min-content;
+  column-gap: 48px;
+  align-content: start;
+}
+
+section.cols > h1,
+section.cols > .note {
+  grid-column: 1 / -1;
+}
+
+/* 大きな数値。**数値** を1つ置き、下の文で意味を書く */
+section.metric strong {
+  display: block;
+  margin: 8px 0 16px;
+  font-size: 120px;
+  line-height: 1.1;
+  font-weight: 700;
+}
+
+/* 読む資料（PDF で配る版）。本文を小さくして文で書く */
+section.doc {
+  font-size: 24px;
+  line-height: 1.6;
+}
+
+section.doc h1 {
+  font-size: 36px;
+  margin-bottom: 24px;
+}
+
+section.doc table {
+  font-size: 20px;
+}
+
+section.doc th {
+  font-size: 18px;
+}

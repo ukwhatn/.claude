@@ -1,0 +1,14 @@
+{
+  "name": "slides",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "pdf": "marp --no-stdin --pdf",
+    "html": "marp --no-stdin",
+    "preview": "marp --no-stdin --preview"
+  },
+  "devDependencies": {
+    "@marp-team/marp-cli": "^4.5.1",
+    "@fontsource/noto-sans-jp": "^5.3.1"
+  }
+}
