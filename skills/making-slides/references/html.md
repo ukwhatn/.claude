@@ -26,7 +26,7 @@ cd <デッキのディレクトリ> && npm install
 ## 2. 構造
 
 - 1ページは `<div class="slides">` の中の `<section>` 1つ。縦に並べる子ページは `<section>` を入れ子にする（使うのは補足や付録を下に置くときだけ）
-- 見出しは `<h1>` に主張の文を書く。注記は `<p class="note">`
+- 見出しは `<h1>` に主張の文を書く。注記は `<p class="note">`（テーマがページの下端に置く）
 - 発表者ノートは `<aside class="notes">`。`S` キーで発表者表示を開く
 - 大きさは `Reveal.initialize` の `width: 1280, height: 720`。端の余白は `margin`（幅に対する割合）で取り、section に `padding` を付けない（印刷用の CSS が 0 にする）
 
@@ -52,6 +52,7 @@ cd <デッキのディレクトリ> && npm install
 
 - 動きの実装をブラウザの機能（View Transitions・`@starting-style`・scroll-driven animation）で作るときは、`/modern-web-guidance` で作り方とブラウザの対応を確認する
 - 本文には最終状態の値と図を書き、動きはそこへ至る途中だけにする（テンプレートの数値の変化は、最終の値をマークアップに書き、表示したときに 0 から数える）。こうすると PDF・動きを減らす設定・JS の失敗のどれでも最終状態が残る
+- auto-animate の2つの `section` は、PDF でも2ページになる。設計表の1ページの中で段階を見せるなら、1つの `section` の中で fragment と CSS の動き（矢印を伸ばすなど）で作る
 - auto-animate は位置・大きさ・色・不透明度を補間する。要素の対応は `data-id` で明示する（`data-id` が無いと、reveal.js は要素の種類と文字で対応を推定するので、意図しない要素どうしが結ばれることがある）
 
 ## 4. 動きを減らす設定
@@ -69,11 +70,12 @@ cd <デッキのディレクトリ> && npm install
 
 ```bash
 node <このスキルのディレクトリ>/scripts/html_to_pdf.mjs index.html build/deck.pdf
-uv run --with pymupdf python3 <このスキルのディレクトリ>/scripts/verify_pdf.py build/deck.pdf --expect-pages <ページ数>
+uv run --with pymupdf python3 <このスキルのディレクトリ>/scripts/verify_pdf.py build/deck.pdf --expect-pages <ページ数> --footer-top 0.9
 uv run --with pymupdf python3 <このスキルのディレクトリ>/scripts/pdf_to_png.py build/deck.pdf build/png/
 ```
 
 - `html_to_pdf.mjs` は `?print-pdf` を開き、reveal.js が印刷用のページ（`.pdf-page`）を組み終えてから、CSS の `@page` の大きさで印刷する
+- `--footer-top 0.9` はテンプレートの配置に合わせた値（注記が本文の下端にあり、ページ番号はその下の余白にある）。注記の位置を変えたら、PDF の文字の位置から決め直す
 - テンプレートは `pdfSeparateFragments: false` で、fragment を最終状態の1ページにまとめる。段階ごとにページを分けたいなら `true` にし、`--expect-pages` を段階の数に合わせる
 - auto-animate の途中と CSS の動きは PDF に出ない。`html_to_pdf.mjs` は動きを減らす設定（`prefers-reduced-motion: reduce`）でページを開くので、CSS の動きには、その設定で最終状態を出す規則を必ず書く（無いと、透明から表示する要素が PDF から消える）。各ページの最終状態で主張が伝わるかを PNG で確認する
 - 1ページが縦に長いと複数ページに分かれる。`pdfMaxPagesPerSlide: 1` で1ページに切る（はみ出した分は消えるので、検査とPNGで確認する）

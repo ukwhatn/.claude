@@ -44,8 +44,18 @@
   margin-left: 1.2em;
 }
 
-/* 出典・定義・前提の注記 */
+/* reveal.js の section は画面でも印刷でも中身の高さしか持たない。注記をページの下端に置くため、高さを px で与える。
+   印刷用のレイアウトでは section の親が .pdf-page になる。display は reveal.js が表示の切り替えに使うので変えない */
+.reveal .slides > section,
+.reveal .pdf-page > section {
+  height: 720px;
+}
+
+/* 出典・定義・前提の注記。ページの下端に置く */
 .reveal .note {
+  position: absolute;
+  bottom: 0;
+  margin: 0;
   color: var(--muted);
   font-size: 20px;
 }
