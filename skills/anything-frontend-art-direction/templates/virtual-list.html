@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>資料番号の一覧</title>
+<style>
+:root { font-family: system-ui, sans-serif; line-height: 1.6; }
+body { max-inline-size: 48rem; margin: 2rem auto; padding-inline: 1rem; }
+button, select, input { font: inherit; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+#viewport { block-size: min(60vh, 24rem); overflow: auto; border: 1px solid; overflow-anchor: none; }
+#rows { margin: 0; padding-inline: .75rem; list-style: none; }
+#measure, #rows li { box-sizing: border-box; display: block; min-block-size: 2.5rem; white-space: nowrap; border-block-end: 1px dotted; }
+#measure { position: absolute; visibility: hidden; pointer-events: none; }
+</style>
+<body>
+<h1>資料番号</h1>
+<label><input type="checkbox" id="whole"> 全件を表示（ページ内検索用）</label>
+<div id="viewport" tabindex="0" role="region" aria-label="資料番号の一覧">
+  <span id="measure" aria-hidden="true">資料 0000</span>
+  <ol id="rows" role="list"></ol>
+</div>
+<script>
+const total = 1000;
+const measure = document.querySelector('#measure');
+const viewport = document.querySelector('#viewport');
+const rows = document.querySelector('#rows');
+const whole = document.querySelector('#whole');
+let lastRange = '';
+function draw() {
+  const rowHeight = measure.getBoundingClientRect().height;
+  const first = whole.checked ? 0 : Math.max(0, Math.floor(viewport.scrollTop / rowHeight) - 3);
+  const until = whole.checked ? total : Math.min(total, Math.ceil((viewport.scrollTop + viewport.clientHeight) / rowHeight) + 3);
+  const key = [first, until, rowHeight, whole.checked].join('/');
+  if (key === lastRange) return;
+  lastRange = key;
+  const group = document.createDocumentFragment();
+  for (let i = first; i < until; i++) {
+    const entry = document.createElement('li');
+    entry.textContent = '資料 ' + String(i + 1).padStart(4, '0');
+    entry.setAttribute('aria-posinset', String(i + 1));
+    entry.setAttribute('aria-setsize', String(total));
+    group.append(entry);
+  }
+  rows.style.paddingBlockStart = first * rowHeight + 'px';
+  rows.style.paddingBlockEnd = (total - until) * rowHeight + 'px';
+  rows.replaceChildren(group);
+}
+whole.addEventListener('change', draw);
+viewport.addEventListener('scroll', draw, { passive: true });
+const resize = new ResizeObserver(draw);
+resize.observe(viewport);
+resize.observe(measure);
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>確認ダイアログ</title>
+<style>
+:root { font-family: system-ui, sans-serif; line-height: 1.6; }
+body { max-inline-size: 48rem; margin: 2rem auto; padding-inline: 1rem; }
+button, select, input { font: inherit; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+dialog::backdrop { background: rgb(20 26 36 / 60%); }
+</style>
+<body>
+<h1>読書メモ</h1>
+<button id="review" type="button">メモを閉じる</button>
+<dialog id="decision" aria-labelledby="question">
+  <h2 id="question">編集を終了しますか？</h2>
+  <form method="dialog">
+    <button value="stay" autofocus>編集を続ける</button>
+    <button value="leave">終了する</button>
+  </form>
+</dialog>
+<p role="status" id="outcome"></p>
+<script>
+const launch = document.querySelector('#review');
+const box = document.querySelector('#decision');
+launch.addEventListener('click', () => {
+  box.returnValue = '';
+  box.showModal();
+});
+box.addEventListener('close', () => {
+  document.querySelector('#outcome').textContent =
+    box.returnValue === 'leave' ? '編集を終了しました。' : '編集中です。';
+});
+</script>
+</body>
+</html>

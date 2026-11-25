@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>展示のお知らせ</title>
+<style>
+:root { font-family: system-ui, sans-serif; line-height: 1.6; }
+body { max-inline-size: 48rem; margin: 2rem auto; padding-inline: 1rem; }
+button, select, input { font: inherit; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+
+</style>
+<body>
+<section aria-label="分室の展示" aria-roledescription="カルーセル">
+  <h1>今月の展示</h1>
+  <button id="rotation">自動送りを開始</button>
+  <button id="back">前へ</button><button id="forward">次へ</button>
+  <div id="slide" aria-live="polite" aria-atomic="true"></div>
+</section>
+<script>
+const topics = ['活版印刷の道具', '地図の描き方', '紙の見本帳'];
+const area = document.querySelector('section');
+const slide = document.querySelector('#slide');
+const rotation = document.querySelector('#rotation');
+const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+let position = 0;
+let timer;
+let waitingForExit = false;
+function show(delta) {
+  position = (position + delta + topics.length) % topics.length;
+  slide.textContent = (position + 1) + ' / ' + topics.length + '　' + topics[position];
+}
+function stop() {
+  clearInterval(timer);
+  timer = undefined;
+  waitingForExit = false;
+  rotation.textContent = '自動送りを開始';
+  slide.setAttribute('aria-live', 'polite');
+}
+function updatePreference() { stop(); rotation.disabled = reduced.matches; }
+let stopOnClick = false;
+rotation.addEventListener('pointerdown', () => { stopOnClick = timer !== undefined || waitingForExit; });
+rotation.addEventListener('pointercancel', () => { stopOnClick = false; });
+rotation.addEventListener('click', event => {
+  const wasRunning = event.detail > 0 && stopOnClick;
+  stopOnClick = false;
+  if (timer !== undefined || waitingForExit || wasRunning) { stop(); return; }
+  if (reduced.matches) return;
+  if (area.matches(':hover')) {
+    waitingForExit = true;
+    rotation.textContent = '自動送りの開始を取り消す';
+    return;
+  }
+  run();
+});
+function run() {
+  waitingForExit = false;
+  slide.setAttribute('aria-live', 'off');
+  rotation.textContent = '自動送りを停止';
+  timer = setInterval(() => show(1), 6000);
+}
+area.addEventListener('focusin', stop);
+area.addEventListener('mouseenter', stop);
+area.addEventListener('mouseleave', () => { if (waitingForExit && !reduced.matches) run(); });
+reduced.addEventListener('change', updatePreference);
+for (const [id, delta] of [['back', -1], ['forward', 1]]) {
+  document.getElementById(id).addEventListener('click', () => { stop(); show(delta); });
+}
+updatePreference();
+show(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,3 @@
+# 取り込んだ外部 skill は上流の blob と一致させる（bin/vendor-check.py が比べる）。上流が CRLF で持つファイルを core.autocrlf で変換しない
+skills/anything-frontend-art-direction/** -text
+vendor/patches/anything-frontend-art-direction.patch -text

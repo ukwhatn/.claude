@@ -14,7 +14,7 @@
 |---|---|
 | `AGENTS.md`（実体）/ `CLAUDE.md`（symlink）/ `settings.json` | `CLAUDE.local.md`（マシン固有の実値） |
 | `context/` `skills/` `hooks/` `agents/` `templates/` `output-styles/` `bin/` `vendor/` `.github/` | `.local/`（メモリ・issue） |
-| `statusline-command.sh` `subagent-statusline.py` `codex-usage.py` `README.md` `NOTICE.md` | `plugins/`（marketplaceキャッシュ） |
+| `statusline-command.sh` `subagent-statusline.py` `codex-usage.py` `README.md` `NOTICE.md` `.gitattributes` | `plugins/`（marketplaceキャッシュ） |
 
 statusline系スクリプトはルート直下に置く（`bin/` を切らない）。`settings.json` が `statusLine` / `subagentStatusLine` から参照しており、settingsだけ同期されてスクリプトが無いと毎tickで実行失敗するため、allowlistへの追加が必要。
 

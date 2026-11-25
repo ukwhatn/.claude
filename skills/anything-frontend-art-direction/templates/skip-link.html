@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>本文への移動</title>
+<style>
+:root { font-family: system-ui, sans-serif; line-height: 1.6; }
+body { max-inline-size: 48rem; margin: 2rem auto; padding-inline: 1rem; }
+button, select, input { font: inherit; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+.skip { position: absolute; inset: .5rem auto auto .5rem; background: Canvas; color: CanvasText; padding: .4rem; }
+.skip:not(:focus) { clip-path: inset(50%); inline-size: 1px; block-size: 1px; overflow: hidden; }
+</style>
+<body>
+<a class="skip" href="#article">本文へ移動</a>
+<header><nav aria-label="目次"><a href="#hours">開館時間</a></nav></header>
+<main id="article" tabindex="-1">
+  <h1>分室の利用案内</h1>
+  <h2 id="hours">開館時間</h2><p>火曜から土曜の10時〜17時です。</p>
+</main>
+</body>
+</html>

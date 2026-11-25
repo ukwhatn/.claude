@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>取り消し可能な先行表示</title>
+<style>
+:root { font-family: system-ui, sans-serif; line-height: 1.6; }
+body { max-inline-size: 48rem; margin: 2rem auto; padding-inline: 1rem; }
+button, select, input { font: inherit; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+
+</style>
+<body>
+<h1>あとで読む</h1>
+<label><input type="checkbox" id="offline"> 保存失敗を試す</label>
+<button id="mark" aria-pressed="false">読書リストに追加</button>
+<p id="result" role="status">未登録です。</p>
+<script>
+const mark = document.querySelector('#mark');
+const result = document.querySelector('#result');
+let committed = false;
+function render(value) {
+  mark.setAttribute('aria-pressed', String(value));
+}
+function save(desired, fail) {
+  return new Promise((resolve, reject) => setTimeout(() => {
+    if (fail) reject(new Error('保存失敗'));
+    else resolve(desired);
+  }, 250));
+}
+mark.addEventListener('click', async () => {
+  if (mark.getAttribute('aria-disabled') === 'true') return;
+  const desired = !committed;
+  mark.setAttribute('aria-disabled', 'true');
+  render(desired);
+  result.textContent = '保存しています。';
+  try {
+    committed = await save(desired, document.querySelector('#offline').checked);
+    result.textContent = committed ? '登録しました。' : '登録を解除しました。';
+  } catch {
+    render(committed);
+    result.textContent = '保存に失敗しました。元の状態に戻しました。';
+  } finally { mark.removeAttribute('aria-disabled'); }
+});
+</script>
+</body>
+</html>

@@ -159,6 +159,15 @@ SOFTWARE.
 - 更新するときは、上流の参照commitから最新までの SKILL.md の差分を全文読み、無改変でコピーしてから `git apply vendor/patches/modern-web-guidance.patch` で改変を当て直す。上の参照commitと `vendor/manifest.json` の `commit` を書き換える
 - ライセンス全文: `skills/modern-web-guidance/LICENSE`（Apache License 2.0）
 
+## RNA4219/anything-frontend-art-direction
+
+- 出典: https://github.com/RNA4219/anything-frontend-art-direction （参照commit: `046e42c7de149373993109cf4a211a577b1c3bcc`）
+- 配置先: `skills/anything-frontend-art-direction/`（SKILL.md, LICENSE, NOTICE.md, sources.md, references/, checklists/, templates/, data/typography/）。作例の `examples/`（画像・音源・書体を埋め込んだ HTML）、README 用の画像の `docs/`、README の各言語版は、スキルの手順から参照されないので取り込んでいない
+- 上流は一部のファイルを CRLF で持つ。上流の blob と一致させるため、`.gitattributes` でこのディレクトリと patch の改行を変換しない設定にしてある
+- 改変: `SKILL.md` の description の末尾に本環境のほかのスキルとの境界を1文追加し、見出しの直後に `## この環境での優先順位` の節を追加し、frontmatter の直後に改変した旨の注記を1行追加した（PJ のデザインシステム・画面の型の選択・仕上げ・文言・チャートを本環境のスキルに譲り、本環境に無い Product Design のスキルを取得しにいかないため）。改変の全体は `vendor/patches/anything-frontend-art-direction.patch`。それ以外のファイルは無改変
+- plugin や `npx skills add` で導入しない（サプライチェーン攻撃を避けるため）。更新するときは、上流の参照commitから最新までの差分を全文読み、上流のファイルを無改変でコピーしてから `git apply vendor/patches/anything-frontend-art-direction.patch` で改変を当て直す。当たらなければ改変の趣旨（境界の1文と優先順位の節）に沿ってパッチを再作成する。上の参照commitと `vendor/manifest.json` の `commit` を書き換える
+- ライセンス全文: `skills/anything-frontend-art-direction/LICENSE`（MIT License, Copyright (c) 2026 anything-frontend contributors）。templates の画像と data の記述も同じ MIT。リンク先の第三者の資料には各権利者の条件が適用される（同ディレクトリの `NOTICE.md`）
+
 ## 上流の更新の検出
 
 `vendor/manifest.json` に、取り込んだ外部 skill の上流リポジトリ・固定した commit・取り込んだファイルを置く。`bin/vendor-check.py` は、固定した commit と上流の最新とで取り込んだファイルの内容が変わったか、取り込み元のディレクトリにファイルが増えたか、手元の複製が固定した commit と一致するか（改変したファイルを除く）を調べる。`.github/workflows/vendor-check.yml` が週次で実行し、差分があれば issue を立てて ukwhatn に割り当てる（既にあれば本文を更新する）。翻案したもの（obra/superpowers・mattpocock/skills・DietrichGebert/ponytail・cursor/plugins の pstack）は台帳に載せていない。

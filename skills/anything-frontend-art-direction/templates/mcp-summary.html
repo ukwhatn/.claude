@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ツールから届いた件数</title>
+<style>
+:root { font-family: system-ui, sans-serif; line-height: 1.6; }
+body { max-inline-size: 48rem; margin: 2rem auto; padding-inline: 1rem; }
+button, select, input { font: inherit; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+
+</style>
+<body>
+<h1>検索結果</h1>
+<p id="summary" role="status">ツール結果を待っています。</p>
+<script>
+const panel = document.querySelector('#summary');
+function start() {
+  if (window.parent === window) {
+    panel.textContent = 'MCP Apps 対応ホストの埋め込み画面で開いてください。';
+    return;
+  }
+  const peer = window.parent;
+  const version = '2026-01-26';
+  const handshakeId = 'count-view-init';
+  let ready = false;
+  let peerOrigin;
+  const timeout = setTimeout(() => {
+    window.removeEventListener('message', receive);
+    panel.textContent = 'ホストから応答がありません。';
+  }, 10000);
+  function receive(event) {
+    const message = event.data;
+    if (event.source !== peer || message?.jsonrpc !== '2.0') return;
+    if (!ready) {
+      if (message.id !== handshakeId) return;
+      clearTimeout(timeout);
+      if (message.error || message.result?.protocolVersion !== version) {
+        window.removeEventListener('message', receive);
+        panel.textContent = 'ホストと表示方式を合意できませんでした。';
+        return;
+      }
+      ready = true;
+      peerOrigin = event.origin;
+      peer.postMessage({ jsonrpc: '2.0', method: 'ui/notifications/initialized', params: {} },
+        peerOrigin === 'null' ? '*' : peerOrigin);
+      return;
+    }
+    if (event.origin !== peerOrigin) return;
+    if (message.method === 'ui/notifications/tool-cancelled') {
+      panel.textContent = '検索を中止しました。';
+      return;
+    }
+    if (message.method !== 'ui/notifications/tool-result') return;
+    const count = message.params?.structuredContent?.count;
+    panel.textContent = !message.params?.isError && Number.isSafeInteger(count) && count >= 0
+      ? '見つかった資料は ' + count + ' 件です。'
+      : '件数を確認できませんでした。';
+  }
+  window.addEventListener('message', receive);
+  peer.postMessage({
+    jsonrpc: '2.0', method: 'ui/initialize', id: handshakeId,
+    params: { appCapabilities: {}, protocolVersion: version, appInfo: { name: 'result-count', version: '1.0.0' } }
+  }, '*');
+}
+start();
+</script>
+</body>
+</html>

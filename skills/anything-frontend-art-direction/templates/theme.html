@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>配色の選択</title>
+<style>
+:root { font-family: system-ui, sans-serif; line-height: 1.6; }
+body { max-inline-size: 48rem; margin: 2rem auto; padding-inline: 1rem; }
+button, select, input { font: inherit; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+:root { color-scheme: light dark; background: Canvas; color: CanvasText; }
+</style>
+<body>
+<h1>表示設定</h1>
+<label for="palette">配色</label>
+<select id="palette"><option value="normal">端末に合わせる</option>
+  <option value="light">ライト</option><option value="dark">ダーク</option></select>
+<script>
+const palette = document.querySelector('#palette');
+palette.addEventListener('change', () => {
+  const style = document.documentElement.style;
+  if (palette.value === 'normal') style.removeProperty('color-scheme');
+  else style.colorScheme = palette.value;
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>状態の変化を伝える</title>
+<style>
+:root { font-family: system-ui, sans-serif; line-height: 1.6; }
+body { max-inline-size: 48rem; margin: 2rem auto; padding-inline: 1rem; }
+button, select, input { font: inherit; }
+:focus-visible { outline: 3px solid currentColor; outline-offset: 3px; }
+#shelf { border-inline-start: .25rem solid; padding-inline-start: .6rem; }
+@media (prefers-reduced-motion: no-preference) {
+  #shelf { transition: transform 160ms ease-out; }
+  #shelf.held { transform: translateX(.3rem); }
+}
+</style>
+<body>
+<h1>貸出棚</h1>
+<button id="hold" aria-pressed="false">取り置き</button>
+<p id="shelf" role="status">受付できます。</p>
+<script>
+const hold = document.querySelector('#hold');
+const shelf = document.querySelector('#shelf');
+hold.addEventListener('click', () => {
+  const active = hold.getAttribute('aria-pressed') === 'false';
+  hold.setAttribute('aria-pressed', String(active));
+  shelf.classList.toggle('held', active);
+  shelf.textContent = active ? '取り置き中です。' : '受付できます。';
+});
+</script>
+</body>
+</html>
