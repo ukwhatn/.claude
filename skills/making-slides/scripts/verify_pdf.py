@@ -27,7 +27,8 @@ DEFAULT_ALLOW = r"NotoSansJP|SFMono|Menlo|Consolas"
 
 
 def spans(page):
-    for block in page.get_text("dict")["blocks"]:
+    # 既定の get_text はページの範囲で切り抜き、ページの外の文字を返さない。スライド外を検査するため切り抜かない
+    for block in page.get_text("dict", clip=pymupdf.INFINITE_RECT())["blocks"]:
         for line in block.get("lines", []):
             for sp in line["spans"]:
                 if sp["text"].strip():

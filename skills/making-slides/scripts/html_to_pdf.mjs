@@ -3,7 +3,8 @@
 //   node html_to_pdf.mjs <deck/index.html> <out.pdf>
 //
 // デッキのディレクトリの playwright-core（テンプレートの devDependencies）で、システムの Chrome を操作する。
-// Chrome のコマンドラインの --print-to-pdf は CSS の @page の大きさを使わず Letter で出力するので使わない。
+// reveal.js は印刷用のページを読み込みの後に JS で組むので、読み込み直後に印刷する Chrome の --print-to-pdf では、組む前の状態（1ページなど）で出力される。
+// 動きを減らす設定で開き、CSS の動きを最終状態で止めて印刷する（初期状態が透明の動きはそのままだと PDF から消える）。
 import { createRequire } from "node:module";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -37,7 +38,7 @@ const chrome = [
 
 const browser = await loadChromium().launch(chrome ? { executablePath: chrome } : { channel: "chrome" });
 try {
-  const page = await browser.newPage();
+  const page = await browser.newPage({ reducedMotion: "reduce" });
   const url = `${pathToFileURL(deckPath).href}?print-pdf`;
   await page.goto(url, { waitUntil: "load" });
   // reveal.js は ready の後に印刷用のページ（.pdf-page）を組み、pdf-ready を出して loading-scroll-mode を外す。

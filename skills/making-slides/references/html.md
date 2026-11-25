@@ -75,7 +75,7 @@ uv run --with pymupdf python3 <このスキルのディレクトリ>/scripts/pdf
 
 - `html_to_pdf.mjs` は `?print-pdf` を開き、reveal.js が印刷用のページ（`.pdf-page`）を組み終えてから、CSS の `@page` の大きさで印刷する
 - テンプレートは `pdfSeparateFragments: false` で、fragment を最終状態の1ページにまとめる。段階ごとにページを分けたいなら `true` にし、`--expect-pages` を段階の数に合わせる
-- auto-animate の途中と CSS の動きは PDF に出ない。各ページの最終状態で主張が伝わるかを PNG で確認する
+- auto-animate の途中と CSS の動きは PDF に出ない。`html_to_pdf.mjs` は動きを減らす設定（`prefers-reduced-motion: reduce`）でページを開くので、CSS の動きには、その設定で最終状態を出す規則を必ず書く（無いと、透明から表示する要素が PDF から消える）。各ページの最終状態で主張が伝わるかを PNG で確認する
 - 1ページが縦に長いと複数ページに分かれる。`pdfMaxPagesPerSlide: 1` で1ページに切る（はみ出した分は消えるので、検査とPNGで確認する）
 
 ## 7. 確認
@@ -87,12 +87,9 @@ uv run --with pymupdf python3 <このスキルのディレクトリ>/scripts/pdf
 
 ## 8. 既知の罠
 
-- PDF が Letter の縦になる
-  - 原因: Chrome のコマンドラインの `--print-to-pdf` は `@page` の大きさを使わない
-  - 対処: `scripts/html_to_pdf.mjs`（`preferCSSPageSize`）を使う
-- PDF が1ページだけになる
-  - 原因: `Reveal.isReady()` の直後に印刷し、印刷用のページを組む前だった
-  - 対処: `.pdf-page` が組まれ、`loading-scroll-mode` が外れるまで待つ（スクリプトで対応済み）
+- PDF が1ページだけになる、用紙の大きさが違う
+  - 原因: reveal.js は印刷用の `@page` とページ（`.pdf-page`）を読み込みの後に JS で組む。読み込み直後（Chrome のコマンドラインの `--print-to-pdf`）や `Reveal.isReady()` の直後に印刷すると、組み終える前の状態で出力される
+  - 対処: `scripts/html_to_pdf.mjs` を使う（`.pdf-page` が組まれ、`loading-scroll-mode` が外れるまで待ち、`preferCSSPageSize` で印刷する）
 - PDF で端の余白が消える
   - 原因: 印刷用の CSS が section の `padding` を 0 にする
   - 対処: 余白は `margin` の設定で取る
