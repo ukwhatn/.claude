@@ -11,11 +11,11 @@
 
 ## 1. 出典の選び方
 
-- 公開されているデザインシステムと公的な指針を使う: Material（material-components-android と developer.android.com の docs）、Apple HIG、IBM Carbon、GitHub Primer、Atlassian Design System、Microsoft Fluent 2 と Windows のデザイン指針、GOV.UK Design System、Nielsen Norman Group、WAI-ARIA APG、WCAG 2.2、MDN、Vercel Web Interface Guidelines、Linear の再設計記事、Anthropic の frontend-design skill。見た目の装飾の規則は、Meta の Astryx の設計原則、vercel-labs/ui（UI SDK）の styles、Chrome の Modern Web Guidance のガイド、unslop・Hallmark・plusai の記事が一致する点だけを採る
+- 公開されているデザインシステムと公的な指針を使う: Material（material-components-android と developer.android.com の docs）、Apple HIG、IBM Carbon、GitHub Primer、Atlassian Design System、Microsoft Fluent 2 と Windows のデザイン指針、GOV.UK Design System、Nielsen Norman Group、WAI-ARIA APG、WCAG 2.2、MDN、Vercel Web Interface Guidelines、Linear の再設計記事、Anthropic の frontend-design skill。確定前の表示の規則は、データ取得ライブラリの公式ドキュメント（React・TanStack Query・hypersig）も使う。見た目の装飾の規則は、Meta の Astryx の設計原則、vercel-labs/ui（UI SDK）の styles、Chrome の Modern Web Guidance のガイド、unslop・Hallmark・plusai の記事が一致する点だけを採る
 - **複数の出典で一致する点を規則にする**。1出典だけの規則は、出典が公式で、他の出典と矛盾しないときに限る
 - **原文を開いて該当文を確認した規則だけを入れる**。確認できなかった規則は、各参照の「未確認で外した規則」に理由と一緒に残す
 - 画面幅の区切り・時間（ms）・寸法（px・dp）・不透明度などの数値は持たない。出典ごとに値が違い、PJ と CSS フレームワークの値と食い違うから。例外は、複数の出典が一致し、かつ型の選択に効く数（ボトムタブの項目数）と、WCAG の達成基準が定める閾値（非テキストのコントラスト 3:1、自動で動く表示の5秒）だけ。WCAG の閾値は規範で、PJ の値で置き換わる性質のものではないから
-- 原文の確認日: 2026-10-06（見た目の装飾・コントラスト・エージェントの状態の規則は 2026-11-13）
+- 原文の確認日: 2026-10-06（見た目の装飾・コントラスト・エージェントの状態の規則は 2026-11-13、確定前の表示の規則は 2026-11-25）
 
 ## 2. 食い違いの採否
 
@@ -41,6 +41,7 @@
 | 関連項目の並べ方 | Modern Web Guidance は横スクロールのカルーセルにする、ほかの出典に同じ規則は無い | 規則にしない（1出典） |
 | unslop の数値・文言・チャート | unslop は余白・幅・文字の太さ・easing・色の値、英語の文言、チャートの色の規則を持つ | 本スキルには入れない。unslop を実行するときも、PJ の値・`/writing-ui-text`・dataviz スキル（使えるとき）を unslop の規則より優先する<!-- publish:omit -->（`skills/unslop/SKILL.md` の Precedence 節）<!-- /publish:omit --> |
 | 画面を磨くか型を選ぶか | unslop は既存の画面を見た目で磨く、本スキルは型を選んで統一する | 新しく作る・型を選ぶのは本スキル。見た目の仕上げは unslop で、新しい画面では本スキルの手順2で方向を決め、手順9で呼ぶ。既存の画面を磨く依頼は unslop を直接使う。unslop は外枠とナビゲーションの型を変えない |
+| 楽観的な更新の既定 | Vercel は成功の見込みが高ければ画面を先に更新する、hypersig は処理中の表示を既定とし、先に表示するのを直接操作・個人の切り替え・自分の本文の送信に限る | hypersig に従う。先に表示した値は確定値で置き換え、失敗時は最新の確定値に戻す（hypersig・React・TanStack Query が一致し、Vercel の "roll back" とも矛盾しない）。先に表示しない値のうち、他者が同時に編集しうる値・サーバーが決める値・取り消せない操作は hypersig だけが記載するが、公式で他の出典と矛盾しないので採る |
 
 ## 3. 取り込まなかったもの
 
@@ -49,6 +50,7 @@
 - Refactoring UI と、生成系サービスの system prompt。本文の一次ソースを開けなかった
 - 密度の既定（業務画面は高密度にする等）。どの出典も既定を定めていない
 - vercel-labs/ui（UI SDK）・Astryx・Hallmark のスキル本体。前の2つはそのライブラリを使う PJ でだけ意味を持ち、Hallmark はランディングページ専用。規則のうち他の出典と一致したものだけを採った
+- hypersig の実装の層（SSE の配信・morph・ページトークン・読み取り共有・Signal の式・再接続時の読み直し）。ライブラリを使う PJ でだけ意味を持ち、再接続時の読み直しは既存のデータ取得ライブラリが既定で行う
 - Modern Web Guidance の実装の手段（Popover API・`<dialog>`・anchor positioning のコード）。型の選択ではなく作り方の層なので、`/modern-web-guidance` でその場で取得する（入っていなければブラウザの機能の公式ドキュメント）
 
 ## 4. 出典を更新するとき

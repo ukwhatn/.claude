@@ -177,9 +177,13 @@
 - エラーを出しても入力を削除しない。誤った値も正しい値も残し、修正するだけで済むようにする［GOVUK-errmsg］［GOVUK-validation］［NNg-errors］
 - 貼り付けを禁止しない［Vercel-WIG］
 
-### 楽観的な更新
+### 確定前の表示
 
-- 成功する見込みが高い操作は、画面を先に更新し、サーバーの応答で合わせる。失敗したら元に戻してエラーを出すか、取り消しを出す［Vercel-WIG］
+- 操作への反応（押した状態・処理中の表示）はすぐ表示し、値はサーバーが確定してから表示する。送信中は処理中の表示にする［hypersig］
+- 確定を待たずに結果を先に表示するのは、待つと壊れて見える利用者自身の操作に限る。ドラッグなどの直接操作、頻繁で影響の小さい個人の切り替え、自分で書いた本文の送信が当たる［hypersig］
+- 次の値は先に表示せず、処理中の表示だけにする。ほかの人が同時に編集しうる値、サーバーが決める値（ID・順序・合計・価格・在庫・権限）、検証で拒否されうる入力、支払いのように取り消せない操作［hypersig］［Vercel-WIG］
+- 先に表示した値は、確定値が届いたら送信中でも置き換える［hypersig］［React-useOptimistic］［TQ-optimistic］［Vercel-WIG］
+- 失敗したら、クリックする前の値ではなく、サーバーにある最新の確定値に戻してエラーを表示する。送信中に別のタブや他の利用者が確定させた変更を、クリック前の値で上書きしないため［hypersig］［React-useOptimistic］［TQ-optimistic］
 
 ### `aria-live`
 
@@ -212,7 +216,10 @@
 | GOVUK-errmsg | https://design-system.service.gov.uk/components/error-message/ | 確認済み | "Do not clear any form fields when showing the Error message component." |
 | NNg-errors | https://www.nngroup.com/articles/error-message-guidelines/ | 確認済み | "Display the error message close to the error's source." |
 | AST-agentic | https://github.com/facebook/astryx/blob/main/docs/design/agentic-states.md | 確認済み（2026-11-13、commit 721dbf1。文書の状態は draft） | "DR1 — Extend established state language first. Agentic states SHOULD reuse representations from `design:user-states` and `design:system-states` when the underlying intention is the same." |
-| Vercel-WIG | https://github.com/vercel-labs/web-interface-guidelines | 確認済み（README.md を raw で取得） | "Keep submit enabled until submission starts; then disable during the in-flight request, show a spinner, & include an idempotency key." |
+| Vercel-WIG | https://github.com/vercel-labs/web-interface-guidelines | 確認済み（README.md を raw で取得） | "Keep submit enabled until submission starts; then disable during the in-flight request, show a spinner, & include an idempotency key." / "Update the UI immediately when success is likely; reconcile on server response. On failure, show an error & roll back or provide Undo."（先に表示するかの既定は採らない。sources.md 2節） |
+| hypersig | https://imaimai17468.github.io/hypersig-ts/ja/concepts/ | 確認済み（2026-11-25） | 「ほかの人が同時に編集しうる値、サーバーが決める値（key、価格、在庫、権限）、検証で拒否されうる入力、支払いのように取り消せない操作には使わず、処理中の表示だけにします。」／「失敗したら、クリックする前の値ではなく、最新の確定した値に戻します。」 |
+| React-useOptimistic | https://react.dev/reference/react/useOptimistic | 確認済み（2026-11-25） | "If the Action throws an error, the Transition still ends, and React renders with whatever `value` currently is." |
+| TQ-optimistic | https://tanstack.com/query/latest/docs/framework/react/guides/optimistic-updates | 確認済み（2026-11-25） | "In most of these failure cases, you can just trigger a refetch for your optimistic queries to revert them to their true server state." |
 
 ## 8. 未確認で外した規則
 
