@@ -120,7 +120,7 @@ SOFTWARE.
 
 ## nanaism/yomiyasu
 
-- 出典: https://github.com/nanaism/yomiyasu の `skills/yomiyasu/` （参照commit: `5b7cacc7749e9195338d7305635c06871fc6daf1`）
+- 出典: https://github.com/nanaism/yomiyasu の `skills/yomiyasu/` （参照commit: `3979c750b5e1fe9892bd47bb354f0fb51d534ff2`）
 - 配置先: `skills/yomiyasu/`（SKILL.md, LICENSE, UNICODE-LICENSE.txt, references/, scripts/）。上流のファイルを無改変でコピーしたもので、翻案していない。`.codex-plugin/` と `assets/` は Claude Code の実行に不要なので取り込んでいない。本環境向けの扱いは `skills/writing-prose/SKILL.md` 側で上書きする
 - `scripts/yomiyasu_hook.py` は設定ファイルに手で登録したときだけ動く hook で、本環境では登録していない
 - plugin や `npx skills add` で導入しない（サプライチェーン攻撃を避けるため）。更新するときは上流を clone し、`diff -r` で差分を全文読んでからコピーし、上の参照commitと `vendor/manifest.json` の `commit` を書き換える
@@ -128,7 +128,7 @@ SOFTWARE.
 
 ## blader/humanizer
 
-- 出典: https://github.com/blader/humanizer （参照commit: `225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8`）
+- 出典: https://github.com/blader/humanizer （参照commit: `a32f24407364c74c812b43c15926d638bee1e072`）
 - 配置先: `skills/humanizer/`（SKILL.md, LICENSE）。上流のファイルを無改変でコピーしたもので、翻案していない。plugin の定義・README・検証スクリプトは Claude Code の実行に不要なので取り込んでいない。本環境向けの扱いは `skills/writing-prose/SKILL.md` 側で上書きする
 - plugin や `npx skills add` で導入しない（サプライチェーン攻撃を避けるため）。更新するときは上流を clone し、`diff -r` で差分を全文読んでからコピーし、上の参照commitと `vendor/manifest.json` の `commit` を書き換える
 - ライセンス全文: `skills/humanizer/LICENSE`（MIT License, Copyright (c) 2025 Siqi Chen）
@@ -143,7 +143,7 @@ SOFTWARE.
 
 ## heydamir/unslop
 
-- 出典: https://github.com/heydamir/unslop の `skills/unslop/` （参照commit: `97daa3eb365670ea3f87ed85356cbfcee18105a5`）。作者: Damir Sokolovsky（https://x.com/heydamir）
+- 出典: https://github.com/heydamir/unslop の `skills/unslop/` （参照commit: `620163eedb3529d9cd23a3994ed8d287d06f760d`）。作者: Damir Sokolovsky（https://x.com/heydamir）
 - 配置先: `skills/unslop/`（SKILL.md, references/, scripts/, agents/openai.yaml, LICENSE）。上流の最上位にある LICENSE を `skills/unslop/LICENSE` に置いた。`examples/`・`test/` は Claude Code の実行に不要なので取り込んでいない
 - ライセンス: Creative Commons Attribution 4.0 International（CC BY 4.0、https://creativecommons.org/licenses/by/4.0/ ）。SKILL.md と references にある作者のクレジット行は削除しない
 - 改変: `SKILL.md` の description の末尾に、本環境のほかのスキルとの境界を1文追加し、`## Run it` の前に `## Precedence in this environment` の節を追加し、frontmatter の直後に改変した旨の注記を1行追加した（PJ のデザインシステム・日本語の文言・チャート・画面の型の選択を本環境のスキルに譲り、課金や外部送信のある画像生成を事前に確認するため）。改変の全体は `vendor/patches/unslop.patch`。それ以外のファイルは無改変
@@ -151,7 +151,7 @@ SOFTWARE.
 
 ## GoogleChrome/modern-web-guidance
 
-- 出典: https://github.com/GoogleChrome/modern-web-guidance の `skills/modern-web-guidance/` （参照commit: `4dd968349e54ca45a05dd5c818fb035c9054b022`）
+- 出典: https://github.com/GoogleChrome/modern-web-guidance の `skills/modern-web-guidance/` （参照commit: `2b4aa13a72dd47cd135b06ce5abfccd92e19b24f`）
 - 配置先: `skills/modern-web-guidance/`（SKILL.md, LICENSE）。`guides/` は SKILL.md の手順どおり CLI が実行時に取得するので取り込んでいない。plugin 定義・`skills/chrome-extensions/` も取り込んでいない
 - 改変: `SKILL.md` の description の「MANDATORY: Execute FIRST for all HTML/CSS and clientside JS tasks」を、ブラウザ側の機能の作り方を決める前に使う旨と designing-ui との境界の文に置き換えた（CSS の小さな修正でも毎回 CLI がネットワークに出るのを避けるため）。応答の末尾に `### Modern Web Guidance` 節を付けさせる Step 4 を外した（応答の書き方は output style が決めるため）。frontmatter の直後に、改変した旨の注記を1行追加した（Apache License 2.0 の 4(b)）。改変の全体は `vendor/patches/modern-web-guidance.patch`
 - CLI は `npx -y modern-web-guidance@latest` のまま実行させる。`~/.npmrc` の `min-release-age` が公開から日の浅い版を除外するので、版をここで固定しない

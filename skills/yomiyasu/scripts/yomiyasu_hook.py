@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """Optional local hooks. Installation only prints configuration; never edits it."""
+
+from __future__ import annotations
 import sys
 sys.dont_write_bytecode = True
 import json
 import os
+from pathlib import Path
+from collections.abc import Callable
+from types import FrameType, ModuleType
+from typing import NoReturn
 
-__version__ = "2.0.2"
+__version__ = "3.4.1"
 _EVENTS = ("UserPromptExpansion", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SessionEnd")
 _BUDGETS = {"UserPromptExpansion": 4, "UserPromptSubmit": 4, "PreToolUse": 7,
             "PostToolUse": 7, "Stop": 20, "SessionEnd": 0.8}
 _LIMITS = {"max_stop_blocks": 2, "max_runs": 3, "deadline_min": 30}
 _MAX_INPUT = 4 * 1024 * 1024
 _MAX_TEXT = 2 * 1024 * 1024
-_HELP = """使い方: yomiyasu_hook.py --host claude-code|codex [--state-dir DIR]
+_HELP = """使い方: yomiyasu_hook.py --host claude-code|codex [--state-dir DIR] [--words フォルダ | --no-words]
        yomiyasu_hook.py --print-config claude-code|codex
        yomiyasu_hook.py --version
 
@@ -26,9 +33,15 @@ _HELP = """使い方: yomiyasu_hook.py --host claude-code|codex [--state-dir DIR
   --state-dir DIR           登録を探す状態フォルダ。省くと環境変数 YOMIYASU_STATE_DIR（空白だけの値と ${ を
                             含む値は使いません）、git の最上位（なければ作業ディレクトリ）の .yomiyasu/ の順に探します。
                             Claude Code では、環境変数 CLAUDE_PROJECT_DIR のプロジェクトの .yomiyasu/ も探します。
+  --words フォルダ          語の一覧（allow.txt と flag.txt。flag-patterns.txt も置けます）のフォルダ。フックは lint を
+                            動かさないので、続けさせるときや止めるときに案内する yomiyasu_check.py run のコマンドに
+                            --words と絶対パスを付けます。
+                            一覧を読めないときは付けず、check が作った状態フォルダの hook-errors.log に1行残します。
+  --no-words                案内する yomiyasu_check.py run のコマンドに --no-words を付けます（--words と一緒には使えず、
+                            両方あればどちらも付けません）。どちらも省くと、run が自分で .yomiyasu-words/ を探します。
   --print-config claude-code|codex
                             設定に貼る JSON の例（このスクリプトの絶対パス入り）を出します。設定ファイルには書き込みません。
-  --version                 版を表示して終わります。
+  --version                 バージョンを表示して終わります。
   -h, --help                このヘルプを表示して終わります。
 
 終了コード:
@@ -40,7 +53,13 @@ _HELP = """使い方: yomiyasu_hook.py --host claude-code|codex [--state-dir DIR
 _PRINT_CONFIG_ERROR = "--print-config には claude-code か codex を渡してください。"
 
 
-def _options(argv):
+def _absolute_path(value: str) -> str:
+    # Keep Windows drive-relative resolution without following symlinks. The
+    # unregistered fast path must not import the check or visibility modules.
+    return os.path.abspath(value)  # noqa: PTH100 -- Path.absolute() is incomplete before Python 3.12
+
+
+def _options(argv: list[str]) -> dict | None:
     # No argparse (or check) on the unregistered fast path. Invalid flags are silent.
     result = {}
     index = 0
@@ -49,9 +68,12 @@ def _options(argv):
         if key in ("--version", "-h", "--help"):
             result[key] = True
             index += 1
-        elif key in ("--host", "--state-dir", "--print-config") and index + 1 < len(argv):
+        elif key in ("--host", "--state-dir", "--print-config", "--words") and index + 1 < len(argv):
             result[key] = argv[index + 1]
             index += 2
+        elif key == "--no-words":
+            result[key] = True
+            index += 1
         elif key == "--print-config":
             # A missing value is reported by main (exit 2); --print-config is never in a host's settings.
             result[key] = None
@@ -61,18 +83,26 @@ def _options(argv):
     return result
 
 
-def _project_state(cwd):
-    current = cwd
+def _path_matches(probe: Callable[[], bool]) -> bool:
+    """Keep Boolean probes false on I/O errors without importing the check module."""
+    try:
+        return probe()
+    except OSError:
+        return False
+
+
+def _project_state(cwd: str) -> str:
+    current = Path(cwd)
     while True:
-        if os.path.exists(os.path.join(current, ".git")):
-            return os.path.join(current, ".yomiyasu")
-        parent = os.path.dirname(current)
+        if _path_matches((current / '.git').exists):
+            return str(current / '.yomiyasu')
+        parent = current.parent
         if parent == current:
-            return os.path.join(cwd, ".yomiyasu")
+            return str(Path(cwd) / '.yomiyasu')
         current = parent
 
 
-def _home_path(value):
+def _home_path(value: str) -> str:
     """A leading ~ in --state-dir or YOMIYASU_STATE_DIR becomes the home folder (same rule as check._home_path).
 
     Only "~" alone and "~/" (also "~\\" on Windows) are expanded, with os.path.expanduser. "~user/x" and "~x" are kept.
@@ -83,8 +113,12 @@ def _home_path(value):
     """
     if isinstance(value, str) and (value == "~" or value[:2] in ("~/", "~" + os.sep)):
         try:
-            home = os.path.expanduser("~")
-            expanded = os.path.expanduser(value)
+            configured = (os.environ.get("USERPROFILE", os.environ.get("HOMEDRIVE", "") + os.environ.get("HOMEPATH", ""))
+                          if os.name == "nt" else os.environ.get("HOME"))
+            if configured is not None and not os.path.splitdrive(configured)[1].strip().strip("/" + os.sep):
+                return value
+            home = str(Path.home())
+            expanded = home + value[1:]
         except Exception:
             return value
         if (not home.startswith("~") and os.path.splitdrive(home)[1].strip().strip("/" + os.sep)
@@ -93,22 +127,22 @@ def _home_path(value):
     return value
 
 
-def _state_given(option):
+def _state_given(option: str | None) -> bool:
     """The first state folder came from --state-dir or YOMIYASU_STATE_DIR (same test as _states and check)."""
     env = os.environ.get("YOMIYASU_STATE_DIR", "")
     return bool(option) or bool(env.strip() and "${" not in env)
 
 
-def _states(cwd, host, option):
+def _states(cwd: str, host: str, option: str | None) -> list[str]:
     candidates = []
     env = os.environ.get("YOMIYASU_STATE_DIR", "")
     for value in (option, env if env.strip() and "${" not in env else None):
         if value:
-            candidates.append(os.path.abspath(os.path.join(cwd, _home_path(value))))
+            candidates.append(_absolute_path(str(Path(cwd) / _home_path(value))))
     candidates.append(_project_state(cwd))
     project = os.environ.get("CLAUDE_PROJECT_DIR")
     if host == "claude-code" and project and "${" not in project:
-        candidates.append(_project_state(os.path.abspath(project)))
+        candidates.append(_project_state(_absolute_path(project)))
     result, seen = [], set()
     for path in candidates:
         key = os.path.normcase(os.path.realpath(path))
@@ -118,7 +152,7 @@ def _states(cwd, host, option):
     return result
 
 
-def _invocation(data, host, event):
+def _invocation(data: dict, host: str, event: str) -> str | None:
     if event == "UserPromptExpansion" and host == "claude-code":
         if data.get("command_name") in ("yomiyasu", "yomiyasu:yomiyasu"):
             args = data.get("command_args")
@@ -139,7 +173,7 @@ def _invocation(data, host, event):
     return None
 
 
-def _config(host):
+def _config(host: str) -> dict:
     import shlex
     path = os.path.realpath(__file__)
     events = ["UserPromptExpansion", "UserPromptSubmit", "PreToolUse", "Stop", "SessionEnd"] if host == "claude-code" else [
@@ -165,16 +199,16 @@ def _config(host):
         "description": "yomiyasu の任意のフック（登録した原稿だけを対象にする）", "hooks": hooks}
 
 
-def _iso():
+def _iso() -> str:
     import datetime
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def _expired(entry):
+def _expired(entry: dict) -> bool:
     return entry["deadline"] < _iso()
 
 
-def _log(entry, event, result, started, stop_active=None):
+def _log(entry: dict, event: str, result: str, started: float, stop_active: bool | None = None) -> None:
     import time
     row = {"at": _iso(), "event": event, "result": result, "ms": int((time.monotonic() - started) * 1000)}
     # The only input flag retained. Never retain any prompt or tool arguments.
@@ -184,30 +218,30 @@ def _log(entry, event, result, started, stop_active=None):
     entry["log"] = entry["log"][-50:]
 
 
-def _error_log(states, event, error):
+def _error_log(states: list[str], event: str, error: BaseException) -> None:
     import stat
     import time
     import traceback
     for state in states:
-        if not os.path.isdir(state):
+        if not _path_matches(Path(state).is_dir):
             continue
         # A folder without .gitignore and state.json was not set up by check (for example a .yomiyasu/
         # made by an agent before run). Writing the log there would show it in git status.
-        if not any(os.path.lexists(os.path.join(state, name)) for name in ('.gitignore', 'state.json')):
+        if not any(_path_matches((Path(state) / name).exists) or _path_matches((Path(state) / name).is_symlink) for name in ('.gitignore', 'state.json')):
             return
         try:
             frames = traceback.extract_tb(error.__traceback__)
             location = "yomiyasu_hook.py:0"
             if frames:
-                location = "{}:{}".format(os.path.basename(frames[-1].filename), frames[-1].lineno)
+                location = "{}:{}".format(Path(frames[-1].filename).name, frames[-1].lineno)
             # The event and exception class are from our own code, not from input text.
             event = event if event in _EVENTS else "unknown"
             kind = type(error).__name__
             if not kind.isidentifier():
                 kind = "Exception"
             line = "{} {} {} {}\n".format(_iso(), event, kind, location).encode("ascii", "backslashreplace")
-            path = os.path.join(state, "hook-errors.log")
-            if os.path.islink(path):
+            path = Path(state) / 'hook-errors.log'
+            if _path_matches(Path(path).is_symlink):
                 continue
             flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0)
             fd = os.open(path, flags, 0o600)
@@ -215,7 +249,7 @@ def _error_log(states, event, error):
                 if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
                     continue
                 if os.name == "posix":
-                    os.chmod(path, 0o600)
+                    Path(path).chmod(0o600)
                 data = stream.read(65537)
                 if len(data) + len(line) > 65536:
                     data = data[len(data) // 2:]
@@ -228,10 +262,10 @@ def _error_log(states, event, error):
         return
 
 
-def _read_text(path):
-    if not os.path.isfile(path):
+def _read_text(path: str) -> bytes:
+    if not os.path.isfile(path):  # noqa: PTH113 -- probe the given string as is, so 'x.md/' is not a file as in 3.0.0
         raise ValueError("text_file")
-    with open(path, "rb") as stream:
+    with open(path, "rb") as stream:  # noqa: PTH123 -- open the given string as is, so 'x.md/' fails as in 3.0.0
         data = stream.read(_MAX_TEXT + 1)
     if len(data) > _MAX_TEXT:
         raise ValueError("text_size")
@@ -239,7 +273,7 @@ def _read_text(path):
     return data
 
 
-def _paths(args, cwd):
+def _paths(args: str, cwd: str) -> list[str]:
     """The manuscript is the first existing text file named in the request (one file only).
 
     Later names (the final, notes or references) are not registered, so unrelated work is not held.
@@ -262,9 +296,10 @@ def _paths(args, cwd):
         word = word[1:] if word.startswith("@") else word
         if not word:
             continue
-        path = os.path.abspath(os.path.join(cwd, word))
+        path = _absolute_path(str(Path(cwd) / word))
         key = _place(path)
-        if key in seen:
+        # A word that cannot name a file here (a lone surrogate) is skipped; later words are still tried.
+        if key is None or key in seen:
             continue
         seen.add(key)
         try:
@@ -275,35 +310,45 @@ def _paths(args, cwd):
     return []
 
 
-def _place(path):
-    return os.path.normcase(os.path.realpath(path))
+def _place(path: str) -> str | None:
+    """The compared form of a path, or None when it cannot name a file on this system.
+
+    A lone surrogate from JSON (such as '\\ud800') cannot be encoded for the file system, and realpath then
+    raises UnicodeEncodeError (Python 3.14). Callers treat None as matching nothing.
+    """
+    try:
+        return os.path.normcase(os.path.realpath(path))
+    except ValueError:
+        return None
 
 
-def _project_root(path):
-    current = path
+def _project_root(path: str) -> str:
+    current = Path(path)
     while True:
-        if os.path.exists(os.path.join(current, ".git")):
-            return current
-        parent = os.path.dirname(current)
+        if _path_matches((current / '.git').exists):
+            return str(current)
+        parent = current.parent
         if parent == current:
             return path
         current = parent
 
 
-def _same_project(entry, cwd):
+def _same_project(entry: dict, cwd: str) -> bool:
     """An unbound registration is bound only from its own project (cwd equal to or under the project root).
 
     A state folder shared through --state-dir or YOMIYASU_STATE_DIR must not reach other projects' sessions.
     """
     recorded = entry.get("cwd")
-    if not isinstance(recorded, str) or not os.path.isabs(recorded):
+    if not isinstance(recorded, str) or not Path(recorded).is_absolute():
         return False
     root = _place(_project_root(recorded))
     here = _place(cwd)
+    if root is None or here is None:
+        return False
     return here == root or here.startswith(root.rstrip(os.sep) + os.sep)
 
 
-def _shown(path, cwd):
+def _shown(path: str, cwd: str) -> str:
     try:
         relative = os.path.relpath(path, cwd)
         if relative != os.pardir and not relative.startswith(os.pardir + os.sep):
@@ -313,40 +358,75 @@ def _shown(path, cwd):
     return path
 
 
-def _mine(entry, host, session):
+def _mine(entry: dict, host: str, session: str) -> bool:
     return entry['status'] != 'ended' and entry['host'] == host and entry['session_id'] == session
 
 
-def _limit_label(entry):
+def _limit_label(entry: dict) -> str:
     return {"deadline": "期限{}分".format(entry["limits"]["deadline_min"]),
             "run_limit": "run {}回まで".format(entry["limits"]["max_runs"])}.get(
                 entry["status_reason"], "続けさせる回数の上限")
 
 
-def _notice(entry, cwd):
+def _notice(entry: dict, cwd: str) -> str:
     return ("yomiyasu: 原稿 {}（実行ID {}）は未確認で終わりました（{}）。最終稿は検査記録と照合できていません。"
             "投稿する前に、yomiyasu_check.py verify で確かめてください。").format(
                 _shown(entry['targets']['source']['path'], cwd), entry['run_id'], _limit_label(entry))
 
 
-def _reason(entry, final, v, cwd):
+class WordsOptionError(ValueError):
+    """--words と --no-words を両方受けた（hook-errors.log には型の名前だけを残す）。"""
+
+
+def _words_arguments(check: ModuleType, options: dict, cwd: str, states: list[str], event: str) -> str:
+    """案内する check run のコマンドに付ける語の一覧の引数（先頭に空白。付けないときは空の文字列）。
+    --words は check と同じ決まりで探して読み、読めなければ付けずに hook-errors.log に残す（終了コードは0のまま）。"""
+    import shlex
+    if '--words' in options and options.get('--no-words'):
+        _error_log(states, event, WordsOptionError('words_and_no_words'))
+        return ''
+    if options.get('--no-words'):
+        return ' --no-words'
+    if '--words' not in options:
+        return ''
+    try:
+        check.resolve_words(cwd, options['--words'])
+    except check.WordsError as error:
+        _error_log(states, event, error)
+        return ''
+    folder = _absolute_path(str(Path(cwd) / check._home_path(options['--words'])))
+    return ' --words ' + shlex.quote(folder)
+
+
+def _words_note(words: str) -> str:
+    """run の名前だけを書いた案内のあとに足す文（語の一覧の引数があるときだけ）。"""
+    return "yomiyasu_check.py run には{}を付けてください。".format(words + ' ') if words else ''
+
+
+def _no_words() -> str:
+    return ''
+
+
+def _reason(entry: dict, final: str, v: dict, cwd: str, words: Callable[[], str] = _no_words) -> str:
     import shlex
     source = shlex.quote(_shown(entry['targets']['source']['path'], cwd))
     final = shlex.quote(_shown(final, cwd))
     prefix = "yomiyasu（実行ID {}）: ".format(entry['run_id'])
     tail = "実行できない場合は、完了報告の「実行しなかった検査」に書いてください。"
     if v['status'] == 'no_record':
-        message = ("登録した原稿 {} の最終稿 {} に、検査記録がありません。yomiyasu_check.py run --source {} --final {} "
-                   "を実行し、そのあと verify を実行してください。").format(source, final, source, final) + tail
+        # 語の一覧の引数は、案内する run のコマンドの中に付ける
+        message = ("登録した原稿 {} の最終稿 {} に、検査記録がありません。yomiyasu_check.py run --source {} --final {}{} "
+                   "を実行し、そのあと verify を実行してください。").format(source, final, source, final, words()) + tail
     elif v['status'] == 'final_changed':
         message = ("最終稿 {} が、最後に検査した本文と違います（検査のあとに書き換えがありました）。run をもう一度実行し、"
-                   "そのあと verify を実行してください。").format(final) + tail
+                   "そのあと verify を実行してください。").format(final) + _words_note(words()) + tail
     elif v['status'] == 'incomplete':
         names = [name for name in ('lint', 'diff', 'materials') if any(
             p['code'] in ('missing_check', 'check_target') and p['detail'].startswith(name) for p in v['problems'])]
-        message = "検査記録に {} の結果がありません。run をもう一度実行してください。".format('、'.join(names)) + tail
+        message = ("検査記録に {} の結果がありません。run をもう一度実行してください。".format('、'.join(names))
+                   + _words_note(words()) + tail)
     elif v['status'] == 'tool_changed':
-        message = "記録のあとで検査スクリプトが変わりました。run をもう一度実行してください。" + tail
+        message = "記録のあとで検査スクリプトが変わりました。run をもう一度実行してください。" + _words_note(words()) + tail
     else:
         # These verify messages are fixed text, never report excerpts or exception messages.
         message = "最終稿 {}: {}".format(final, v['message'])
@@ -354,10 +434,10 @@ def _reason(entry, final, v, cwd):
         max(0, entry['limits']['max_stop_blocks'] - entry['counters']['stop_blocks']))
 
 
-def _stop(check, state, entry, data, host, session, cwd, started, budget):
+def _stop(check: ModuleType, state: str, entry: dict, data: dict, host: str, session: str, cwd: str, started: float, budget: float, words: Callable[[], str] = _no_words) -> dict:
     import hashlib
     response = {}
-    def change(current):
+    def change(current: dict) -> bool | None:
         if not _mine(current, host, session):
             return False
         if current['status'] == 'unverified':
@@ -370,15 +450,15 @@ def _stop(check, state, entry, data, host, session, cwd, started, budget):
         final = current['targets']['final'] or check.latest_final_path(state, current['run_id'])
         source = current['targets']['source']
         if final is None:
-            if not os.path.isfile(source['path']):
+            if not os.path.isfile(source['path']):  # noqa: PTH113 -- probe the given string as is, so 'x.md/' is not a file as in 3.0.0
                 _log(current, 'Stop', 'source_missing', started)
                 return
-            with open(source['path'], 'rb') as stream:
+            with open(source['path'], 'rb') as stream:  # noqa: PTH123 -- open the given string as is, so 'x.md/' fails as in 3.0.0
                 unchanged = hashlib.sha256(stream.read()).hexdigest() == source['sha256']
             if unchanged:
                 return False
             final = source['path']
-        if not os.path.isfile(final):
+        if not os.path.isfile(final):  # noqa: PTH113 -- probe the given string as is, so 'x.md/' is not a file as in 3.0.0
             _log(current, 'Stop', 'final_missing', started)
             return
         v = check.verify_quick(state, final_path=final, run_id=current['run_id'], since=current['created_at'])
@@ -399,13 +479,13 @@ def _stop(check, state, entry, data, host, session, cwd, started, budget):
             _log(current, 'Stop', 'unverified:' + reason, started, data.get('stop_hook_active', False))
         else:
             current['counters']['stop_blocks'] += 1
-            response.update(decision='block', reason=_reason(current, final, v, cwd))
+            response.update(decision='block', reason=_reason(current, final, v, cwd, words))
             _log(current, 'Stop', 'block:' + v['status'], started, data.get('stop_hook_active', False))
     check.armed_update(state, entry['run_id'], change, budget)
     return response
 
 
-def _bash_command(value):
+def _bash_command(value: object) -> str:
     import shlex
     if isinstance(value, str):
         return value
@@ -416,7 +496,7 @@ def _bash_command(value):
     return ''
 
 
-def _shell_segments(command):
+def _shell_segments(command: str) -> list[str]:
     """Split only outside quotes/substitutions; keep heredoc text with its command.
 
     This is a delimiter scanner, not a shell evaluator. shlex below still parses arguments.
@@ -497,7 +577,7 @@ def _shell_segments(command):
     return result
 
 
-def _bodies(data, cwd):
+def _bodies(data: dict, cwd: str) -> list[tuple[bytes | None, str | None, str]]:
     """Yield (bytes or None, path or None, original command). Never execute shell text."""
     import re
     import shlex
@@ -505,11 +585,13 @@ def _bodies(data, cwd):
     if not isinstance(name, str) or not isinstance(tool, dict):
         return []
     bodies = []
+    # A lone surrogate (JSON "\ud800") stays as bytes that are not UTF-8, so that field alone cannot match a
+    # registered draft (_related skips it) while the other fields are still checked.
     if name.startswith('mcp__'):
-        def scan(value, depth):
+        def scan(value: dict, depth: int) -> None:
             for key, item in value.items():
                 if key in ('body', 'text', 'content', 'description', 'message', 'notes') and isinstance(item, str):
-                    bodies.append((item.encode('utf-8'), None, ''))
+                    bodies.append((item.encode('utf-8', 'surrogatepass'), None, ''))
                 elif isinstance(item, dict) and depth < 2:
                     scan(item, depth + 1)
         scan(tool, 1)
@@ -528,7 +610,7 @@ def _bodies(data, cwd):
             words = context.split()
             unsafe = True
         # The first gh word, also by absolute path (/opt/homebrew/bin/gh) or gh.exe.
-        names = [os.path.basename(word.replace('\\', '/')) for word in words]
+        names = [os.path.basename(word.replace('\\', '/')) for word in words]  # noqa: PTH119 -- 'gh/' is not the gh command, as in 3.0.0
         found = [n for n, word in enumerate(names) if word in ('gh', 'gh.exe')]
         if not found:
             continue
@@ -572,19 +654,19 @@ def _bodies(data, cwd):
                 if file_arg:
                     value = value[1:]
             if file_arg:
-                path = os.path.abspath(os.path.join(cwd, value)) if value and value != '-' else None
+                path = _absolute_path(str(Path(cwd) / value)) if value and value != '-' else None
                 try:
                     raw = _read_text(path) if path else None
                 except (OSError, ValueError):
                     raw = None
                 bodies.append((raw, path, context))
             else:
-                bodies.append((value.encode('utf-8'), None, context))
+                bodies.append((value.encode('utf-8', 'surrogatepass'), None, context))
             index += 1
     return bodies
 
 
-def _related(check, state, entry, body, path, command):
+def _related(check: ModuleType, state: str, entry: dict, body: bytes | None, path: str | None, command: str) -> bool:
     known, paths = check.run_known_texts(state, entry['run_id'])
     source = entry['targets']['source']
     paths.add(source['path'])
@@ -592,14 +674,16 @@ def _related(check, state, entry, body, path, command):
     final = entry['targets']['final'] or check.latest_final_path(state, entry['run_id'])
     if final:
         paths.add(final)
-    if path:
-        placed = _place(path)
-        exports = _place(os.path.join(state, 'exports')) + os.sep
-        if placed in {_place(p) for p in paths} or placed.startswith(exports):
+    # A path that cannot name a file (None from _place) matches no registered path; its body is None, so it is
+    # judged below like any other unreadable body file, and the other bodies are still checked.
+    placed = _place(path) if path else None
+    if placed is not None:
+        exports = _place(str(Path(state) / 'exports'))
+        if placed in {_place(p) for p in paths} - {None} or (exports is not None and placed.startswith(exports + os.sep)):
             return True
     if body is None:
         for p in paths:
-            if any(value and value in command for value in (p, os.path.relpath(p, entry['_cwd']), os.path.basename(p))):
+            if any(value and value in command for value in (p, os.path.relpath(p, entry['_cwd']), Path(p).name)):
                 return True
         return False
     for p in paths:
@@ -613,9 +697,9 @@ def _related(check, state, entry, body, path, command):
         return False
 
 
-def _pretool(check, state, entry, bodies, host, session, cwd, started, budget):
+def _pretool(check: ModuleType, state: str, entry: dict, bodies: list[tuple[bytes | None, str | None, str]], host: str, session: str, cwd: str, started: float, budget: float, words: Callable[[], str] = _no_words) -> dict:
     response = {}
-    def change(current):
+    def change(current: dict) -> bool | None:
         if not _mine(current, host, session):
             return False
         for body, path, command in bodies:
@@ -635,9 +719,10 @@ def _pretool(check, state, entry, bodies, host, session, cwd, started, budget):
                     continue
                 # Keep successful body matching (including copies and line-ending differences).
                 # Only refine a failure's reason when the file is a registered final.
-                if path:
+                placed = _place(path) if path else None
+                if placed is not None:
                     finals = (current['targets']['final'], check.latest_final_path(state, current['run_id']))
-                    if any(final and _place(path) == _place(final) for final in finals):
+                    if any(final and placed == _place(final) for final in finals):
                         v = check.verify_quick(state, final_path=path, final_bytes=body,
                                                run_id=current['run_id'], since=current['created_at'])
                         if v['status'] == 'executed':
@@ -648,6 +733,7 @@ def _pretool(check, state, entry, bodies, host, session, cwd, started, budget):
                           "yomiyasu_check.py run と verify を実行し、yomiyasu_check.py export --final {} で書き出した写しを "
                           "--body-file に渡してください。照合できないときは、投稿せずに未確認として利用者に伝えてください。").format(
                               current['run_id'], _shown(current['targets']['source']['path'], cwd), status, _shown(final, cwd))
+                reason += _words_note(words())
             response.update(hookSpecificOutput={'hookEventName': 'PreToolUse', 'permissionDecision': decision,
                                                'permissionDecisionReason': reason})
             _log(current, 'PreToolUse', decision + ':' + status, started)
@@ -657,18 +743,27 @@ def _pretool(check, state, entry, bodies, host, session, cwd, started, budget):
     return response
 
 
-def _process(check, states, invocation, data, host, event, cwd, started, budget, processing, default_place=False):
+def _process(check: ModuleType, states: list[str], invocation: str | None, data: dict, host: str, event: str, cwd: str, started: float, budget: float, processing: list[tuple[str, str]], default_place: bool = False,
+             options: dict | None = None) -> str:
     import time
     session = data['session_id']
+    # 案内する check run のコマンドに付ける語の一覧の引数（--words、--no-words を受けたときだけ）。案内の文を作るときだけ
+    # 一覧を読み、読めない一覧を hook-errors.log に残すのも1回だけにする
+    found = []
+    def words() -> str:
+        if not found:
+            found.append(_words_arguments(check, options or {}, cwd, states, event))
+        return found[0]
     registrations, combined = [], {}
-    def remaining():
+    def remaining() -> None:
         if time.monotonic() >= budget:
             raise TimeoutError('hook_budget')
     if invocation is not None:
         for path in _paths(invocation, cwd):
             remaining()
+            placed = _place(path)
             existing = [e for state in states for e in check.armed_entries(state)
-                        if _mine(e, host, session) and _place(e['targets']['source']['path']) == _place(path)]
+                        if _mine(e, host, session) and placed is not None and _place(e['targets']['source']['path']) == placed]
             if existing:
                 continue
             # First candidate follows --state-dir, environment, project priority. A project .yomiyasu/
@@ -678,16 +773,16 @@ def _process(check, states, invocation, data, host, event, cwd, started, budget,
             registrations.append(("yomiyasu の管理: 原稿 {} を登録しました（実行ID {}。上限: 続けさせる2回、run 3回、30分）。"
                                   "この原稿を yomiyasu_check.py run の --source に渡すと、記録がこの登録につながります。"
                                   "返答を終えるときに、最終稿が検査記録と合うかをフックが確かめます。").format(
-                                      _shown(path, cwd), entry['run_id']))
+                                      _shown(path, cwd), entry['run_id']) + _words_note(words()))
     bodies = _bodies(data, cwd) if event == 'PreToolUse' else []
     for state in states:
         remaining()
         entries = check.armed_entries(state)
         # Readers skip invalid records; the hook reports only the exception type.
-        folder = os.path.join(state, 'armed')
-        if os.path.isdir(folder):
+        folder = Path(state) / 'armed'
+        if _path_matches(Path(folder).is_dir):
             valid = {e['run_id'] + '.json' for e in entries}
-            if any(name.endswith('.json') and name not in valid for name in os.listdir(folder)):
+            if any(path.name.endswith('.json') and path.name not in valid for path in Path(folder).iterdir()):
                 _error_log([state], event, ValueError('armed_record'))
         for entry in entries:
             remaining()
@@ -695,7 +790,7 @@ def _process(check, states, invocation, data, host, event, cwd, started, budget,
                 continue
             if event != 'SessionEnd' and entry['session_id'] in (None, session) and entry['host'] in (None, host) and (entry['session_id'] is None or entry['host'] is None) and not _expired(entry) and (entry['session_id'] is not None or _same_project(entry, cwd)):
                 processing[:] = [(state, entry['run_id'])]
-                def bind(current):
+                def bind(current: dict) -> bool | None:
                     if current['session_id'] not in (None, session) or current['status'] == 'ended' or current['host'] not in (None, host) or _expired(current) or (current['session_id'] is None and not _same_project(current, cwd)):
                         return False
                     current['session_id'], current['host'], current['bound_at'] = session, host, _iso()
@@ -706,21 +801,21 @@ def _process(check, states, invocation, data, host, event, cwd, started, budget,
                 continue
             processing[:] = [(state, entry['run_id'])]
             if event == 'SessionEnd':
-                def finish(current):
+                def finish(current: dict) -> bool | None:
                     if not _mine(current, host, session):
                         return False
                     current['status'], current['status_reason'] = 'ended', 'session_end'
                     _log(current, event, 'ended:session_end', started)
                 check.armed_update(state, entry['run_id'], finish, budget)
             elif event == 'Stop':
-                response = _stop(check, state, entry, data, host, session, cwd, started, budget)
+                response = _stop(check, state, entry, data, host, session, cwd, started, budget, words)
                 for key, value in response.items():
                     if key in ('reason', 'systemMessage') and key in combined:
                         combined[key] += '\n' + value
                     else:
                         combined[key] = value
             elif event == 'PreToolUse' and bodies:
-                response = _pretool(check, state, entry, bodies, host, session, cwd, started, budget)
+                response = _pretool(check, state, entry, bodies, host, session, cwd, started, budget, words)
                 if response:
                     old = combined.get('hookSpecificOutput')
                     new = response['hookSpecificOutput']
@@ -739,14 +834,14 @@ def _process(check, states, invocation, data, host, event, cwd, started, budget,
 
 class _SilentStream(object):
     # check's public hook helpers are quiet; also contain diagnostics from a broken import.
-    def write(self, text):
+    def write(self, text: str) -> int:
         return len(text)
 
-    def flush(self):
+    def flush(self) -> None:
         pass
 
 
-def main(argv=None):
+def main(argv: list[str] | None = None) -> int:
     states, event = [], 'unknown'
     processing = []
     try:
@@ -762,8 +857,9 @@ def main(argv=None):
             output = json.dumps(_config(options['--print-config']), ensure_ascii=True, indent=2)
         elif '--print-config' in options:
             # Only a person runs --print-config (it is never in a host's settings), so a wrong value is a usage error.
-            if hasattr(sys.stderr, 'reconfigure'):
-                sys.stderr.reconfigure(encoding='utf-8')
+            reconfigure = getattr(sys.stderr, 'reconfigure', None)
+            if callable(reconfigure):
+                reconfigure(encoding='utf-8', newline='\n')
             sys.stderr.write(_PRINT_CONFIG_ERROR + '\n')
             return 2
         else:
@@ -783,13 +879,13 @@ def main(argv=None):
             if event not in _EVENTS or (host == 'claude-code' and event == 'PostToolUse') or (host == 'codex' and event == 'UserPromptExpansion'):
                 return 0
             cwd = data.get('cwd')
-            if not isinstance(cwd, str) or not os.path.isabs(cwd) or not os.path.isdir(cwd):
+            if not isinstance(cwd, str) or not Path(cwd).is_absolute() or not _path_matches(Path(cwd).is_dir):
                 return 0
             states = _states(cwd, host, options.get('--state-dir'))
             invocation = _invocation(data, host, event)
-            if invocation is None and not any(os.path.isdir(os.path.join(state, 'armed')) for state in states):
+            if invocation is None and not any(_path_matches((Path(state) / 'armed').is_dir) for state in states):
                 return 0
-            # Only json, os and sys have been imported on the unregistered path.
+            # The unregistered path has not imported the check module.
             import time
             import importlib.util
             started = time.monotonic()
@@ -797,27 +893,33 @@ def main(argv=None):
             import signal
             timer = hasattr(signal, 'setitimer') and hasattr(signal, 'SIGALRM')
             previous = None
-            def deadline_reached(number, frame):
+            def deadline_reached(number: int, frame: FrameType | None) -> NoReturn:
                 raise TimeoutError('hook_budget')
             try:
                 if timer:
                     previous = signal.signal(signal.SIGALRM, deadline_reached)
                     signal.setitimer(signal.ITIMER_REAL, max(0.001, budget - time.monotonic()))
                 spec = importlib.util.spec_from_file_location('_yomiyasu_hook_check',
-                    os.path.join(os.path.dirname(os.path.realpath(__file__)), 'yomiyasu_check.py'))
+                    str(Path(os.path.realpath(__file__)).with_name('yomiyasu_check.py')))
+                if spec is None or spec.loader is None:
+                    raise ImportError('cannot load yomiyasu_check.py')
                 import contextlib
                 check = importlib.util.module_from_spec(spec)
                 with contextlib.redirect_stdout(_SilentStream()), contextlib.redirect_stderr(_SilentStream()):
                     spec.loader.exec_module(check)
                     output = _process(check, states, invocation, data, host, event, cwd, started, budget, processing,
-                                      default_place=not _state_given(options.get('--state-dir')))
+                                      default_place=not _state_given(options.get('--state-dir')), options=options)
             finally:
                 if timer and previous is not None:
                     signal.setitimer(signal.ITIMER_REAL, 0)
                     signal.signal(signal.SIGALRM, previous)
         if output:
-            if hasattr(sys.stdout, 'reconfigure'):
-                sys.stdout.reconfigure(encoding='utf-8')
+            reconfigure = getattr(sys.stdout, 'reconfigure', None)
+            if callable(reconfigure):
+                # The registration message is plain text with the draft's name. A name with bytes that are not
+                # UTF-8 (a lone surrogate such as '\udcff') is written as an escape instead of failing the hook.
+                # Write '\n' on every OS (Windows would otherwise write '\r\n').
+                reconfigure(encoding='utf-8', errors='backslashreplace', newline='\n')
             sys.stdout.write(output + '\n')
             sys.stdout.flush()
     except BaseException as error:
