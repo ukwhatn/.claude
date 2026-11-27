@@ -95,5 +95,6 @@ Chrome拡張は複数profileの同時接続をサポートするが、Connected 
 - 操作・状態いじり・テスト生成はplaywright（cookie / localStorage / sessionStorageのCRUD、storage stateの保存、リクエストのモックとオフライン化、ロケータ生成）
 - 計測はchrome-devtools（performance traceとCore Web Vitals、Lighthouse、heap snapshotによるリーク調査、CPU・ネットワークのスロットリング）
 - navigate / click / snapshot / console / network一覧はどちらでもできる。常用しているサーバ側で済ませる
+- playwrightの `browser_run_code_unsafe` は、実行したコードをツールの出力に表示する（`filename` で渡しても表示する）。秘密の値を含むコードは渡さず、Cookieはアプリ側の手順など値が出力に出ない経路で入れる。`filename` はワークスペースの下（allowed roots）しか読まない
 - chrome-devtoolsはstdio専用でHTTP transportを持たないため、サーバ1本を複数セッションで共有できない（セッションごとにプロセスが立ち、同一エンドポイントに複数プロセスが接続するとCDPセッションが競合する）。計測が必要になったときだけ使い、常用しない
 - 両者は同じ自動化ブラウザを共有する（セットアップスクリプトの既定構成）。ブラウザに `--remote-debugging-port` を開けておき、chrome-devtoolsは `--browserUrl` でそこへ繋ぐ。自動化用のuser-data-dirは既定パス外なので古典的なremote debuggingが使え、承認ダイアログも出ない（承認を要求するのはブラウザ内から有効化する新方式のみ）。引き換えに、そのポートは無認証で開くので、ログイン状態を持つ自動化ブラウザをローカルの任意プロセスが操作できる
